@@ -78,15 +78,17 @@ Q_ENUM_NS(file_type)
 namespace USB2SnesWS {
 Q_NAMESPACE
 enum opcode {
+    // Format is [argument to send]->what is returned, {} mean a result json reply
+    // Size are in hexformat
     // Connection
-    DeviceList, // List the available Device TODO
-    Attach, // Attach to the devise using the name TODO
-    AppVersion, // Give the version of the App TODO
-    Name, // Specificy the name of the client TODO
+    DeviceList, // List the available Device {portdevice1, portdevice2, portdevice3...}
+    Attach, // Attach to the devise using the name [portdevice]
+    AppVersion, // Give the version of the App {version}
+    Name, // Specificy the name of the client [name]
 
     // Special
-    Info, // Give information about the sd2snes firmware TODO
-    Boot, // Boot a rom TODO
+    Info, // Give information about the sd2snes firmware {firmwareversion, versionstring, romrunning, flag1, flag2...}TOFIX
+    Boot, // Boot a rom [romname] TODO
     Menu, // Get back to the menu TODO
     Reset, // Reset TODO
     Stream, // TODO
@@ -96,12 +98,12 @@ enum opcode {
     PutAddress, // put value to the address TODO
     PutIPS, // Apply a patch TODO
 
-    GetFile, // Get a file TODO
-    PutFile, // Post a file TODO
-    List, // LS command TODO
-    Remove, // remove a file TODO
-    Rename, // rename a file TODO
-    MakeDir // create a directory TODO
+    GetFile, // Get a file [filepath]->{size}->filedata
+    PutFile, // Post a file [filepath, size]-> TODO
+    List, // LS command [dirpath]->{typefile1, namefile1, typefile2, namefile2...}
+    Remove, // remove a file
+    Rename, // rename a file
+    MakeDir // create a directory
 };
 Q_ENUM_NS(opcode)
 }

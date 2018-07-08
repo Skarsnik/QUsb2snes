@@ -7,6 +7,7 @@
 Q_LOGGING_CATEGORY(log_wsserver, "WSServer")
 #define sDebug() qCDebug(log_wsserver)
 
+quint64 WSServer::MRequest::gId = 0;
 
 WSServer::WSServer(QObject *parent) : QObject(parent)
 {
@@ -36,6 +37,7 @@ void WSServer::onNewConnection()
     connect(newSocket, SIGNAL(textMessageReceived(QString)), this, SLOT(onTextMessageReceived(QString)));
     connect(newSocket, SIGNAL(binaryMessageReceived(QByteArray)), this, SLOT(onBinaryMessageReceived(QByteArray)));
     connect(newSocket, SIGNAL(disconnected()), this, SLOT(onClientDisconnected()));
+    connect(newSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onClientError(QAbstractSocket::SocketError)));
 
     WSInfos wi;
     wi.attached = false;
@@ -68,8 +70,8 @@ void WSServer::addNewLowConnection(USBConnection *lowCo)
 void WSServer::onTextMessageReceived(QString message)
 {
     QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
-    const WSInfos &wsInfo = wsInfos[ws];
-    sDebug() << wsNames[ws] << "received " << message;
+    const WSInfos &wsInfo = wsInfos.value(ws);
+    sDebug() << wsNames.value(ws) << "received " << message;
 
     MRequest* req = requestFromJSON(message);
     sDebug() << "Request is " << req->opcode;
@@ -90,10 +92,8 @@ void WSServer::onTextMessageReceived(QString message)
             lowConnectionInfos[lowCo].currentCommand = req->opcode;
             lowConnectionInfos[lowCo].currentWS = ws;
             executeRequest(req);
-        }
-        else // add to queue
-        {
-            sDebug() << wsInfo.attachedTo->name() << "Adding request in queue " << req->opcode << "(" << pendingRequests[wsInfo.attachedTo].size() << ")";
+        } else { // add to queue
+            sDebug() << wsInfo.attachedTo->name() << "Adding request in queue " << *req << "(" << pendingRequests[wsInfo.attachedTo].size() << ")";
             pendingRequests[wsInfo.attachedTo].append(req);
         }
 
@@ -107,7 +107,16 @@ LError:
 
 void WSServer::onBinaryMessageReceived(QByteArray data)
 {
-
+    QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
+    WSInfos infos = wsInfos.value(ws);
+    sDebug() << wsNames.value(ws) << "Received binary data" << data.size();
+    if (infos.commandState != ClientCommandState::WAITINGBDATAREPLY)
+    {
+        setError(ErrorType::ProtocolError, "Sending binary data when nothing waiting for it");
+        clientError(ws);
+    } else {
+        wsInfos.value(ws).attachedTo->writeData(data);
+    }
 }
 
 void WSServer::onClientDisconnected()
@@ -117,10 +126,22 @@ void WSServer::onClientDisconnected()
     cleanUpSocket(ws);
 }
 
+void WSServer::onClientError(QAbstractSocket::SocketError)
+{
+    QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
+    sDebug() << "Client error : " << wsNames.value(ws) << ws->errorString();
+}
+
 void WSServer::onLowCoCommandFinished()
 {
     USBConnection*  usbco = qobject_cast<USBConnection*>(sender());
-    processLowCoCmdFinished(usbco);
+    if (lowConnectionInfos[usbco].currentWS != NULL)
+    {
+        processLowCoCmdFinished(usbco);
+        processCommandQueue(usbco);
+    }
+    else
+        sDebug() << "Received finished command while no socket to receive it";
 }
 
 void WSServer::onLowCoProtocolError()
@@ -131,6 +152,33 @@ void WSServer::onLowCoProtocolError()
 void WSServer::onLowCoClosed()
 {
 
+}
+
+void WSServer::onLowCoGetDataReceived(QByteArray data)
+{
+    USBConnection*  usbco = qobject_cast<USBConnection*>(sender());
+    sDebug() << "Sending " << data.size() << "to" << wsNames.value(lowConnectionInfos[usbco].currentWS);
+    lowConnectionInfos[usbco].currentWS->sendBinaryMessage(data);
+}
+
+void WSServer::onLowCoSizeGet(unsigned int size)
+{
+    USBConnection*  usbco = qobject_cast<USBConnection*>(sender());
+    sendReply(lowConnectionInfos[usbco].currentWS, QString::number(size, 16));
+}
+
+void        WSServer::processCommandQueue(USBConnection* usbco)
+{
+    QList<MRequest*>&    cmdQueue = pendingRequests[usbco];
+    if (!cmdQueue.isEmpty())
+    {
+        sDebug() << cmdQueue.size() << " requests in queue, processing the first";
+        MRequest* req = cmdQueue.takeFirst();
+        currentRequest[usbco] = req;
+        lowConnectionInfos[usbco].currentCommand = req->opcode;
+        lowConnectionInfos[usbco].currentWS = req->owner;
+        executeRequest(req);
+    }
 }
 
 void WSServer::setError(const WSServer::ErrorType type, const QString reason)
@@ -162,7 +210,8 @@ WSServer::MRequest* WSServer::requestFromJSON(const QString &str)
             req->arguments << entry.toString();
         }
     }
-    req->space = job["Space"].toString();
+    if (job.contains("Space"))
+        req->space = job["Space"].toString();
     if (job.contains("Flags"))
     {
         QJsonArray   jarray = job["Flags"].toArray();
@@ -195,11 +244,11 @@ void WSServer::cleanUpSocket(QWebSocket *ws)
         i.next();
         if (i.value().currentWS == ws)
         {
-            lowConnectionInfos.remove(i.key());
+            i.value().currentWS == NULL;
             break;
         }
     }
-    delete ws;
+    ws->deleteLater();
 }
 
 bool WSServer::isValidUnAttached(const USB2SnesWS::opcode opcode)
@@ -233,6 +282,6 @@ void    WSServer::sendReply(QWebSocket *ws, QString args)
 
 QDebug operator<<(QDebug debug, const WSServer::MRequest &req)
 {
-    debug << "Created at" << req.timeCreated << "-" << req.opcode << req.space << req.flags << req.arguments;
+    debug << req.id << "Created at" << req.timeCreated << "-" << req.opcode << req.space << req.flags << req.arguments;
     return debug;
 }

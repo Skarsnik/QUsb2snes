@@ -38,12 +38,17 @@ public:
         NEW,
         SENT,
         WAITINGREPLY,
+        WAITINGBDATAREPLY,
         DONE
     };
     Q_ENUM(RequestState)
 private:
 
     struct MRequest {
+        MRequest() {
+            id = gId++;
+        }
+        quint64             id;
         QWebSocket*         owner;
         QTime               timeCreated;
         USB2SnesWS::opcode  opcode;
@@ -52,7 +57,10 @@ private:
         QStringList         flags;
         RequestState        state;
         friend QDebug              operator<<(QDebug debug, const MRequest& req);
+    private:
+        static quint64      gId;
     };
+
     friend QDebug              operator<<(QDebug debug, const WSServer::MRequest& req);
     struct WSInfos {
         bool                attached;
@@ -82,9 +90,12 @@ private slots:
     void    onTextMessageReceived(QString message);
     void    onBinaryMessageReceived(QByteArray data);
     void    onClientDisconnected();
+    void    onClientError(QAbstractSocket::SocketError);
     void    onLowCoCommandFinished();
     void    onLowCoProtocolError();
     void    onLowCoClosed();
+    void    onLowCoGetDataReceived(QByteArray data);
+    void    onLowCoSizeGet(unsigned int size);
 
 private:
     QMetaEnum                           cmdMetaEnum;
@@ -109,6 +120,7 @@ private:
     void        executeRequest(MRequest *req);
     void        addNewLowConnection(USBConnection* lowCo);
     void        processLowCoCmdFinished(USBConnection* usbco);
+    void        processCommandQueue(USBConnection* usbco);
 
     QStringList getDevicesList();
     void        cmdAttach(MRequest *req);

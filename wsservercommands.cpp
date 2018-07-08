@@ -4,14 +4,20 @@
 
 #define sDebug() qCDebug(log_wsserver)
 
+#define CMD_TAKE_ONE_ARG(cmd) if (req->arguments.size() != 1) \
+{ \
+    setError(ErrorType::CommandError, QString("%1 command take one argument").arg(cmd)); \
+    clientError(ws); \
+    return ; \
+}
 
 void    WSServer::executeRequest(MRequest *req)
 {
     USBConnection*  usbCo = NULL;
     QWebSocket*     ws = req->owner;
-    sDebug() << "Executing request : " << req;
-    if (wsInfos[ws].attached)
-        usbCo = wsInfos[ws].attachedTo;
+    sDebug() << "Executing request : " << *req << "for" << wsNames.value(ws);
+    if (wsInfos.value(ws).attached)
+        usbCo = wsInfos.value(ws).attachedTo;
     switch (req->opcode)
     {
     case USB2SnesWS::DeviceList : {
@@ -28,6 +34,7 @@ void    WSServer::executeRequest(MRequest *req)
         break;
     }
     case USB2SnesWS::Name : {
+        CMD_TAKE_ONE_ARG("Name")
         wsNames[ws] = req->arguments.at(0);
         break;
     }
@@ -36,9 +43,53 @@ void    WSServer::executeRequest(MRequest *req)
         req->state = RequestState::WAITINGREPLY;
         break;
     }
+    // FILE Commands
     case USB2SnesWS::List : {
+        CMD_TAKE_ONE_ARG("List")
         usbCo->fileCommand(SD2Snes::opcode::LS, req->arguments.at(0).toLatin1());
         req->state = RequestState::WAITINGREPLY;
+        break;
+    }
+    case USB2SnesWS::GetFile : {
+        CMD_TAKE_ONE_ARG("GetFile")
+        connect(usbCo, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onLowCoGetDataReceived(QByteArray)));
+        connect(usbCo, SIGNAL(sizeGet(uint)), this, SLOT(onLowCoSizeGet(uint)));
+        usbCo->fileCommand(SD2Snes::opcode::GET, req->arguments.at(0).toLatin1());
+        req->state = RequestState::WAITINGREPLY;
+        break;
+    }
+    case USB2SnesWS::PutFile : {
+        if (req->arguments.size() != 2)
+        {
+            setError(ErrorType::CommandError, "PutFile command take 2 arguments (file1, SizeInHex)");
+            clientError(ws);
+            return ;
+        }
+        bool ok;
+        usbCo->putFile(req->arguments.at(0).toLatin1(), req->arguments.at(1).toInt(&ok, 16));
+        req->state = RequestState::WAITINGREPLY;
+        wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
+        break;
+    }
+    case USB2SnesWS::Rename : {
+        if (req->arguments.size() != 2)
+        {
+            setError(ErrorType::CommandError, "Rename command take 2 arguments (file1, file2)");
+            clientError(ws);
+            return ;
+        }
+        usbCo->fileCommand(SD2Snes::opcode::MV, QVector<QByteArray>() << req->arguments.at(0).toLatin1()
+                                                                    << req->arguments.at(1).toLatin1());
+        break;
+    }
+    case USB2SnesWS::Remove : {
+        CMD_TAKE_ONE_ARG("Remove")
+        usbCo->fileCommand(SD2Snes::opcode::RM, req->arguments.at(0).toLatin1());
+        break;
+    }
+    case USB2SnesWS::MakeDir : {
+        CMD_TAKE_ONE_ARG("MakeDir")
+        usbCo->fileCommand(SD2Snes::opcode::MKDIR, req->arguments.at(0).toLatin1());
         break;
     }
     default:
@@ -50,10 +101,21 @@ void    WSServer::executeRequest(MRequest *req)
     sDebug() << "Request executed";
 }
 
+#undef CMD_TAKE_ONE_ARG
+
 void    WSServer::processLowCoCmdFinished(USBConnection* usbco)
 {
     LowCoInfos&  info = lowConnectionInfos[usbco];
+    sDebug() << "Processing command finished" << info.currentCommand;
     switch (info.currentCommand) {
+    case USB2SnesWS::Info :
+    {
+        USB2SnesInfo    ifo = usbco->parseInfo(usbco->dataRead);
+        sendReply(info.currentWS, QStringList() << ifo.version << "foo" << ifo.romPlaying << ifo.flags);
+        break;
+    }
+
+    // FILE Command
     case USB2SnesWS::List :
     {
         QList<USBConnection::FileInfos> lfi = usbco->parseLSCommand(usbco->dataRead);
@@ -66,11 +128,25 @@ void    WSServer::processLowCoCmdFinished(USBConnection* usbco)
         sendReply(info.currentWS, rep);
         break;
     }
-    case USB2SnesWS::Info :
+    case USB2SnesWS::GetFile :
     {
-        USB2SnesInfo    ifo = usbco->parseInfo(usbco->dataRead);
-        sendReply(info.currentWS, QStringList() << ifo.version << "foo" << ifo.romPlaying << ifo.flags);
+        disconnect(usbco, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onLowCoGetDataReceived(QByteArray)));
+        disconnect(usbco, SIGNAL(sizeGet(uint)), this, SLOT(onLowCoSizeGet(uint)));
+        //sDebug() << "Sending " << usbco->fileData.size() << "bytes";
+        //info.currentWS->sendBinaryMessage(usbco->fileData);
         break;
+    }
+    case USB2SnesWS::Rename :
+    case USB2SnesWS::Remove :
+    case USB2SnesWS::MakeDir :
+    case USB2SnesWS::PutFile :
+    {
+        break;
+    }
+    case USB2SnesWS::GetAddress :
+    {
+        unsigned int size = currentRequest[usbco]->arguments.at(1).toUInt();
+        info.currentWS->sendBinaryMessage(usbco->dataRead.mid(512, size));
     }
     default:
     {

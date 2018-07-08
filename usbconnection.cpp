@@ -44,6 +44,7 @@ void USBConnection::close()
 void USBConnection::spReadyRead()
 {
     static QByteArray   responseBlock = QByteArray();
+    static bool         firstBlock = true;
 
     bytesReceived += m_port.bytesAvailable();
     dataRead = m_port.readAll();
@@ -65,6 +66,7 @@ void USBConnection::spReadyRead()
             return;
         }
     }
+
     dataReceived.append(dataRead);
     if (fileGetCmd && m_getSize <= 0)
     {
@@ -75,6 +77,7 @@ void USBConnection::spReadyRead()
                     (((quint8) responseBlock.at(254)) << 8)  +
                     responseBlock.at(255);
         sDebug() << "Size for data : " << m_getSize;
+        emit sizeGet(m_getSize);
     }
     if (responseSizeExpected != -1)
     {
@@ -83,18 +86,33 @@ void USBConnection::spReadyRead()
             goto LcmdFinished;
         }
     } else {
-        sDebug() << "Unsized command";
+        //sDebug() << "Unsized command";
         if ((this->*checkCommandEnd)()) {
+            if (m_currentCommand == SD2Snes::opcode::GET)
+                emit getDataReceived(dataRead.left(bytesReceived - m_getSize));
             goto LcmdFinished;
+        } else {
+            if (m_currentCommand == SD2Snes::opcode::GET)
+            {
+                if (firstBlock)
+                    emit getDataReceived(dataRead.mid(512));
+                else
+                    emit getDataReceived(dataRead);
+            }
         }
     }
+    firstBlock = false;
     return;
 LcmdFinished :
     m_state = READY;
     dataRead = dataReceived;
+    if (fileGetCmd)
+        fileData = dataRead.mid(512, m_getSize);
     dataReceived.clear();
     bytesReceived = 0;
     fileGetCmd = false;
+    firstBlock = true;
+    m_getSize = -1;
     responseBlock.clear();
     sDebug() << "Command finished";
     emit commandFinished();
@@ -133,7 +151,7 @@ bool    USBConnection::checkEndForGet()
     quint64 cmp_size = m_getSize;
     if (m_getSize % 512 != 0)
         cmp_size = (m_getSize / 512) * 512 + 512;
-    sDebug() << cmp_size;
+    //sDebug() << cmp_size;
     return bytesReceived == cmp_size + 512;
 }
 

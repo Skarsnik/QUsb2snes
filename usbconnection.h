@@ -34,6 +34,7 @@ public:
 
     USB2SnesInfo    parseInfo(const QByteArray &data);
     State           state() const;
+    QByteArray      fileData;
     QByteArray      dataRead;
 
     QList<USBConnection::FileInfos> parseLSCommand(QByteArray &dataI);
@@ -41,6 +42,8 @@ signals:
     void            commandFinished();
     void            protocolError();
     void            closed();
+    void            getDataReceived(QByteArray data);
+    void            sizeGet(unsigned int);
 
 public slots:
     bool    open();
@@ -58,6 +61,7 @@ private:
     int bytesReceived;
     State   m_state;
     bool    fileGetCmd;
+    bool    isGetCmd;
     SD2Snes::opcode m_currentCommand;
     unsigned char    m_commandFlags;
     quint64     m_getSize;
