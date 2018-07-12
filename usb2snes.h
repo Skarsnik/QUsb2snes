@@ -98,12 +98,12 @@ enum opcode {
     PutAddress, // put value to the address TODO
     PutIPS, // Apply a patch TODO
 
-    GetFile, // Get a file [filepath]->{size}->filedata
-    PutFile, // Post a file [filepath, size]-> TODO
-    List, // LS command [dirpath]->{typefile1, namefile1, typefile2, namefile2...}
-    Remove, // remove a file
-    Rename, // rename a file
-    MakeDir // create a directory
+    GetFile, // Get a file - [filepath]->{size}->filedata
+    PutFile, // Post a file -  [filepath, size] then write you data
+    List, // LS command - [dirpath]->{typefile1, namefile1, typefile2, namefile2...}
+    Remove, // remove a file [filepath]
+    Rename, // rename a file [filepath, newfilename]
+    MakeDir // create a directory [dirpath]
 };
 Q_ENUM_NS(opcode)
 }

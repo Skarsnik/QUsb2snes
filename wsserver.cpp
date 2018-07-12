@@ -13,8 +13,11 @@ WSServer::WSServer(QObject *parent) : QObject(parent)
 {
     wsServer = new QWebSocketServer(QStringLiteral("USB2SNES Server"), QWebSocketServer::NonSecureMode, this);
     const QMetaObject &mo = USB2SnesWS::staticMetaObject;
+    const QMetaObject &mo2 = SD2Snes::staticMetaObject;
     int i = mo.indexOfEnumerator("opcode");
     cmdMetaEnum = mo.enumerator(i);
+    i = mo2.indexOfEnumerator("space");
+    spaceMetaEnum = mo2.enumerator(i);
 }
 
 bool WSServer::start()
@@ -197,9 +200,21 @@ WSServer::MRequest* WSServer::requestFromJSON(const QString &str)
     QString opcode = job["Opcode"].toString();
     if (cmdMetaEnum.keyToValue(qPrintable(opcode)) == -1)
     {
-        req->owner = (QWebSocket*) 42;
+        req->owner = (QWebSocket*)(42);
         setError(ErrorType::ProtocolError, "Invalid OPcode send" + opcode);
         return req;
+    }
+    if (job.contains("Space"))
+    {
+        QString space = job["Space"].toString();
+
+        if (spaceMetaEnum.keyToValue(qPrintable(space)) == -1)
+        {
+            req->owner = (QWebSocket*)(42);
+            setError(ErrorType::ProtocolError, "Invalid Space send" + space);
+            return req;
+        }
+        req->space = (SD2Snes::space) spaceMetaEnum.keyToValue(qPrintable(space));
     }
     req->opcode = (USB2SnesWS::opcode) cmdMetaEnum.keyToValue(qPrintable(opcode));
     if (job.contains("Operands"))
@@ -210,8 +225,6 @@ WSServer::MRequest* WSServer::requestFromJSON(const QString &str)
             req->arguments << entry.toString();
         }
     }
-    if (job.contains("Space"))
-        req->space = job["Space"].toString();
     if (job.contains("Flags"))
     {
         QJsonArray   jarray = job["Flags"].toArray();

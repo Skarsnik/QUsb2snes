@@ -52,7 +52,7 @@ private:
         QWebSocket*         owner;
         QTime               timeCreated;
         USB2SnesWS::opcode  opcode;
-        QString             space;
+        SD2Snes::space      space;
         QStringList         arguments;
         QStringList         flags;
         RequestState        state;
@@ -99,6 +99,7 @@ private slots:
 
 private:
     QMetaEnum                           cmdMetaEnum;
+    QMetaEnum                           spaceMetaEnum;
     QWebSocketServer*                   wsServer;
     QList<QWebSocket*>                  unassignedWS;
     QMap<QWebSocket*, WSInfos>          wsInfos;

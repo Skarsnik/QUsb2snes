@@ -26,6 +26,7 @@ void    WSServer::executeRequest(MRequest *req)
         break;
     }
     case USB2SnesWS::Attach : {
+        CMD_TAKE_ONE_ARG("Attach")
         cmdAttach(req);
         break;
     }
@@ -58,6 +59,20 @@ void    WSServer::executeRequest(MRequest *req)
         req->state = RequestState::WAITINGREPLY;
         break;
     }
+    case USB2SnesWS::GetAddress : {
+        if (req->arguments.size() != 2)
+        {
+            setError(ErrorType::CommandError, "GetAddress command take 2 arguments (AddressInHex, SizeInHex)");
+            clientError(ws);
+            return ;
+        }
+        connect(usbCo, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onLowCoGetDataReceived(QByteArray)));
+        connect(usbCo, SIGNAL(sizeGet(uint)), this, SLOT(onLowCoSizeGet(uint)));
+        bool    ok;
+        usbCo->getAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+        req->state = RequestState::WAITINGREPLY;
+        break;
+    }
     case USB2SnesWS::PutFile : {
         if (req->arguments.size() != 2)
         {
@@ -80,16 +95,19 @@ void    WSServer::executeRequest(MRequest *req)
         }
         usbCo->fileCommand(SD2Snes::opcode::MV, QVector<QByteArray>() << req->arguments.at(0).toLatin1()
                                                                     << req->arguments.at(1).toLatin1());
+        req->state = RequestState::WAITINGREPLY;
         break;
     }
     case USB2SnesWS::Remove : {
         CMD_TAKE_ONE_ARG("Remove")
         usbCo->fileCommand(SD2Snes::opcode::RM, req->arguments.at(0).toLatin1());
+        req->state = RequestState::WAITINGREPLY;
         break;
     }
     case USB2SnesWS::MakeDir : {
         CMD_TAKE_ONE_ARG("MakeDir")
         usbCo->fileCommand(SD2Snes::opcode::MKDIR, req->arguments.at(0).toLatin1());
+        req->state = RequestState::WAITINGREPLY;
         break;
     }
     default:
@@ -102,6 +120,10 @@ void    WSServer::executeRequest(MRequest *req)
 }
 
 #undef CMD_TAKE_ONE_ARG
+
+
+
+
 
 void    WSServer::processLowCoCmdFinished(USBConnection* usbco)
 {
@@ -132,8 +154,6 @@ void    WSServer::processLowCoCmdFinished(USBConnection* usbco)
     {
         disconnect(usbco, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onLowCoGetDataReceived(QByteArray)));
         disconnect(usbco, SIGNAL(sizeGet(uint)), this, SLOT(onLowCoSizeGet(uint)));
-        //sDebug() << "Sending " << usbco->fileData.size() << "bytes";
-        //info.currentWS->sendBinaryMessage(usbco->fileData);
         break;
     }
     case USB2SnesWS::Rename :
@@ -145,8 +165,9 @@ void    WSServer::processLowCoCmdFinished(USBConnection* usbco)
     }
     case USB2SnesWS::GetAddress :
     {
-        unsigned int size = currentRequest[usbco]->arguments.at(1).toUInt();
-        info.currentWS->sendBinaryMessage(usbco->dataRead.mid(512, size));
+        disconnect(usbco, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onLowCoGetDataReceived(QByteArray)));
+        disconnect(usbco, SIGNAL(sizeGet(uint)), this, SLOT(onLowCoSizeGet(uint)));
+        break;
     }
     default:
     {
@@ -155,6 +176,7 @@ void    WSServer::processLowCoCmdFinished(USBConnection* usbco)
     }
     }
     currentRequest[usbco]->state = RequestState::DONE;
+    sDebug() << "Request " << *(currentRequest.value(usbco)) << "processed in " << currentRequest.value(usbco)->timeCreated.msecsTo(QTime::currentTime()) << " ms";
     delete currentRequest[usbco];
     currentRequest[usbco] = NULL;
 }
