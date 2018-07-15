@@ -44,7 +44,11 @@ void    WSServer::executeRequest(MRequest *req)
         req->state = RequestState::WAITINGREPLY;
         break;
     }
-    // FILE Commands
+
+    /*
+     * File commands
+    */
+
     case USB2SnesWS::List : {
         CMD_TAKE_ONE_ARG("List")
         usbCo->fileCommand(SD2Snes::opcode::LS, req->arguments.at(0).toLatin1());
@@ -56,20 +60,6 @@ void    WSServer::executeRequest(MRequest *req)
         connect(usbCo, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onLowCoGetDataReceived(QByteArray)));
         connect(usbCo, SIGNAL(sizeGet(uint)), this, SLOT(onLowCoSizeGet(uint)));
         usbCo->fileCommand(SD2Snes::opcode::GET, req->arguments.at(0).toLatin1());
-        req->state = RequestState::WAITINGREPLY;
-        break;
-    }
-    case USB2SnesWS::GetAddress : {
-        if (req->arguments.size() != 2)
-        {
-            setError(ErrorType::CommandError, "GetAddress command take 2 arguments (AddressInHex, SizeInHex)");
-            clientError(ws);
-            return ;
-        }
-        connect(usbCo, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onLowCoGetDataReceived(QByteArray)));
-        connect(usbCo, SIGNAL(sizeGet(uint)), this, SLOT(onLowCoSizeGet(uint)));
-        bool    ok;
-        usbCo->getAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
         req->state = RequestState::WAITINGREPLY;
         break;
     }
@@ -110,6 +100,49 @@ void    WSServer::executeRequest(MRequest *req)
         req->state = RequestState::WAITINGREPLY;
         break;
     }
+
+    /*
+    * Address command
+    */
+    case USB2SnesWS::GetAddress : {
+        if (req->arguments.size() != 2)
+        {
+            setError(ErrorType::CommandError, "GetAddress command take 2 arguments (AddressInHex, SizeInHex)");
+            clientError(ws);
+            return ;
+        }
+        connect(usbCo, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onLowCoGetDataReceived(QByteArray)));
+        connect(usbCo, SIGNAL(sizeGet(uint)), this, SLOT(onLowCoSizeGet(uint)));
+        bool    ok;
+        usbCo->getAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+        req->state = RequestState::WAITINGREPLY;
+        break;
+    }
+    case USB2SnesWS::PutAddress : {
+        if (req->arguments.size() < 2)
+        {
+            setError(ErrorType::CommandError, "PutAddress command take at least 2 arguments (AddressInHex, SizeInHex)");
+            clientError(ws);
+            return ;
+        }
+        bool ok;
+        // Basic usage of PutAddress
+        if (req->arguments.size() == 2)
+        {
+            usbCo->putAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+        } else {
+           QList<QPair<unsigned int, quint8> > pairs;
+           for (unsigned int i = 0; i < req->arguments.size(); i += 2)
+           {
+               pairs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUShort(&ok, 16)));
+           }
+           usbCo->putAddrCommand(req->space, pairs);
+        }
+        req->state = RequestState::WAITINGREPLY;
+        wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
+        break;
+    }
+
     default:
     {
         setError(ErrorType::ProtocolError, "Invalid command or non implemented");
@@ -160,6 +193,7 @@ void    WSServer::processLowCoCmdFinished(USBConnection* usbco)
     case USB2SnesWS::Remove :
     case USB2SnesWS::MakeDir :
     case USB2SnesWS::PutFile :
+    case USB2SnesWS::PutAddress :
     {
         break;
     }
