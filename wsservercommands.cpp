@@ -1,6 +1,19 @@
+#include "usbconnection.h"
 #include "wsserver.h"
 #include <QLoggingCategory>
 #include <QSerialPortInfo>
+
+bool    WSServer::isFileCommand(USB2SnesWS::opcode opcode)
+{
+    return (opcode == USB2SnesWS::GetFile | opcode == USB2SnesWS::PutFile | opcode == USB2SnesWS::List |
+            opcode == USB2SnesWS::Rename | opcode == USB2SnesWS::MakeDir | opcode == USB2SnesWS::Rename |
+            opcode == USB2SnesWS::Remove);
+}
+
+bool    WSServer::isControlCommand(USB2SnesWS::opcode opcode)
+{
+    return (opcode == USB2SnesWS::Boot | opcode == USB2SnesWS::Reset | opcode == USB2SnesWS::Menu);
+}
 
 #define sDebug() qCDebug(log_wsserver)
 
@@ -13,11 +26,11 @@
 
 void    WSServer::executeRequest(MRequest *req)
 {
-    USBConnection*  usbCo = NULL;
+    ADevice*  device = NULL;
     QWebSocket*     ws = req->owner;
     sDebug() << "Executing request : " << *req << "for" << wsNames.value(ws);
     if (wsInfos.value(ws).attached)
-        usbCo = wsInfos.value(ws).attachedTo;
+        device = wsInfos.value(ws).attachedTo;
     switch (req->opcode)
     {
     case USB2SnesWS::DeviceList : {
@@ -40,7 +53,7 @@ void    WSServer::executeRequest(MRequest *req)
         break;
     }
     case USB2SnesWS::Info : {
-        usbCo->infoCommand();
+        device->infoCommand();
         req->state = RequestState::WAITINGREPLY;
         break;
     }
@@ -51,15 +64,15 @@ void    WSServer::executeRequest(MRequest *req)
 
     case USB2SnesWS::List : {
         CMD_TAKE_ONE_ARG("List")
-        usbCo->fileCommand(SD2Snes::opcode::LS, req->arguments.at(0).toLatin1());
+        device->fileCommand(SD2Snes::opcode::LS, req->arguments.at(0).toLatin1());
         req->state = RequestState::WAITINGREPLY;
         break;
     }
     case USB2SnesWS::GetFile : {
         CMD_TAKE_ONE_ARG("GetFile")
-        connect(usbCo, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onLowCoGetDataReceived(QByteArray)));
-        connect(usbCo, SIGNAL(sizeGet(uint)), this, SLOT(onLowCoSizeGet(uint)));
-        usbCo->fileCommand(SD2Snes::opcode::GET, req->arguments.at(0).toLatin1());
+        connect(device, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onDeviceGetDataReceived(QByteArray)));
+        connect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)));
+        device->fileCommand(SD2Snes::opcode::GET, req->arguments.at(0).toLatin1());
         req->state = RequestState::WAITINGREPLY;
         break;
     }
@@ -71,7 +84,7 @@ void    WSServer::executeRequest(MRequest *req)
             return ;
         }
         bool ok;
-        usbCo->putFile(req->arguments.at(0).toLatin1(), req->arguments.at(1).toInt(&ok, 16));
+        device->putFile(req->arguments.at(0).toLatin1(), req->arguments.at(1).toInt(&ok, 16));
         req->state = RequestState::WAITINGREPLY;
         wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
         break;
@@ -83,20 +96,20 @@ void    WSServer::executeRequest(MRequest *req)
             clientError(ws);
             return ;
         }
-        usbCo->fileCommand(SD2Snes::opcode::MV, QVector<QByteArray>() << req->arguments.at(0).toLatin1()
+        device->fileCommand(SD2Snes::opcode::MV, QVector<QByteArray>() << req->arguments.at(0).toLatin1()
                                                                     << req->arguments.at(1).toLatin1());
         req->state = RequestState::WAITINGREPLY;
         break;
     }
     case USB2SnesWS::Remove : {
         CMD_TAKE_ONE_ARG("Remove")
-        usbCo->fileCommand(SD2Snes::opcode::RM, req->arguments.at(0).toLatin1());
+        device->fileCommand(SD2Snes::opcode::RM, req->arguments.at(0).toLatin1());
         req->state = RequestState::WAITINGREPLY;
         break;
     }
     case USB2SnesWS::MakeDir : {
         CMD_TAKE_ONE_ARG("MakeDir")
-        usbCo->fileCommand(SD2Snes::opcode::MKDIR, req->arguments.at(0).toLatin1());
+        device->fileCommand(SD2Snes::opcode::MKDIR, req->arguments.at(0).toLatin1());
         req->state = RequestState::WAITINGREPLY;
         break;
     }
@@ -111,10 +124,10 @@ void    WSServer::executeRequest(MRequest *req)
             clientError(ws);
             return ;
         }
-        connect(usbCo, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onLowCoGetDataReceived(QByteArray)));
-        connect(usbCo, SIGNAL(sizeGet(uint)), this, SLOT(onLowCoSizeGet(uint)));
+        connect(device, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onDeviceGetDataReceived(QByteArray)));
+        connect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)));
         bool    ok;
-        usbCo->getAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+        device->getAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
         req->state = RequestState::WAITINGREPLY;
         break;
     }
@@ -129,14 +142,14 @@ void    WSServer::executeRequest(MRequest *req)
         // Basic usage of PutAddress
         if (req->arguments.size() == 2)
         {
-            usbCo->putAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+            device->putAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
         } else {
            QList<QPair<unsigned int, quint8> > pairs;
            for (unsigned int i = 0; i < req->arguments.size(); i += 2)
            {
                pairs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUShort(&ok, 16)));
            }
-           usbCo->putAddrCommand(req->space, pairs);
+           device->putAddrCommand(req->space, pairs);
         }
         req->state = RequestState::WAITINGREPLY;
         wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
@@ -158,14 +171,14 @@ void    WSServer::executeRequest(MRequest *req)
 
 
 
-void    WSServer::processLowCoCmdFinished(USBConnection* usbco)
+void    WSServer::processDeviceCommandFinished(ADevice* device)
 {
-    LowCoInfos&  info = lowConnectionInfos[usbco];
+    DeviceInfos&  info = devicesInfos[device];
     sDebug() << "Processing command finished" << info.currentCommand;
     switch (info.currentCommand) {
     case USB2SnesWS::Info :
     {
-        USB2SnesInfo    ifo = usbco->parseInfo(usbco->dataRead);
+        USB2SnesInfo    ifo = device->parseInfo(device->dataRead);
         sendReply(info.currentWS, QStringList() << ifo.version << "foo" << ifo.romPlaying << ifo.flags);
         break;
     }
@@ -173,9 +186,9 @@ void    WSServer::processLowCoCmdFinished(USBConnection* usbco)
     // FILE Command
     case USB2SnesWS::List :
     {
-        QList<USBConnection::FileInfos> lfi = usbco->parseLSCommand(usbco->dataRead);
+        QList<ADevice::FileInfos> lfi = device->parseLSCommand(device->dataRead);
         QStringList rep;
-        foreach(USBConnection::FileInfos fi, lfi)
+        foreach(ADevice::FileInfos fi, lfi)
         {
             rep << QString::number((quint32) fi.type);
             rep << fi.name;
@@ -185,8 +198,8 @@ void    WSServer::processLowCoCmdFinished(USBConnection* usbco)
     }
     case USB2SnesWS::GetFile :
     {
-        disconnect(usbco, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onLowCoGetDataReceived(QByteArray)));
-        disconnect(usbco, SIGNAL(sizeGet(uint)), this, SLOT(onLowCoSizeGet(uint)));
+        disconnect(device, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onDeviceGetDataReceived(QByteArray)));
+        disconnect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)));
         break;
     }
     case USB2SnesWS::Rename :
@@ -199,8 +212,8 @@ void    WSServer::processLowCoCmdFinished(USBConnection* usbco)
     }
     case USB2SnesWS::GetAddress :
     {
-        disconnect(usbco, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onLowCoGetDataReceived(QByteArray)));
-        disconnect(usbco, SIGNAL(sizeGet(uint)), this, SLOT(onLowCoSizeGet(uint)));
+        disconnect(device, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onDeviceGetDataReceived(QByteArray)));
+        disconnect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)));
         break;
     }
     default:
@@ -209,10 +222,10 @@ void    WSServer::processLowCoCmdFinished(USBConnection* usbco)
         return;
     }
     }
-    currentRequest[usbco]->state = RequestState::DONE;
-    sDebug() << "Request " << *(currentRequest.value(usbco)) << "processed in " << currentRequest.value(usbco)->timeCreated.msecsTo(QTime::currentTime()) << " ms";
-    delete currentRequest[usbco];
-    currentRequest[usbco] = NULL;
+    currentRequests[device]->state = RequestState::DONE;
+    sDebug() << "Request " << *(currentRequests.value(device)) << "processed in " << currentRequests.value(device)->timeCreated.msecsTo(QTime::currentTime()) << " ms";
+    delete currentRequests[device];
+    currentRequests[device] = NULL;
 }
 
 
@@ -220,8 +233,8 @@ QStringList WSServer::getDevicesList()
 {
     QStringList toret;
     sDebug() << "Device List";
-    foreach (USBConnection* lowCo, lowConnections)
-        toret << lowCo->name();
+    foreach (ADevice* dev, devices)
+        toret << dev->name();
     QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
     foreach (QSerialPortInfo usbinfo, sinfos) {
         sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
@@ -235,7 +248,7 @@ void WSServer::cmdAttach(MRequest *req)
 {
     QString port = req->arguments.at(0);
     bool    portFound = false;
-    foreach (USBConnection* bla, lowConnections) {
+    foreach (ADevice* bla, devices) {
         if (bla->name() == port)
         {
             portFound = true;
@@ -244,25 +257,25 @@ void WSServer::cmdAttach(MRequest *req)
     }
     if (!portFound)
     {
-        USBConnection* newCo = new USBConnection(port);
-        lowConnectionInfos[newCo] = LowCoInfos();
-        if (!newCo->open())
+        ADevice* newDev = new USBConnection(port);
+        devicesInfos[newDev] = DeviceInfos();
+        if (!newDev->open())
         {
             setError(ErrorType::CommandError, "Attach: Can't open the device on " + port);
             clientError(req->owner);
             return ;
         } else {
             sDebug() << "Added a new low Connection" << port;
-            addNewLowConnection(newCo);
+            addDevice(newDev);
         }
     }
-    foreach (USBConnection* lowCo, lowConnections)
+    foreach (ADevice* dev, devices)
     {
-        if (lowCo->name() == port)
+        if (dev->name() == port)
         {
             sDebug() << "Attaching " << wsNames.value(req->owner) <<  " to " << port;
             wsInfos[req->owner].attached = true;
-            wsInfos[req->owner].attachedTo = lowCo;
+            wsInfos[req->owner].attachedTo = dev;
             return ;
         }
     }

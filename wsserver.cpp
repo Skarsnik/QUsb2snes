@@ -61,12 +61,12 @@ void WSServer::onWSClosed()
     qDebug() << "Websocket closed";
 }
 
-void WSServer::addNewLowConnection(USBConnection *lowCo)
+void WSServer::addDevice(ADevice *device)
 {
-    lowConnections.append(lowCo);
-    connect(lowCo, SIGNAL(commandFinished()), this, SLOT(onLowCoCommandFinished()));
-    connect(lowCo, SIGNAL(protocolError()), this, SLOT(onLowCoProtocolError()));
-    connect(lowCo, SIGNAL(closed()), this, SLOT(onLowCoClosed()));
+    devices.append(device);
+    connect(device, SIGNAL(commandFinished()), this, SLOT(onDeviceCommandFinished()));
+    connect(device, SIGNAL(protocolError()), this, SLOT(onDeviceProtocolError()));
+    connect(device, SIGNAL(closed()), this, SLOT(onDeviceClosed()));
 }
 
 
@@ -88,12 +88,18 @@ void WSServer::onTextMessageReceived(QString message)
     }
     if (wsInfo.attached && !isValidUnAttached(req->opcode))
     {
-        if (wsInfo.attachedTo->state() == USBConnection::READY)
+        if (wsInfo.attachedTo->state() == ADevice::READY)
         {
-            USBConnection* lowCo = wsInfo.attachedTo;
-            currentRequest[lowCo] = req;
-            lowConnectionInfos[lowCo].currentCommand = req->opcode;
-            lowConnectionInfos[lowCo].currentWS = ws;
+            ADevice* lowCo = wsInfo.attachedTo;
+            if ((isControlCommand(req->opcode) && !lowCo->hasControlCommands()) ||
+                 isFileCommand(req->opcode) && !lowCo->hasFileCommands())
+            {
+                setError(ErrorType::DeviceError, QString("The device does not support the command %1").arg(cmdMetaEnum.valueToKey(static_cast<int>(req->opcode))));
+                goto LError;
+            }
+            currentRequests[lowCo] = req;
+            devicesInfos[lowCo].currentCommand = req->opcode;
+            devicesInfos[lowCo].currentWS = ws;
             executeRequest(req);
         } else { // add to queue
             sDebug() << wsInfo.attachedTo->name() << "Adding request in queue " << *req << "(" << pendingRequests[wsInfo.attachedTo].size() << ")";
@@ -135,51 +141,51 @@ void WSServer::onClientError(QAbstractSocket::SocketError)
     sDebug() << "Client error : " << wsNames.value(ws) << ws->errorString();
 }
 
-void WSServer::onLowCoCommandFinished()
+void WSServer::onDeviceCommandFinished()
 {
-    USBConnection*  usbco = qobject_cast<USBConnection*>(sender());
-    if (lowConnectionInfos[usbco].currentWS != NULL)
+    ADevice*  device = qobject_cast<ADevice*>(sender());
+    if (devicesInfos[device].currentWS != NULL)
     {
-        processLowCoCmdFinished(usbco);
-        processCommandQueue(usbco);
+        processDeviceCommandFinished(device);
+        processCommandQueue(device);
     }
     else
         sDebug() << "Received finished command while no socket to receive it";
 }
 
-void WSServer::onLowCoProtocolError()
+void WSServer::onDeviceProtocolError()
 {
 
 }
 
-void WSServer::onLowCoClosed()
+void WSServer::onDeviceClosed()
 {
 
 }
 
-void WSServer::onLowCoGetDataReceived(QByteArray data)
+void WSServer::onDeviceGetDataReceived(QByteArray data)
 {
-    USBConnection*  usbco = qobject_cast<USBConnection*>(sender());
-    sDebug() << "Sending " << data.size() << "to" << wsNames.value(lowConnectionInfos[usbco].currentWS);
-    lowConnectionInfos[usbco].currentWS->sendBinaryMessage(data);
+    ADevice*  device = qobject_cast<ADevice*>(sender());
+    sDebug() << "Sending " << data.size() << "to" << wsNames.value(devicesInfos[device].currentWS);
+    devicesInfos[device].currentWS->sendBinaryMessage(data);
 }
 
-void WSServer::onLowCoSizeGet(unsigned int size)
+void WSServer::onDeviceSizeGet(unsigned int size)
 {
-    USBConnection*  usbco = qobject_cast<USBConnection*>(sender());
-    sendReply(lowConnectionInfos[usbco].currentWS, QString::number(size, 16));
+    ADevice*  device = qobject_cast<ADevice*>(sender());
+    sendReply(devicesInfos[device].currentWS, QString::number(size, 16));
 }
 
-void        WSServer::processCommandQueue(USBConnection* usbco)
+void        WSServer::processCommandQueue(ADevice* device)
 {
-    QList<MRequest*>&    cmdQueue = pendingRequests[usbco];
+    QList<MRequest*>&    cmdQueue = pendingRequests[device];
     if (!cmdQueue.isEmpty())
     {
         sDebug() << cmdQueue.size() << " requests in queue, processing the first";
         MRequest* req = cmdQueue.takeFirst();
-        currentRequest[usbco] = req;
-        lowConnectionInfos[usbco].currentCommand = req->opcode;
-        lowConnectionInfos[usbco].currentWS = req->owner;
+        currentRequests[device] = req;
+        devicesInfos[device].currentCommand = req->opcode;
+        devicesInfos[device].currentWS = req->owner;
         executeRequest(req);
     }
 }
@@ -251,7 +257,7 @@ void WSServer::cleanUpSocket(QWebSocket *ws)
     wsInfos.remove(ws);
     wsNames.remove(ws);
     unassignedWS.removeAll(ws);
-    QMapIterator<USBConnection*, LowCoInfos> i(lowConnectionInfos);
+    QMapIterator<ADevice*, DeviceInfos> i(devicesInfos);
     while (i.hasNext())
     {
         i.next();

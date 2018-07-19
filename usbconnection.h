@@ -4,22 +4,12 @@
 #include <QObject>
 #include <QSerialPort>
 #include <QVector>
-#include "usb2snes.h"
+#include "adevice.h"
 
-class USBConnection : public QObject
+class USBConnection : public ADevice
 {
     Q_OBJECT
 public:
-    enum State {
-      READY,
-      BUSY,
-      CLOSED
-    };
-
-    struct FileInfos {
-        SD2Snes::file_type   type;
-        QString             name;
-    };
 
     explicit USBConnection(QString portName);
 
@@ -36,12 +26,15 @@ public:
     void            writeData(QByteArray data);
     QString         name() const;
 
-    USB2SnesInfo    parseInfo(const QByteArray &data);
-    State           state() const;
-    QByteArray      fileData;
-    QByteArray      dataRead;
+    bool            hasFileCommands();
+    bool            hasControlCommands();
 
-    QList<USBConnection::FileInfos> parseLSCommand(QByteArray &dataI);
+    USB2SnesInfo    parseInfo(const QByteArray &data);
+    QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI);
+
+    QByteArray      fileData;
+
+
 
 signals:
     void            commandFinished();
@@ -64,7 +57,6 @@ private:
     QByteArray  dataReceived;
     int responseSizeExpected;
     int bytesReceived;
-    State   m_state;
     bool    fileGetCmd;
     bool    isGetCmd;
     SD2Snes::opcode m_currentCommand;

@@ -7,7 +7,7 @@
 #include <QDebug>
 #include <QLoggingCategory>
 #include <QMetaEnum>
-#include "usbconnection.h"
+#include "adevice.h"
 
 Q_DECLARE_LOGGING_CATEGORY(log_wsserver)
 
@@ -64,11 +64,11 @@ private:
     friend QDebug              operator<<(QDebug debug, const WSServer::MRequest& req);
     struct WSInfos {
         bool                attached;
-        USBConnection*      attachedTo;
+        ADevice*            attachedTo;
         ClientCommandState  commandState;
     };
 
-    struct LowCoInfos {
+    struct DeviceInfos {
         QWebSocket*         currentWS;
         USB2SnesWS::opcode  currentCommand;
     };
@@ -91,11 +91,11 @@ private slots:
     void    onBinaryMessageReceived(QByteArray data);
     void    onClientDisconnected();
     void    onClientError(QAbstractSocket::SocketError);
-    void    onLowCoCommandFinished();
-    void    onLowCoProtocolError();
-    void    onLowCoClosed();
-    void    onLowCoGetDataReceived(QByteArray data);
-    void    onLowCoSizeGet(unsigned int size);
+    void    onDeviceCommandFinished();
+    void    onDeviceProtocolError();
+    void    onDeviceClosed();
+    void    onDeviceGetDataReceived(QByteArray data);
+    void    onDeviceSizeGet(unsigned int size);
 
 private:
     QMetaEnum                           cmdMetaEnum;
@@ -103,25 +103,25 @@ private:
     QWebSocketServer*                   wsServer;
     QList<QWebSocket*>                  unassignedWS;
     QMap<QWebSocket*, WSInfos>          wsInfos;
-    QList<USBConnection*>               lowConnections;
-    QMap<USBConnection*, LowCoInfos>    lowConnectionInfos;
-    QMap<USBConnection*, MRequest*>     currentRequest;
+    QList<ADevice*>                     devices;
+    QMap<ADevice*, DeviceInfos>         devicesInfos;
+    QMap<ADevice*, MRequest*>           currentRequests;
     QMap<QWebSocket*, QString>          wsNames;
     QString                             m_errorString;
     ErrorType                           m_errorType;
     QStringList                         deviceList;
 
-    QMap<USBConnection*, QList<MRequest*> >    pendingRequests;
+    QMap<ADevice*, QList<MRequest*> >    pendingRequests;
 
     void        setError(const ErrorType type, const QString reason);
-    MRequest    *requestFromJSON(const QString& str);
+    MRequest*   requestFromJSON(const QString& str);
     void        clientError(QWebSocket* ws);
     void        cleanUpSocket(QWebSocket* ws);
     bool        isValidUnAttached(const USB2SnesWS::opcode opcode);
-    void        executeRequest(MRequest *req);
-    void        addNewLowConnection(USBConnection* lowCo);
-    void        processLowCoCmdFinished(USBConnection* usbco);
-    void        processCommandQueue(USBConnection* usbco);
+    void        executeRequest(MRequest* req);
+    void        addDevice(ADevice* device);
+    void        processDeviceCommandFinished(ADevice* device);
+    void        processCommandQueue(ADevice* device);
 
     QStringList getDevicesList();
     void        cmdAttach(MRequest *req);
@@ -130,6 +130,8 @@ private:
 
 
     void cmdInfo(MRequest *req);
+    bool isFileCommand(USB2SnesWS::opcode opcode);
+    bool isControlCommand(USB2SnesWS::opcode opcode);
 };
 
 #endif // WSSERVER_H

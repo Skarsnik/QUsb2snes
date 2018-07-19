@@ -6,6 +6,8 @@ Project {
     QtApplication {
         cpp.cxxLanguageVersion: "c++11"
         files: [
+            "adevice.cpp",
+            "adevice.h",
             "main.cpp",
             "ressources.qrc",
             "usb2snes.h",

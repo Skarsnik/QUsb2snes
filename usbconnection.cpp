@@ -228,6 +228,16 @@ QString USBConnection::name() const
     return m_port.portName();
 }
 
+bool USBConnection::hasFileCommands()
+{
+    return true;
+}
+
+bool USBConnection::hasControlCommands()
+{
+    return true;
+}
+
 
 void    USBConnection::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
 {
@@ -305,7 +315,7 @@ void USBConnection::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned in
     sendVCommand(SD2Snes::opcode::VPUT, space, SD2Snes::server_flags::NONE, args);
 }
 
-QList<USBConnection::FileInfos>    USBConnection::parseLSCommand(QByteArray& dataI)
+QList<ADevice::FileInfos>    USBConnection::parseLSCommand(QByteArray& dataI)
 {
     QList<FileInfos>  infos;
     QByteArray data = dataI.mid(512);
@@ -357,7 +367,3 @@ USB2SnesInfo USBConnection::parseInfo(const QByteArray& data)
     return info;
 }
 
-USBConnection::State USBConnection::state() const
-{
-    return m_state;
-}

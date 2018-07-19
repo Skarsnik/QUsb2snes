@@ -75,11 +75,16 @@ Q_ENUM_NS(file_type)
 
 }
 
+/*
+ * Commands are send in JSON format
+*/
+
 namespace USB2SnesWS {
 Q_NAMESPACE
 enum opcode {
     // Format is [argument to send]->what is returned, {} mean a result json reply
     // Size are in hexformat
+
     // Connection
     DeviceList, // List the available Device {portdevice1, portdevice2, portdevice3...}
     Attach, // Attach to the devise using the name [portdevice]
@@ -94,12 +99,13 @@ enum opcode {
     Stream, // TODO
     Fence, // TODO
 
-    GetAddress, // Get the value of the address TODO
-    PutAddress, // put value to the address TODO
+    GetAddress, // Get the value of the address, space is important [offset, size]->datarequested TODO multiarg form
+    PutAddress, // put value to the address  [offset, size] then send the binary data.
+                // Also support multiple request in one [offset1, size1, offset2, size2] TODO work on size check/boundary
     PutIPS, // Apply a patch TODO
 
     GetFile, // Get a file - [filepath]->{size}->filedata
-    PutFile, // Post a file -  [filepath, size] then write you data
+    PutFile, // Post a file -  [filepath, size] then send the binary data
     List, // LS command - [dirpath]->{typefile1, namefile1, typefile2, namefile2...}
     Remove, // remove a file [filepath]
     Rename, // rename a file [filepath, newfilename]
