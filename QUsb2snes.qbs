@@ -8,8 +8,12 @@ Project {
         files: [
             "adevice.cpp",
             "adevice.h",
+            "appui.cpp",
+            "appui.h",
             "main.cpp",
             "ressources.qrc",
+            "retroarchdevice.cpp",
+            "retroarchdevice.h",
             "usb2snes.h",
             "usbconnection.cpp",
             "usbconnection.h",

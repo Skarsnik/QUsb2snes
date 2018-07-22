@@ -64,9 +64,31 @@ void WSServer::onWSClosed()
 void WSServer::addDevice(ADevice *device)
 {
     devices.append(device);
+    devicesInfos[device] = DeviceInfos();
     connect(device, SIGNAL(commandFinished()), this, SLOT(onDeviceCommandFinished()));
     connect(device, SIGNAL(protocolError()), this, SLOT(onDeviceProtocolError()));
     connect(device, SIGNAL(closed()), this, SLOT(onDeviceClosed()));
+}
+
+QMap<QString, QStringList> WSServer::getDevicesInfo()
+{
+    QMap<QString, QStringList> toret;
+    QListIterator<ADevice*> it(devices);
+    while (it.hasNext())
+    {
+        ADevice *dev = it.next();
+        toret[dev->name()] = QStringList();
+        QMapIterator<QWebSocket*, WSInfos> wsIit(wsInfos);
+        while (wsIit.hasNext())
+        {
+            auto p = wsIit.next();
+            if (p.value().attachedTo == dev)
+            {
+                toret[dev->name()] << wsNames.value(p.key());
+            }
+        }
+    }
+    return toret;
 }
 
 

@@ -8,6 +8,7 @@
 #include <QLoggingCategory>
 #include <QMetaEnum>
 #include "adevice.h"
+#include "retroarchdevice.h"
 
 Q_DECLARE_LOGGING_CATEGORY(log_wsserver)
 
