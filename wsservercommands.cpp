@@ -143,6 +143,10 @@ void    WSServer::executeRequest(MRequest *req)
         if (req->arguments.size() == 2)
         {
             device->putAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+            if (req->wasPending)
+            {
+                device->writeData(wsInfos[ws].pendingPutDatas.takeFirst());
+            }
         } else {
            QList<QPair<unsigned int, quint8> > pairs;
            for (unsigned int i = 0; i < req->arguments.size(); i += 2)
@@ -238,8 +242,8 @@ QStringList WSServer::getDevicesList()
     QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
     foreach (QSerialPortInfo usbinfo, sinfos) {
         sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
-        if (usbinfo.isBusy() == false && !toret.contains(usbinfo.portName()))
-            toret << usbinfo.portName();
+        if (usbinfo.isBusy() == false && !toret.contains(usbinfo.portName()) && usbinfo.serialNumber() == "DEMO00000000")
+            toret << "SD2SNES " + usbinfo.portName();
     }
     return toret;
 }
@@ -252,13 +256,25 @@ void WSServer::cmdAttach(MRequest *req)
         if (bla->name() == port)
         {
             portFound = true;
+            sDebug() << "Found device" << bla->name() << "State : " << bla->state();
+            if (bla->state() == ADevice::State::CLOSED)
+            {
+                sDebug() << "PIJKOOO";
+                if (!bla->open())
+                {
+                    setError(ErrorType::CommandError, "Attach: Can't open the device on " + port);
+                    clientError(req->owner);
+                    return;
+                }
+            }
             break;
         }
     }
     if (!portFound)
     {
-        ADevice* newDev = new USBConnection(port);
-        devicesInfos[newDev] = DeviceInfos();
+        QString nPort = port;
+        nPort.replace("SD2SNES ", "");
+        ADevice* newDev = new USBConnection(nPort);
         if (!newDev->open())
         {
             setError(ErrorType::CommandError, "Attach: Can't open the device on " + port);

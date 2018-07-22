@@ -15,6 +15,7 @@ public:
       BUSY,
       CLOSED
     };
+    Q_ENUM(State)
 
     struct FileInfos {
         SD2Snes::file_type  type;

@@ -103,7 +103,7 @@ void WSServer::onTextMessageReceived(QString message)
             executeRequest(req);
         } else { // add to queue
             sDebug() << wsInfo.attachedTo->name() << "Adding request in queue " << *req << "(" << pendingRequests[wsInfo.attachedTo].size() << ")";
-            pendingRequests[wsInfo.attachedTo].append(req);
+            addToPendingRequest(wsInfo.attachedTo, req);
         }
 
     }
@@ -114,17 +114,51 @@ LError:
     clientError(ws);
 }
 
+void    WSServer::addToPendingRequest(ADevice* device, MRequest *req)
+{
+    pendingRequests[device].append(req);
+    if (req->opcode == USB2SnesWS::PutAddress)
+    {
+        bool ok;
+        wsInfos[req->owner].pendingPutSizes.append(req->arguments.at(1).toInt(&ok, 16));
+    }
+}
+
 void WSServer::onBinaryMessageReceived(QByteArray data)
 {
+    // This need to be per ws
+    static unsigned int byteReceived = 0;
+    static QByteArray   recvData = QByteArray();
+
+    recvData.append(data);
+    byteReceived += data.size();
     QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
-    WSInfos infos = wsInfos.value(ws);
+    WSInfos& infos = wsInfos[ws];
+    ADevice* dev = wsInfos.value(ws).attachedTo;
     sDebug() << wsNames.value(ws) << "Received binary data" << data.size();
     if (infos.commandState != ClientCommandState::WAITINGBDATAREPLY)
     {
         setError(ErrorType::ProtocolError, "Sending binary data when nothing waiting for it");
         clientError(ws);
     } else {
-        wsInfos.value(ws).attachedTo->writeData(data);
+        QList<unsigned int>& pend = infos.pendingPutSizes;
+        if (pend.isEmpty()) {
+            dev->writeData(data);
+            byteReceived = 0;
+            recvData.clear();
+        }
+        else
+        {
+            if (pend.first() == byteReceived)
+            {
+                sDebug() << wsNames.value(ws) << "Putting data in queue";
+                infos.pendingPutDatas.append(recvData);
+                pend.removeAt(0);
+                byteReceived = 0;
+                recvData.clear();
+            }
+        }
+
     }
 }
 
@@ -186,6 +220,7 @@ void        WSServer::processCommandQueue(ADevice* device)
         currentRequests[device] = req;
         devicesInfos[device].currentCommand = req->opcode;
         devicesInfos[device].currentWS = req->owner;
+        req->wasPending = true;
         executeRequest(req);
     }
 }

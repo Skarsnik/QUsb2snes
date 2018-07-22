@@ -36,12 +36,12 @@ public:
 
 
 
-signals:
+/*signals:
     void            commandFinished();
     void            protocolError();
     void            closed();
     void            getDataReceived(QByteArray data);
-    void            sizeGet(unsigned int);
+    void            sizeGet(unsigned int);*/
 
 public slots:
     bool    open();

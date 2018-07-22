@@ -47,6 +47,7 @@ private:
     struct MRequest {
         MRequest() {
             id = gId++;
+            wasPending = false;
         }
         quint64             id;
         QWebSocket*         owner;
@@ -56,6 +57,7 @@ private:
         QStringList         arguments;
         QStringList         flags;
         RequestState        state;
+        bool                wasPending;
         friend QDebug              operator<<(QDebug debug, const MRequest& req);
     private:
         static quint64      gId;
@@ -63,9 +65,11 @@ private:
 
     friend QDebug              operator<<(QDebug debug, const WSServer::MRequest& req);
     struct WSInfos {
-        bool                attached;
-        ADevice*            attachedTo;
-        ClientCommandState  commandState;
+        bool                    attached;
+        ADevice*                attachedTo;
+        ClientCommandState      commandState;
+        QList<unsigned int>     pendingPutSizes;
+        QList<QByteArray>       pendingPutDatas;
     };
 
     struct DeviceInfos {
@@ -77,6 +81,8 @@ public:
     explicit WSServer(QObject *parent = nullptr);
     bool     start();
     QString&  errorString() const;
+    void        addDevice(ADevice* device);
+    QMap<QString, QStringList>  getDevicesInfo();
 
 signals:
     error();
@@ -111,7 +117,7 @@ private:
     ErrorType                           m_errorType;
     QStringList                         deviceList;
 
-    QMap<ADevice*, QList<MRequest*> >    pendingRequests;
+    QMap<ADevice*, QList<MRequest*> >   pendingRequests;
 
     void        setError(const ErrorType type, const QString reason);
     MRequest*   requestFromJSON(const QString& str);
@@ -119,7 +125,6 @@ private:
     void        cleanUpSocket(QWebSocket* ws);
     bool        isValidUnAttached(const USB2SnesWS::opcode opcode);
     void        executeRequest(MRequest* req);
-    void        addDevice(ADevice* device);
     void        processDeviceCommandFinished(ADevice* device);
     void        processCommandQueue(ADevice* device);
 
@@ -132,6 +137,7 @@ private:
     void cmdInfo(MRequest *req);
     bool isFileCommand(USB2SnesWS::opcode opcode);
     bool isControlCommand(USB2SnesWS::opcode opcode);
+    void addToPendingRequest(ADevice *device, MRequest *req);
 };
 
 #endif // WSSERVER_H

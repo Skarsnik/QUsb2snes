@@ -51,11 +51,11 @@ void USBConnection::spReadyRead()
     if (dataRead.size() <= 2056)
     {
         sDebug() << "<<" << dataRead.size() << " bytes - total received : " << bytesReceived;
-        for (unsigned int i = 0; i < dataRead.size(); i += 512)
+        /*for (unsigned int i = 0; i < dataRead.size(); i += 512)
         {
             sDebug() << dataRead.mid(i, 512);
             sDebug() << "---------";
-        }
+        }*/
     }
     else
         sDebug() << "<<" << dataRead.size() << " bytes - total received : " << bytesReceived;
@@ -225,7 +225,7 @@ void USBConnection::writeData(QByteArray data)
 
 QString USBConnection::name() const
 {
-    return m_port.portName();
+    return "SD2SNES " + m_port.portName();
 }
 
 bool USBConnection::hasFileCommands()
