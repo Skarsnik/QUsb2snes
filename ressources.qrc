@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/img">
         <file>cheer.png</file>
+        <file>icon64x64.ico</file>
     </qresource>
 </RCC>

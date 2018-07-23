@@ -13,7 +13,7 @@ extern WSServer    wsServer;
 
 AppUi::AppUi(QObject *parent) : QObject(parent)
 {
-    sysTray = new QSystemTrayIcon(QIcon(":/img/cheer.png"));
+    sysTray = new QSystemTrayIcon(QIcon(":/img/icon64x64.ico"));
     menu = new QMenu();
     menu->addAction("QUsb2Snes v" + QApplication::applicationVersion());
     menu->addSeparator();

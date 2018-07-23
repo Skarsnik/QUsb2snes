@@ -11,6 +11,7 @@ Project {
             "appui.cpp",
             "appui.h",
             "main.cpp",
+            "qusb2snes.rc",
             "ressources.qrc",
             "retroarchdevice.cpp",
             "retroarchdevice.h",

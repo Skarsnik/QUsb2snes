@@ -181,6 +181,7 @@ void RetroarchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
 void RetroarchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, unsigned int size)
 {
     int addr = addr0;
+    m_state = BUSY;
     if (space != SD2Snes::space::SNES)
         return;
     addr = addr_to_addr(addr);

@@ -5,14 +5,14 @@
 
 bool    WSServer::isFileCommand(USB2SnesWS::opcode opcode)
 {
-    return (opcode == USB2SnesWS::GetFile | opcode == USB2SnesWS::PutFile | opcode == USB2SnesWS::List |
-            opcode == USB2SnesWS::Rename | opcode == USB2SnesWS::MakeDir | opcode == USB2SnesWS::Rename |
+    return (opcode == USB2SnesWS::GetFile || opcode == USB2SnesWS::PutFile || opcode == USB2SnesWS::List ||
+            opcode == USB2SnesWS::Rename || opcode == USB2SnesWS::MakeDir || opcode == USB2SnesWS::Rename ||
             opcode == USB2SnesWS::Remove);
 }
 
 bool    WSServer::isControlCommand(USB2SnesWS::opcode opcode)
 {
-    return (opcode == USB2SnesWS::Boot | opcode == USB2SnesWS::Reset | opcode == USB2SnesWS::Menu);
+    return (opcode == USB2SnesWS::Boot || opcode == USB2SnesWS::Reset || opcode == USB2SnesWS::Menu);
 }
 
 #define sDebug() qCDebug(log_wsserver)

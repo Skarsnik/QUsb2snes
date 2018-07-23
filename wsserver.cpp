@@ -314,13 +314,13 @@ void WSServer::cleanUpSocket(QWebSocket *ws)
     wsInfos.remove(ws);
     wsNames.remove(ws);
     unassignedWS.removeAll(ws);
-    QMapIterator<ADevice*, DeviceInfos> i(devicesInfos);
+    QMutableMapIterator<ADevice*, DeviceInfos> i(devicesInfos);
     while (i.hasNext())
     {
         i.next();
         if (i.value().currentWS == ws)
         {
-            i.value().currentWS == NULL;
+            i.value().currentWS = NULL;
             break;
         }
     }
