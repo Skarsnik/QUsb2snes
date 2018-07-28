@@ -27,6 +27,13 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     QObject::connect(menu->addAction("Exit"), &QAction::triggered, qApp, &QApplication::exit);
     sysTray->setContextMenu(menu);
     retroarchDevice = NULL;
+    settings = new QSettings("config.ini", QSettings::IniFormat);
+    if (settings->value("retroarchdevice").toBool())
+    {
+        retroarchDevice = new RetroarchDevice();
+        wsServer.addDevice(retroarchDevice);
+        retroarchAction->setChecked(true);
+    }
 }
 
 void AppUi::onRetroarchTriggered(bool checked)
@@ -35,9 +42,12 @@ void AppUi::onRetroarchTriggered(bool checked)
     {
         if (retroarchDevice == NULL)
             retroarchDevice = new RetroarchDevice();
-        retroarchAction->setText("Disable RetroArch virtual device");
+        //retroarchAction->setText("Enable RetroArch virtual device");
         wsServer.addDevice(retroarchDevice);
+    } else {
+        wsServer.removeDevice(retroarchDevice);
     }
+    settings->setValue("retroarchdevice", checked);
 }
 
 void AppUi::onMenuAboutToshow()

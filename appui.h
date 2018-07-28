@@ -5,6 +5,7 @@
 
 #include <QMenu>
 #include <QObject>
+#include <QSettings>
 #include <QSystemTrayIcon>
 
 class AppUi : public QObject
@@ -28,6 +29,7 @@ private:
     QMenu*              deviceMenu;
     QAction*            retroarchAction;
     RetroarchDevice*    retroarchDevice;
+    QSettings*           settings;
 
 };
 

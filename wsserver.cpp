@@ -68,6 +68,14 @@ void WSServer::addDevice(ADevice *device)
     connect(device, SIGNAL(commandFinished()), this, SLOT(onDeviceCommandFinished()));
     connect(device, SIGNAL(protocolError()), this, SLOT(onDeviceProtocolError()));
     connect(device, SIGNAL(closed()), this, SLOT(onDeviceClosed()));
+    sDebug() << "Added device : " << device->name();
+}
+
+void WSServer::removeDevice(ADevice *device)
+{
+    devices.removeAt(devices.indexOf(device));
+    devicesInfos.remove(device);
+    // TODO remove and disconnect WS
 }
 
 QMap<QString, QStringList> WSServer::getDevicesInfo()

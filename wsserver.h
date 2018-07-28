@@ -83,10 +83,11 @@ public:
     bool     start();
     QString&  errorString() const;
     void        addDevice(ADevice* device);
+    void        removeDevice(ADevice* device);
     QMap<QString, QStringList>  getDevicesInfo();
 
 signals:
-    error();
+    void    error();
 
 public slots:
 
