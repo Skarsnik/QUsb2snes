@@ -66,11 +66,15 @@ private:
 
     friend QDebug              operator<<(QDebug debug, const WSServer::MRequest& req);
     struct WSInfos {
+        QString                 name;
         bool                    attached;
         ADevice*                attachedTo;
         ClientCommandState      commandState;
         QList<unsigned int>     pendingPutSizes;
         QList<QByteArray>       pendingPutDatas;
+        QByteArray              recvData;
+        unsigned int            byteReceived;
+
     };
 
     struct DeviceInfos {
@@ -109,12 +113,10 @@ private:
     QMetaEnum                           cmdMetaEnum;
     QMetaEnum                           spaceMetaEnum;
     QWebSocketServer*                   wsServer;
-    QList<QWebSocket*>                  unassignedWS;
     QMap<QWebSocket*, WSInfos>          wsInfos;
     QList<ADevice*>                     devices;
     QMap<ADevice*, DeviceInfos>         devicesInfos;
     QMap<ADevice*, MRequest*>           currentRequests;
-    QMap<QWebSocket*, QString>          wsNames;
     QString                             m_errorString;
     ErrorType                           m_errorType;
     QStringList                         deviceList;

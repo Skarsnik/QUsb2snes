@@ -24,7 +24,7 @@ bool WSServer::start()
 {
     if (wsServer->listen(QHostAddress::Any, 8080))
     {
-        sDebug() << "Webserver started : listenning on port 8080";
+        sDebug() << "WebSocket server started : listenning on port 8080";
         connect(wsServer, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
         connect(wsServer, SIGNAL(closed()), this, SLOT(onWSClosed()));
         connect(wsServer, SIGNAL(serverError(QWebSocketProtocol::CloseCode)), this, SLOT(onWSError(QWebSocketProtocol::CloseCode)));
@@ -43,12 +43,12 @@ void WSServer::onNewConnection()
     connect(newSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onClientError(QAbstractSocket::SocketError)));
 
     WSInfos wi;
+    wi.name = "Websocket " + QString::number((size_t)ws, 16);
     wi.attached = false;
     wi.attachedTo = NULL;
+    wi.commandState = NOCOMMAND;
+    wi.byteReceived = 0;
     wsInfos[newSocket] = wi;
-
-    wsNames[newSocket] = "Websocket" + QString::number((size_t)ws, 16);
-    unassignedWS << newSocket;
 }
 
 void WSServer::onWSError(QWebSocketProtocol::CloseCode code)
@@ -92,7 +92,7 @@ QMap<QString, QStringList> WSServer::getDevicesInfo()
             auto p = wsIit.next();
             if (p.value().attachedTo == dev)
             {
-                toret[dev->name()] << wsNames.value(p.key());
+                toret[dev->name()] << p.value().name;
             }
         }
     }
@@ -104,7 +104,7 @@ void WSServer::onTextMessageReceived(QString message)
 {
     QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
     const WSInfos &wsInfo = wsInfos.value(ws);
-    sDebug() << wsNames.value(ws) << "received " << message;
+    sDebug() << wsInfo.name << "received " << message;
 
     MRequest* req = requestFromJSON(message);
     sDebug() << "Request is " << req->opcode;
@@ -156,16 +156,12 @@ void    WSServer::addToPendingRequest(ADevice* device, MRequest *req)
 
 void WSServer::onBinaryMessageReceived(QByteArray data)
 {
-    // This need to be per ws
-    static unsigned int byteReceived = 0;
-    static QByteArray   recvData = QByteArray();
-
-    recvData.append(data);
-    byteReceived += data.size();
     QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
     WSInfos& infos = wsInfos[ws];
+    infos.recvData.append(data);
+    infos.byteReceived += data.size();
     ADevice* dev = wsInfos.value(ws).attachedTo;
-    sDebug() << wsNames.value(ws) << "Received binary data" << data.size();
+    sDebug() << infos.name << "Received binary data" << data.size();
     if (infos.commandState != ClientCommandState::WAITINGBDATAREPLY)
     {
         setError(ErrorType::ProtocolError, "Sending binary data when nothing waiting for it");
@@ -174,18 +170,16 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
         QList<unsigned int>& pend = infos.pendingPutSizes;
         if (pend.isEmpty()) {
             dev->writeData(data);
-            byteReceived = 0;
-            recvData.clear();
-        }
-        else
-        {
-            if (pend.first() == byteReceived)
+            infos.byteReceived = 0;
+            infos.recvData.clear();
+        } else {
+            if (pend.first() == infos.byteReceived)
             {
-                sDebug() << wsNames.value(ws) << "Putting data in queue";
-                infos.pendingPutDatas.append(recvData);
+                sDebug() << infos.name << "Putting data in queue";
+                infos.pendingPutDatas.append(infos.recvData);
                 pend.removeAt(0);
-                byteReceived = 0;
-                recvData.clear();
+                infos.byteReceived = 0;
+                infos.recvData.clear();
             }
         }
 
@@ -195,14 +189,14 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
 void WSServer::onClientDisconnected()
 {
     QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
-    sDebug() << "Websocket disconnected" << wsNames.value(ws);
+    sDebug() << "Websocket disconnected" << wsInfos.value(ws).name;
     cleanUpSocket(ws);
 }
 
 void WSServer::onClientError(QAbstractSocket::SocketError)
 {
     QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
-    sDebug() << "Client error : " << wsNames.value(ws) << ws->errorString();
+    sDebug() << "Client error : " << wsInfos.value(ws).name << ws->errorString();
 }
 
 void WSServer::onDeviceCommandFinished()
@@ -230,7 +224,7 @@ void WSServer::onDeviceClosed()
 void WSServer::onDeviceGetDataReceived(QByteArray data)
 {
     ADevice*  device = qobject_cast<ADevice*>(sender());
-    sDebug() << "Sending " << data.size() << "to" << wsNames.value(devicesInfos[device].currentWS);
+    sDebug() << "Sending " << data.size() << "to" << wsInfos.value(devicesInfos[device].currentWS).name;
     devicesInfos[device].currentWS->sendBinaryMessage(data);
 }
 
@@ -318,10 +312,8 @@ void WSServer::clientError(QWebSocket *ws)
 
 void WSServer::cleanUpSocket(QWebSocket *ws)
 {
-    sDebug() << "Cleaning up " << wsNames[ws];
+    sDebug() << "Cleaning up " << wsInfos.value(ws).name;
     wsInfos.remove(ws);
-    wsNames.remove(ws);
-    unassignedWS.removeAll(ws);
     QMutableMapIterator<ADevice*, DeviceInfos> i(devicesInfos);
     while (i.hasNext())
     {
@@ -355,7 +347,7 @@ void        WSServer::sendReply(QWebSocket* ws, const QStringList& args)
         ja.append(QJsonValue(s));
     }
     jObj["Results"] = ja;
-    sDebug() << wsNames[ws] << ">>" << QJsonDocument(jObj).toJson();
+    sDebug() << wsInfos.value(ws).name << ">>" << QJsonDocument(jObj).toJson();
     ws->sendTextMessage(QJsonDocument(jObj).toJson());
 }
 

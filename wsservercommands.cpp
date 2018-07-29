@@ -28,7 +28,7 @@ void    WSServer::executeRequest(MRequest *req)
 {
     ADevice*  device = NULL;
     QWebSocket*     ws = req->owner;
-    sDebug() << "Executing request : " << *req << "for" << wsNames.value(ws);
+    sDebug() << "Executing request : " << *req << "for" << wsInfos.value(ws).name;
     if (wsInfos.value(ws).attached)
         device = wsInfos.value(ws).attachedTo;
     switch (req->opcode)
@@ -49,7 +49,7 @@ void    WSServer::executeRequest(MRequest *req)
     }
     case USB2SnesWS::Name : {
         CMD_TAKE_ONE_ARG("Name")
-        wsNames[ws] = req->arguments.at(0);
+        wsInfos[ws].name = req->arguments.at(0);
         break;
     }
     case USB2SnesWS::Info : {
@@ -289,7 +289,7 @@ void WSServer::cmdAttach(MRequest *req)
     {
         if (dev->name() == port)
         {
-            sDebug() << "Attaching " << wsNames.value(req->owner) <<  " to " << port;
+            sDebug() << "Attaching " << wsInfos.value(req->owner).name <<  " to " << port;
             wsInfos[req->owner].attached = true;
             wsInfos[req->owner].attachedTo = dev;
             return ;
