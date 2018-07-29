@@ -44,7 +44,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
         retroarchAction->setChecked(true);
     }
     checkForApplications();
-    handleMagic2Snes("D:\\Project\\build-Magic2Snes-Desktop_Qt_5_11_0_MinGW_32bit-Debug\\debug\\");
+    //handleMagic2Snes("D:\\Project\\build-Magic2Snes-Desktop_Qt_5_11_0_MinGW_32bit-Debug\\debug\\");
     appsMenu->addSeparator();
     appsMenu->addAction("Remote Applications");
     appsMenu->addSeparator();

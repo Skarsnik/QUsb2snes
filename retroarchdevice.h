@@ -48,6 +48,8 @@ private:
     unsigned int sizeBigGet;
     unsigned int sizeRequested;
     unsigned int addrBigGet;
+    unsigned int lastRCRSize;
+    void read_core_ram(unsigned int addr, unsigned int size);
 };
 
 #endif // RETROARCHDEVICE_H

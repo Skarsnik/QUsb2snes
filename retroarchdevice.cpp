@@ -68,15 +68,17 @@ void RetroarchDevice::onUdpReadyRead()
 {
     QByteArray data = m_sock->readAll();
     sDebug() << ">>" << data;
-    QList<QByteArray> tList = data.split(' ');
+    QList<QByteArray> tList = data.trimmed().split(' ');
+    sDebug() << tList;
     if (tList.at(2) != "-1")
     {
         tList = tList.mid(2);
         data = tList.join();
-        //sDebug() << "Sending : " << QByteArray::fromHex(data).toHex();
+        sDebug() << "Sending : " << QByteArray::fromHex(data).toHex();
         emit getDataReceived(QByteArray::fromHex(data));
     } else {
-        emit getDataReceived(QByteArray());
+        sDebug() << "Not giving data : sending" << lastRCRSize << "bytes";
+        emit getDataReceived(QByteArray(lastRCRSize, 0));
     }
     if (bigGet)
     {
@@ -96,14 +98,20 @@ void RetroarchDevice::onUdpReadyRead()
                 mSize = sizeBigGet - sizeRequested;
             sizeRequested += mSize;
             addrBigGet += mSize;
-            QByteArray data = "READ_CORE_RAM " + QByteArray::number(addrBigGet, 16) + " " + QByteArray::number(mSize);
-            sDebug() << ">>" << data;
-            m_sock->write(data);
+            read_core_ram(addrBigGet, mSize);
          }
          return;
     }
     emit commandFinished();
     m_state = READY;
+}
+
+void    RetroarchDevice::read_core_ram(unsigned int addr, unsigned int size)
+{
+    QByteArray data = "READ_CORE_RAM " + QByteArray::number(addr, 16) + " " + QByteArray::number(size);
+    sDebug() << ">>" << data;
+    lastRCRSize = size;
+    m_sock->write(data);
 }
 
 void RetroarchDevice::timedCommandDone()
@@ -172,10 +180,7 @@ void RetroarchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
         size = 78;
         addrBigGet = addr;
     }
-    QByteArray data = "READ_CORE_RAM " + QByteArray::number(addr, 16) + " " + QByteArray::number(size);
-    sDebug() << m_sock->state();
-    sDebug() << ">>" << data;
-    m_sock->write(data);
+    read_core_ram(addr, size);
 }
 
 void RetroarchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, unsigned int size)
