@@ -141,6 +141,11 @@ void RetroarchDevice::fileCommand(SD2Snes::opcode op, QByteArray args)
 
 }
 
+void RetroarchDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
+{
+
+}
+
 void RetroarchDevice::putFile(QByteArray name, unsigned int size)
 {
 

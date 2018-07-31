@@ -213,7 +213,9 @@ void WSServer::onDeviceCommandFinished()
 
 void WSServer::onDeviceProtocolError()
 {
-
+    ADevice*  device = qobject_cast<ADevice*>(sender());
+    setError(ProtocolError, "Error in device protocol");
+    clientError(currentRequests.value(device)->owner);
 }
 
 void WSServer::onDeviceClosed()

@@ -15,6 +15,7 @@ public:
 
     void            fileCommand(SD2Snes::opcode op, QVector<QByteArray> args);
     void            fileCommand(SD2Snes::opcode op, QByteArray args);
+    void            controlCommand(SD2Snes::opcode op, QByteArray args = QByteArray());
     void            putFile(QByteArray name, unsigned int size);
     void            getSetAddrCommand(SD2Snes::opcode op, unsigned int addr, unsigned int size);
     void            getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size);

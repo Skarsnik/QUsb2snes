@@ -51,11 +51,11 @@ void USBConnection::spReadyRead()
     if (dataRead.size() <= 2056)
     {
         sDebug() << "<<" << dataRead.size() << " bytes - total received : " << bytesReceived;
-        /*for (unsigned int i = 0; i < dataRead.size(); i += 512)
+        for (unsigned int i = 0; i < dataRead.size(); i += 512)
         {
             sDebug() << dataRead.mid(i, 512);
             sDebug() << "---------";
-        }*/
+        }
     }
     else
         sDebug() << "<<" << dataRead.size() << " bytes - total received : " << bytesReceived;
@@ -66,6 +66,15 @@ void USBConnection::spReadyRead()
             || responseBlock.at(5) == 1)
         {
             sDebug() << "Protocol Error, invalid response block";
+            m_state = READY;
+            if (fileGetCmd)
+                fileData = dataRead.mid(512, m_getSize);
+            dataReceived.clear();
+            bytesReceived = 0;
+            fileGetCmd = false;
+            firstBlock = true;
+            m_getSize = -1;
+            responseBlock.clear();
             emit protocolError();
             return;
         }
@@ -175,8 +184,10 @@ void    USBConnection::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space,
     data.append((char) flags);
     data.append(QByteArray().fill(0, filer_size));
     data.replace(256, arg.size(), arg);
-    if (!arg2.isEmpty())
+    if (!arg2.isEmpty() && opcode == SD2Snes::opcode::PUT)
         data.replace(252, arg2.size(), arg2);
+    if (!arg2.isEmpty() && opcode == SD2Snes::opcode::MV)
+        data.replace(8, arg2.size(), arg2);
     sDebug() << ">>" << data.left(8) << "- 252-272 : " << data.mid(252, 20);
     m_state = BUSY;
     m_currentCommand = opcode;
@@ -254,7 +265,10 @@ void    USBConnection::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
         fileGetCmd = true;
         checkCommandEnd = &USBConnection::checkEndForGet;
     }
-    sendCommand(op, SD2Snes::space::FILE, SD2Snes::server_flags::NONE, args[0]);
+    if (args.size() != 2)
+        sendCommand(op, SD2Snes::space::FILE, SD2Snes::server_flags::NONE, args[0]);
+    else
+        sendCommand(op, SD2Snes::space::FILE, SD2Snes::server_flags::NONE, args[0], args[1]);
 }
 
 void USBConnection::fileCommand(SD2Snes::opcode op, QByteArray args)
@@ -262,6 +276,12 @@ void USBConnection::fileCommand(SD2Snes::opcode op, QByteArray args)
     QVector<QByteArray> p;
     p.append(args);
     fileCommand(op, p);
+}
+
+void USBConnection::controlCommand(SD2Snes::opcode op, QByteArray args)
+{
+    responseSizeExpected = 512;
+    sendCommand(op, SD2Snes::space::SNES, SD2Snes::server_flags::NONE, args);
 }
 
 static QByteArray   int24ToData(quint32 number)

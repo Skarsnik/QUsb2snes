@@ -57,6 +57,28 @@ void    WSServer::executeRequest(MRequest *req)
         req->state = RequestState::WAITINGREPLY;
         break;
     }
+    /*
+     * Control commands
+     */
+    case USB2SnesWS::Reset :
+    {
+        device->controlCommand(SD2Snes::opcode::RESET);
+        req->state = RequestState::WAITINGREPLY;
+        break;
+    }
+    case USB2SnesWS::Menu :
+    {
+        device->controlCommand(SD2Snes::opcode::MENU_RESET);
+        req->state = RequestState::WAITINGREPLY;
+        break;
+    }
+    case USB2SnesWS::Boot :
+    {
+        CMD_TAKE_ONE_ARG("Boot")
+        device->controlCommand(SD2Snes::opcode::BOOT, req->arguments.at(0).toLatin1());
+        req->state = RequestState::WAITINGREPLY;
+        break;
+    }
 
     /*
      * File commands
@@ -211,6 +233,9 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
     case USB2SnesWS::MakeDir :
     case USB2SnesWS::PutFile :
     case USB2SnesWS::PutAddress :
+    case USB2SnesWS::Menu :
+    case USB2SnesWS::Reset :
+    case USB2SnesWS::Boot :
     {
         break;
     }
