@@ -24,10 +24,16 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     connect(menu, SIGNAL(aboutToShow()), this, SLOT(onMenuAboutToshow()));
 
     deviceMenu = menu->addMenu("Devices");
+
     retroarchAction = new QAction("Enable RetroArch virtual device");
     retroarchAction->setCheckable(true);
     connect(retroarchAction, SIGNAL(triggered(bool)), this, SLOT(onRetroarchTriggered(bool)));
     deviceMenu->addAction(retroarchAction);
+
+    luaBridgeAction = new QAction("Enable Lua bridge (snes9x-rr)");
+    luaBridgeAction->setCheckable(true);
+    connect(luaBridgeAction, SIGNAL(triggered(bool)), this, SLOT(onLuaBridgeTriggered(bool)));
+    deviceMenu->addAction(luaBridgeAction);
     deviceMenu->addSeparator();
 
     appsMenu = menu->addMenu("Applications");
@@ -43,6 +49,12 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
         wsServer.addDevice(retroarchDevice);
         retroarchAction->setChecked(true);
     }
+    if (settings->value("luabridge").toBool())
+    {
+        luaBridgeDevice = new LuaBridge();
+        wsServer.addDevice(luaBridgeDevice);
+        luaBridgeAction->setChecked(true);
+    }
     checkForApplications();
     //handleMagic2Snes("D:\\Project\\build-Magic2Snes-Desktop_Qt_5_11_0_MinGW_32bit-Debug\\debug\\");
     appsMenu->addSeparator();
@@ -57,7 +69,6 @@ void AppUi::onRetroarchTriggered(bool checked)
     {
         if (retroarchDevice == NULL)
             retroarchDevice = new RetroarchDevice();
-        //retroarchAction->setText("Enable RetroArch virtual device");
         wsServer.addDevice(retroarchDevice);
     } else {
         wsServer.removeDevice(retroarchDevice);
@@ -65,10 +76,24 @@ void AppUi::onRetroarchTriggered(bool checked)
     settings->setValue("retroarchdevice", checked);
 }
 
+void AppUi::onLuaBridgeTriggered(bool checked)
+{
+    if (checked == true)
+    {
+        if (luaBridgeDevice == NULL)
+            luaBridgeDevice = new LuaBridge();
+        wsServer.addDevice(luaBridgeDevice);
+    } else {
+        wsServer.removeDevice(luaBridgeDevice);
+    }
+    settings->setValue("luabridge", checked);
+}
+
 void AppUi::onMenuAboutToshow()
 {
     deviceMenu->clear();
     deviceMenu->addAction(retroarchAction);
+    deviceMenu->addAction(luaBridgeAction);
     deviceMenu->addSection("Devices state");
     auto piko = wsServer.getDevicesInfo();
     QMapIterator<QString, QStringList> it(piko);

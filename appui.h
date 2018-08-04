@@ -1,6 +1,7 @@
 #ifndef APPUI_H
 #define APPUI_H
 
+#include "luabridge.h"
 #include "retroarchdevice.h"
 
 #include <QMenu>
@@ -22,6 +23,7 @@ public slots:
 
 private slots:
     void    onRetroarchTriggered(bool checked);
+    void    onLuaBridgeTriggered(bool checked);
     void    onMenuAboutToshow();
     void    onAppsMenuTriggered(QAction* action);
     void    onMagic2SnesMenuTriggered(QAction*action);
@@ -33,6 +35,8 @@ private:
     QMenu*              magic2SnesMenu;
     QString             magic2SnesExe;
     QAction*            retroarchAction;
+    QAction*            luaBridgeAction;
+    LuaBridge*          luaBridgeDevice;
     RetroarchDevice*    retroarchDevice;
     QSettings*          settings;
     QMap<QString, QString>  regularApps;
