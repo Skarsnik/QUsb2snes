@@ -143,6 +143,7 @@ private:
     bool isFileCommand(USB2SnesWS::opcode opcode);
     bool isControlCommand(USB2SnesWS::opcode opcode);
     void addToPendingRequest(ADevice *device, MRequest *req);
+    void cleanUpDevice(ADevice *device);
 };
 
 #endif // WSSERVER_H

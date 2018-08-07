@@ -127,7 +127,8 @@ void LuaBridge::onNewConnection()
 
 void LuaBridge::onServerError()
 {
-
+    m_state = CLOSED;
+    emit closed();
 }
 
 void LuaBridge::onClientReadyRead()
@@ -160,6 +161,8 @@ void LuaBridge::onClientDisconnected()
 {
     sDebug() << "Client disconnected";
     client->deleteLater();
+    m_state = CLOSED;
+    emit closed();
 }
 
 void LuaBridge::onTimerOut()

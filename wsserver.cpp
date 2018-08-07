@@ -76,9 +76,28 @@ void WSServer::addDevice(ADevice *device)
 
 void WSServer::removeDevice(ADevice *device)
 {
+    setError(DeviceError, "Manualy removed the device (probably from the UI");
+    cleanUpDevice(device);
     devices.removeAt(devices.indexOf(device));
     devicesInfos.remove(device);
+
     // TODO remove and disconnect WS
+}
+
+void    WSServer::cleanUpDevice(ADevice* device)
+{
+    DeviceInfos& devInfo = devicesInfos[device];
+    QMapIterator<QWebSocket*, WSInfos> it(wsInfos);
+    QList<QWebSocket*> toDiscard;
+    while (it.hasNext())
+    {
+        if (it.value().attachedTo == device)
+            toDiscard.append(it.key());
+    }
+    foreach (QWebSocket* ws, toDiscard)
+        clientError(ws);
+    if (devInfo.currentWS != NULL)
+        devInfo.currentWS = NULL;
 }
 
 QMap<QString, QStringList> WSServer::getDevicesInfo()
@@ -227,12 +246,12 @@ void WSServer::onDeviceProtocolError()
 {
     ADevice*  device = qobject_cast<ADevice*>(sender());
     setError(ProtocolError, "Error in device protocol");
-    clientError(currentRequests.value(device)->owner);
+    cleanUpDevice(device);
 }
 
 void WSServer::onDeviceClosed()
 {
-
+    cleanUpDevice(qobject_cast<ADevice*>(sender()));
 }
 
 void WSServer::onDeviceGetDataReceived(QByteArray data)

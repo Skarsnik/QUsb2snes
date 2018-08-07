@@ -38,6 +38,7 @@ public slots:
 private slots:
     void    onTimerOut();
     void    onTelnetCommandReturned(QByteArray data);
+    void    onTelnetDisconnected();
 
 private:
     QTimer  m_timer;

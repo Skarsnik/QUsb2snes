@@ -16,6 +16,7 @@ SNESClassic::SNESClassic()
     m_timer.setInterval(3);
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(onTimerOut()));
     connect(telCo, SIGNAL(commandReturn(QByteArray)), this, SLOT(onTelnetCommandReturned(QByteArray)));
+    connect(telCo, SIGNAL(disconnected()), this, SLOT(onTelnetDisconnected()));
     sDebug() << "Creating SNES Classic device";
     m_state = CLOSED;
 }
@@ -167,6 +168,12 @@ void SNESClassic::onTelnetCommandReturned(QByteArray data)
         m_state = READY;
         emit commandFinished();
     }
+}
+
+void SNESClassic::onTelnetDisconnected()
+{
+    m_state = CLOSED;
+    emit closed();
 }
 
 void SNESClassic::findMemoryLocations()
