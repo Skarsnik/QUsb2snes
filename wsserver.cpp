@@ -48,6 +48,8 @@ void WSServer::onNewConnection()
     wi.attachedTo = NULL;
     wi.commandState = NOCOMMAND;
     wi.byteReceived = 0;
+    wi.pendingAttach = false;
+    wi.recvData.clear();
     wsInfos[newSocket] = wi;
 }
 
@@ -63,6 +65,7 @@ void WSServer::onWSClosed()
 
 void WSServer::addDevice(ADevice *device)
 {
+    sDebug() << "Adding device" << device->name();
     devices.append(device);
     devicesInfos[device] = DeviceInfos();
     connect(device, SIGNAL(commandFinished()), this, SLOT(onDeviceCommandFinished()));
@@ -113,8 +116,15 @@ void WSServer::onTextMessageReceived(QString message)
     req->owner = ws;
     if (wsInfo.attached == false && !isValidUnAttached(req->opcode))
     {
-        setError(ErrorType::ProtocolError, "Invalid command while unattached");
-        goto LError;
+        if (wsInfo.pendingAttach)
+        {
+            sDebug() << wsInfo.attachedTo->name() << "Adding request in queue " << *req << "(" << pendingRequests[wsInfo.attachedTo].size() << ")";
+            addToPendingRequest(wsInfo.attachedTo, req);
+            return ;
+        } else {
+            setError(ErrorType::ProtocolError, "Invalid command while unattached");
+            goto LError;
+        }
     }
     if (wsInfo.attached && !isValidUnAttached(req->opcode))
     {
@@ -151,6 +161,7 @@ void    WSServer::addToPendingRequest(ADevice* device, MRequest *req)
     {
         bool ok;
         wsInfos[req->owner].pendingPutSizes.append(req->arguments.at(1).toInt(&ok, 16));
+        sDebug() << "Adding a Put command in queue, adding size" << wsInfos[req->owner].pendingPutSizes.last();
     }
 }
 
@@ -169,10 +180,11 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
     } else {
         QList<unsigned int>& pend = infos.pendingPutSizes;
         if (pend.isEmpty()) {
-            dev->writeData(data);
             infos.byteReceived = 0;
             infos.recvData.clear();
+            dev->writeData(data);
         } else {
+            sDebug() << "Data for pending request" << infos.byteReceived << pend.first();
             if (pend.first() == infos.byteReceived)
             {
                 sDebug() << infos.name << "Putting data in queue";
@@ -226,6 +238,11 @@ void WSServer::onDeviceClosed()
 void WSServer::onDeviceGetDataReceived(QByteArray data)
 {
     ADevice*  device = qobject_cast<ADevice*>(sender());
+    if (devicesInfos.value(device).currentWS == NULL)
+    {
+        sDebug() << "NOOP Sending get data to nothing" << device->name();
+        return ;
+    }
     sDebug() << "Sending " << data.size() << "to" << wsInfos.value(devicesInfos[device].currentWS).name;
     devicesInfos[device].currentWS->sendBinaryMessage(data);
 }
@@ -314,18 +331,32 @@ void WSServer::clientError(QWebSocket *ws)
 
 void WSServer::cleanUpSocket(QWebSocket *ws)
 {
-    sDebug() << "Cleaning up " << wsInfos.value(ws).name;
-    wsInfos.remove(ws);
-    QMutableMapIterator<ADevice*, DeviceInfos> i(devicesInfos);
-    while (i.hasNext())
+    WSInfos wInfo = wsInfos.value(ws);
+    sDebug() << "Cleaning up " << wInfo.name;
+    if (wInfo.attached)
     {
-        i.next();
-        if (i.value().currentWS == ws)
+        ADevice*    dev = wInfo.attachedTo;
+        MRequest*   req = currentRequests[dev];
+        if (devicesInfos.value(dev).currentWS == ws)
+            devicesInfos[dev].currentWS = NULL;
+        if (req != NULL && req->owner == ws)
         {
-            i.value().currentWS = NULL;
-            break;
+            req->owner = NULL;
+            req->state = RequestState::CANCELLED;
+        }
+        // Removing pending request that are tied to this ws
+        QMutableListIterator<MRequest*>    it(pendingRequests[dev]);
+        while(it.hasNext())
+        {
+            MRequest* mReq = it.next();
+            if (mReq->owner == ws)
+            {
+                it.remove();
+                delete mReq;
+            }
         }
     }
+    wsInfos.remove(ws);
     ws->deleteLater();
 }
 
@@ -341,6 +372,11 @@ bool WSServer::isValidUnAttached(const USB2SnesWS::opcode opcode)
 
 void        WSServer::sendReply(QWebSocket* ws, const QStringList& args)
 {
+    if (ws == NULL)
+    {
+        sDebug() << "NOOP: Sending reply to a non existing client";
+        return ;
+    }
     QJsonObject jObj;
     QJsonArray ja;
 
@@ -360,6 +396,6 @@ void    WSServer::sendReply(QWebSocket *ws, QString args)
 
 QDebug operator<<(QDebug debug, const WSServer::MRequest &req)
 {
-    debug << req.id << "Created at" << req.timeCreated << "-" << req.opcode << req.space << req.flags << req.arguments;
+    debug << req.id << "Created at" << req.timeCreated << "-" << req.opcode << req.space << req.flags << req.arguments << req.state;
     return debug;
 }

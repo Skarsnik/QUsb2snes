@@ -40,7 +40,8 @@ public:
         SENT,
         WAITINGREPLY,
         WAITINGBDATAREPLY,
-        DONE
+        DONE,
+        CANCELLED
     };
     Q_ENUM(RequestState)
 private:
@@ -74,7 +75,7 @@ private:
         QList<QByteArray>       pendingPutDatas;
         QByteArray              recvData;
         unsigned int            byteReceived;
-
+        bool                    pendingAttach;
     };
 
     struct DeviceInfos {

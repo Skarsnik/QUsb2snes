@@ -19,6 +19,7 @@ LuaBridge::LuaBridge()
     m_state = CLOSED;
     connect(&timer, SIGNAL(timeout()), this, SLOT(onTimerOut()));
     tcpServer->listen(QHostAddress("127.0.0.1"), 65398);
+    sDebug() << "LUA bridge created";
 }
 
 static unsigned int usb2snes_addr_to_snes(unsigned int addr)
@@ -40,6 +41,7 @@ void LuaBridge::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned
 
 void LuaBridge::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
+    m_state = BUSY;
     putAddr = addr;
     putSize = size;
 }
@@ -72,6 +74,7 @@ void LuaBridge::writeData(QByteArray data)
         emit commandFinished();
         receivedSize = 0;
         received.clear();
+        m_state = READY;
     }
 }
 

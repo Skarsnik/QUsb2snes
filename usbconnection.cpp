@@ -184,7 +184,7 @@ void    USBConnection::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space,
     data.append((char) flags);
     data.append(QByteArray().fill(0, filer_size));
     data.replace(256, arg.size(), arg);
-    if (!arg2.isEmpty() && opcode == SD2Snes::opcode::PUT)
+    if (!arg2.isEmpty() && opcode != SD2Snes::opcode::MV)
         data.replace(252, arg2.size(), arg2);
     if (!arg2.isEmpty() && opcode == SD2Snes::opcode::MV)
         data.replace(8, arg2.size(), arg2);

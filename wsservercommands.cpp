@@ -276,15 +276,17 @@ QStringList WSServer::getDevicesList()
 void WSServer::cmdAttach(MRequest *req)
 {
     QString port = req->arguments.at(0);
+    wsInfos[req->owner].pendingAttach = true;
     bool    portFound = false;
     foreach (ADevice* bla, devices) {
         if (bla->name() == port)
         {
             portFound = true;
             sDebug() << "Found device" << bla->name() << "State : " << bla->state();
+            wsInfos[req->owner].attachedTo = bla;
             if (bla->state() == ADevice::State::CLOSED)
             {
-                sDebug() << "PIJKOOO";
+                sDebug() << "Trying to open device";
                 if (!bla->open())
                 {
                     setError(ErrorType::CommandError, "Attach: Can't open the device on " + port);
@@ -317,6 +319,8 @@ void WSServer::cmdAttach(MRequest *req)
             sDebug() << "Attaching " << wsInfos.value(req->owner).name <<  " to " << port;
             wsInfos[req->owner].attached = true;
             wsInfos[req->owner].attachedTo = dev;
+            wsInfos[req->owner].pendingAttach = false;
+            processCommandQueue(dev);
             return ;
         }
     }

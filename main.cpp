@@ -24,6 +24,8 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 {
     QByteArray localMsg = msg.toLocal8Bit();
     QTextStream*    log = &logfile;
+    if (QString(context.category) == "LowLevelTelnet")
+        return ;
     //cout << msg;
     QString logString = QString("%6 %5 - %7: %1 \t(%2:%3, %4)").arg(localMsg.constData()).arg(context.file).arg(context.line).arg(context.function).arg(context.category, 20).arg(QDateTime::currentDateTime().toString(Qt::ISODate));
     switch (type)

@@ -9,6 +9,7 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #define sDebug() qCDebug(log_appUi)
 
 #include "appui.h"
+#include "snesclassic.h"
 #include "wsserver.h"
 
 
@@ -22,6 +23,8 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     menu->addAction("QUsb2Snes v" + QApplication::applicationVersion());
     menu->addSeparator();
     connect(menu, SIGNAL(aboutToShow()), this, SLOT(onMenuAboutToshow()));
+    retroarchDevice = NULL;
+    luaBridgeDevice = NULL;
 
     deviceMenu = menu->addMenu("Devices");
 
@@ -55,6 +58,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
         wsServer.addDevice(luaBridgeDevice);
         luaBridgeAction->setChecked(true);
     }
+    wsServer.addDevice(new SNESClassic());
     checkForApplications();
     //handleMagic2Snes("D:\\Project\\build-Magic2Snes-Desktop_Qt_5_11_0_MinGW_32bit-Debug\\debug\\");
     appsMenu->addSeparator();
