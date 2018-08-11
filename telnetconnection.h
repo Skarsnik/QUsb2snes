@@ -76,6 +76,7 @@ private:
         unsigned int        charToCheck;
 
 
+
         void    writeToTelnet(QByteArray toWrite);
         void    setState(State st);
 };

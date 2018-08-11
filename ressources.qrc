@@ -2,5 +2,14 @@
     <qresource prefix="/img">
         <file>cheer.png</file>
         <file>icon64x64.ico</file>
+        <file>deviceicon.svg</file>
+        <file>appicon.svg</file>
+        <file>quiticon.svg</file>
+        <file>magic2snesicon.png</file>
+        <file>retroarch.png</file>
+        <file>icone-snes9x.gif</file>
+        <file>chrysalis.png</file>
+        <file>multitroid.png</file>
     </qresource>
+    <qresource prefix="/"/>
 </RCC>
