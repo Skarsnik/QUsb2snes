@@ -263,7 +263,11 @@ QStringList WSServer::getDevicesList()
     QStringList toret;
     sDebug() << "Device List";
     foreach (ADevice* dev, devices)
-        toret << dev->name();
+    {
+        if (dev->canAttach())
+            toret << dev->name();
+    }
+    // SD2Snes connection are created on attach
     QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
     foreach (QSerialPortInfo usbinfo, sinfos) {
         sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
@@ -275,11 +279,11 @@ QStringList WSServer::getDevicesList()
 
 void WSServer::cmdAttach(MRequest *req)
 {
-    QString port = req->arguments.at(0);
+    QString deviceToAttach = req->arguments.at(0);
     wsInfos[req->owner].pendingAttach = true;
     bool    portFound = false;
     foreach (ADevice* bla, devices) {
-        if (bla->name() == port)
+        if (bla->name() == deviceToAttach)
         {
             portFound = true;
             sDebug() << "Found device" << bla->name() << "State : " << bla->state();
@@ -289,7 +293,7 @@ void WSServer::cmdAttach(MRequest *req)
                 sDebug() << "Trying to open device";
                 if (!bla->open())
                 {
-                    setError(ErrorType::CommandError, "Attach: Can't open the device on " + port);
+                    setError(ErrorType::CommandError, "Attach: Can't open the device on " + deviceToAttach);
                     clientError(req->owner);
                     return;
                 }
@@ -299,24 +303,24 @@ void WSServer::cmdAttach(MRequest *req)
     }
     if (!portFound)
     {
-        QString nPort = port;
+        QString nPort = deviceToAttach;
         nPort.replace("SD2SNES ", "");
         ADevice* newDev = new USBConnection(nPort);
         if (!newDev->open())
         {
-            setError(ErrorType::CommandError, "Attach: Can't open the device on " + port);
+            setError(ErrorType::CommandError, "Attach: Can't open the device on " + deviceToAttach);
             clientError(req->owner);
             return ;
         } else {
-            sDebug() << "Added a new low Connection" << port;
+            sDebug() << "Added a new low Connection" << deviceToAttach;
             addDevice(newDev);
         }
     }
     foreach (ADevice* dev, devices)
     {
-        if (dev->name() == port)
+        if (dev->name() == deviceToAttach)
         {
-            sDebug() << "Attaching " << wsInfos.value(req->owner).name <<  " to " << port;
+            sDebug() << "Attaching " << wsInfos.value(req->owner).name <<  " to " << deviceToAttach;
             wsInfos[req->owner].attached = true;
             wsInfos[req->owner].attachedTo = dev;
             wsInfos[req->owner].pendingAttach = false;

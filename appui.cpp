@@ -23,12 +23,13 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     menu = new QMenu();
     menu->addAction(QIcon(":/img/icon64x64.ico"), "QUsb2Snes v" + QApplication::applicationVersion());
     menu->addSeparator();
-    connect(menu, SIGNAL(aboutToShow()), this, SLOT(onMenuAboutToshow()));
     retroarchDevice = NULL;
     luaBridgeDevice = NULL;
     snesClassicDevice = NULL;
 
     deviceMenu = menu->addMenu(QIcon(":/img/deviceicon.svg"), "Devices");
+    connect(deviceMenu, SIGNAL(aboutToShow()), this, SLOT(onMenuAboutToshow()));
+
 
     retroarchAction = new QAction(QIcon(":/img/retroarch.png"), "Enable RetroArch virtual device (snes9x 2010 core only)");
     retroarchAction->setCheckable(true);
@@ -125,7 +126,10 @@ void AppUi::onMenuAboutToshow()
     while (it.hasNext())
     {
         auto p = it.next();
-        deviceMenu->addAction(p.key() + " : " + p.value().join(" - "));
+        if (p.value().isEmpty())
+            deviceMenu->addAction(p.key() + " - No client connected");
+        else
+            deviceMenu->addAction(p.key() + " : " + p.value().join(" - "));
     }
     deviceMenu->addSeparator();
     deviceMenu->addAction(retroarchAction);

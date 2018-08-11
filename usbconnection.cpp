@@ -51,11 +51,11 @@ void USBConnection::spReadyRead()
     if (dataRead.size() <= 2056)
     {
         sDebug() << "<<" << dataRead.size() << " bytes - total received : " << bytesReceived;
-        for (unsigned int i = 0; i < dataRead.size(); i += 512)
+        /*for (unsigned int i = 0; i < dataRead.size(); i += 512)
         {
             sDebug() << dataRead.mid(i, 512);
             sDebug() << "---------";
-        }
+        }*/
     }
     else
         sDebug() << "<<" << dataRead.size() << " bytes - total received : " << bytesReceived;
@@ -223,6 +223,11 @@ void USBConnection::infoCommand()
 {
     responseSizeExpected = 512;
     sendCommand(SD2Snes::opcode::INFO, SD2Snes::space::FILE, SD2Snes::server_flags::NONE, QByteArray());
+}
+
+bool USBConnection::canAttach()
+{
+    return true;
 }
 
 void USBConnection::writeData(QByteArray data)

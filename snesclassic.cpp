@@ -19,6 +19,9 @@ SNESClassic::SNESClassic()
     connect(telCo, SIGNAL(disconnected()), this, SLOT(onTelnetDisconnected()));
     sDebug() << "Creating SNES Classic device";
     m_state = CLOSED;
+    sramLocation = 0;
+    romLocation = 0;
+    ramLocation = 0;
 }
 
 
@@ -123,26 +126,7 @@ QList<ADevice::FileInfos> SNESClassic::parseLSCommand(QByteArray &dataI)
 
 bool SNESClassic::open()
 {
-    sDebug() << "Trying to connect to telnet";
-    QEventLoop loop;
-    connect(telCo, SIGNAL(connected()), &loop, SLOT(quit()));
-    connect(telCo, SIGNAL(error()), &loop, SLOT(quit()));
-    telCo->conneect();
-    loop.exec();
-    sDebug() << telCo->state();
-    if (telCo->state() == TelnetConnection::Connected)
-    {
-        QByteArray data = telCo->syncExecuteCommand("pidof canoe-shvc");
-        if (!data.isEmpty())
-        {
-            canoePid = data.trimmed();
-            findMemoryLocations();
-            m_state = READY;
-            return true;
-        }
-    }
-    sDebug() << "Not ready";
-    return false;
+    return m_state == READY;
 }
 
 void SNESClassic::close()
@@ -212,4 +196,39 @@ void SNESClassic::controlCommand(SD2Snes::opcode op, QByteArray args)
 
 void SNESClassic::putFile(QByteArray name, unsigned int size)
 {
+}
+
+
+bool SNESClassic::canAttach()
+{
+    if (m_state == READY || m_state == BUSY)
+        return true;
+    if (telCo->state() == TelnetConnection::Offline)
+    {
+        sDebug() << "Trying to connect to telnet";
+        QEventLoop loop;
+        connect(telCo, SIGNAL(connected()), &loop, SLOT(quit()));
+        connect(telCo, SIGNAL(error()), &loop, SLOT(quit()));
+        telCo->conneect();
+        loop.exec();
+    }
+    sDebug() << telCo->state();
+    if (telCo->state() == TelnetConnection::Connected || telCo->state() == TelnetConnection::Ready)
+    {
+        QByteArray data = telCo->syncExecuteCommand("pidof canoe-shvc");
+        if (!data.isEmpty())
+        {
+            canoePid = data.trimmed();
+            findMemoryLocations();
+            if (ramLocation != 0 && romLocation != 0 && sramLocation != 0)
+            {
+                m_state = READY;
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+    sDebug() << "Not ready";
+    return false;
 }

@@ -18,6 +18,7 @@ RetroarchDevice::RetroarchDevice()
     connect(m_timer, SIGNAL(timeout()), this, SLOT(timedCommandDone()));
     connect(m_sock, SIGNAL(readyRead()), this, SLOT(onUdpReadyRead()));
     bigGet = false;
+    checkingRetroarch = false;
 }
 
 
@@ -42,17 +43,44 @@ QList<ADevice::FileInfos> RetroarchDevice::parseLSCommand(QByteArray &dataI)
     return QList<ADevice::FileInfos>();
 }
 
-bool RetroarchDevice::open()
+bool RetroarchDevice::canAttach()
 {
-    sDebug() << "Trying to connect to retroarch";
-    m_sock->connectToHost(QHostAddress::LocalHost, 55355);
-    if (m_sock->waitForConnected(500))
-    {
-        sDebug() << "Connected";
-        m_state = READY;
+    if (m_state != CLOSED)
         return true;
+    if (!(m_sock->state() == QUdpSocket::ConnectedState || m_sock->state() == QUdpSocket::BoundState))
+    {
+        sDebug() << "Trying to connect to retroarch";
+        m_sock->connectToHost(QHostAddress::LocalHost, 55355);
+        if (!m_sock->waitForConnected(500))
+            return false;
+        sDebug() << "Connected";
+    }
+    checkingRetroarch = true;
+    m_sock->write("READ_CORE_RAM 0 1");
+    QEventLoop loop;
+    QTimer tt;
+    tt.setSingleShot(true);
+    tt.start(200);
+    connect(this, SIGNAL(checkReturned()), &loop, SLOT(quit()));
+    connect(&tt, SIGNAL(timeout()), &loop, SLOT(quit()));
+    loop.exec();
+    checkingRetroarch = false;
+    if (tt.isActive())
+    {
+        tt.stop();
+        if (checkReturnedValue != "-1")
+        {
+            m_state = READY;
+            return true;
+        }
     }
     return false;
+}
+
+
+bool RetroarchDevice::open()
+{
+    return m_state != CLOSED;
 }
 
 void RetroarchDevice::close()
@@ -70,6 +98,15 @@ void RetroarchDevice::onUdpReadyRead()
     sDebug() << ">>" << data;
     QList<QByteArray> tList = data.trimmed().split(' ');
     sDebug() << tList;
+    if (checkingRetroarch)
+    {
+        if (tList.size() < 3)
+            checkReturnedValue = "-1";
+        else
+            checkReturnedValue = tList.at(2);
+        emit checkReturned();
+        return;
+    }
     if (tList.at(2) != "-1")
     {
         tList = tList.mid(2);
@@ -195,15 +232,9 @@ void RetroarchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, u
     if (space != SD2Snes::space::SNES)
         return;
     addr = addr_to_addr(addr);
-    sDebug() << "WRITING TO RAM/SRAM" << QString::number(addr, 16);
-    sDebug() << "WRITING TO RAM/SRAM" << QString::number(addr, 16);
-    sDebug() << "WRITING TO RAM/SRAM" << QString::number(addr, 16);
-    sDebug() << "WRITING TO RAM/SRAM" << QString::number(addr, 16);
-    sDebug() << "WRITING TO RAM/SRAM" << QString::number(addr, 16);
-    sDebug() << "WRITING TO RAM/SRAM" << QString::number(addr, 16);
     if (addr == -1)
         return ;
-    //sDebug() << "WRITING TO RAM/SRAM" << addr;
+    sDebug() << "WRITING TO RAM/SRAM" << addr;
     dataToWrite = "WRITE_CORE_RAM " + QByteArray::number(addr, 16) + " ";
 }
 

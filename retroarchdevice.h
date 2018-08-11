@@ -26,6 +26,7 @@ public:
     void sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray &arg, const QByteArray arg2);
     void infoCommand();
     void writeData(QByteArray data);
+    bool canAttach();
     QString name() const;
     bool hasFileCommands();
     bool hasControlCommands();
@@ -50,7 +51,12 @@ private:
     unsigned int sizeRequested;
     unsigned int addrBigGet;
     unsigned int lastRCRSize;
+    bool         checkingRetroarch;
+    QByteArray   checkReturnedValue;
     void read_core_ram(unsigned int addr, unsigned int size);
+
+signals:
+    void    checkReturned();
 };
 
 #endif // RETROARCHDEVICE_H

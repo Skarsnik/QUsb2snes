@@ -104,9 +104,13 @@ QMap<QString, QStringList> WSServer::getDevicesInfo()
 {
     QMap<QString, QStringList> toret;
     QListIterator<ADevice*> it(devices);
+    QStringList canAttachDev = getDevicesList();
+
     while (it.hasNext())
     {
         ADevice *dev = it.next();
+        if (!canAttachDev.contains(dev->name()))
+            continue;
         toret[dev->name()] = QStringList();
         QMapIterator<QWebSocket*, WSInfos> wsIit(wsInfos);
         while (wsIit.hasNext())
@@ -117,6 +121,10 @@ QMap<QString, QStringList> WSServer::getDevicesInfo()
                 toret[dev->name()] << p.value().name;
             }
         }
+    }
+    foreach (QString sdev, canAttachDev) {
+        if (!toret.contains(sdev))
+            toret[sdev] = QStringList();
     }
     return toret;
 }

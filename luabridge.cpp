@@ -20,6 +20,7 @@ LuaBridge::LuaBridge()
     connect(&timer, SIGNAL(timeout()), this, SLOT(onTimerOut()));
     tcpServer->listen(QHostAddress("127.0.0.1"), 65398);
     sDebug() << "LUA bridge created";
+    client = NULL;
 }
 
 static unsigned int usb2snes_addr_to_snes(unsigned int addr)
@@ -106,6 +107,13 @@ QList<ADevice::FileInfos> LuaBridge::parseLSCommand(QByteArray &dataI)
     return QList<ADevice::FileInfos>();
 }
 
+bool LuaBridge::canAttach()
+{
+    if (client != NULL)
+        return true;
+    return false;
+}
+
 bool LuaBridge::open()
 {
     m_state = READY;
@@ -162,6 +170,7 @@ void LuaBridge::onClientDisconnected()
     sDebug() << "Client disconnected";
     client->deleteLater();
     m_state = CLOSED;
+    client = NULL;
     emit closed();
 }
 

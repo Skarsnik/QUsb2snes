@@ -30,6 +30,7 @@ public:
     QString name() const;
     bool hasFileCommands();
     bool hasControlCommands();
+    bool canAttach();
     USB2SnesInfo parseInfo(const QByteArray &data);
     QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI);
 

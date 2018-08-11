@@ -24,6 +24,7 @@ public:
     void            sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray &arg, const QByteArray arg2);
     void            sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QList<QPair<unsigned int, quint8> > &args);
     void            infoCommand();
+    bool            canAttach();
     void            writeData(QByteArray data);
     QString         name() const;
 

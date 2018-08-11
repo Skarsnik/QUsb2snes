@@ -37,6 +37,7 @@ public:
     virtual QString         name() const = 0;
     virtual bool            hasFileCommands() = 0;
     virtual bool            hasControlCommands() = 0;
+    virtual bool            canAttach() = 0;
 
     virtual USB2SnesInfo    parseInfo(const QByteArray &data) = 0;
     virtual QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI) = 0;
