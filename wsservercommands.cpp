@@ -318,7 +318,7 @@ void WSServer::cmdAttach(MRequest *req)
     }
     foreach (ADevice* dev, devices)
     {
-        if (dev->name() == deviceToAttach)
+        if (dev->name() == deviceToAttach || (deviceToAttach.left(3) == "COM" && dev->name().right(4) == deviceToAttach))
         {
             sDebug() << "Attaching " << wsInfos.value(req->owner).name <<  " to " << deviceToAttach;
             wsInfos[req->owner].attached = true;
