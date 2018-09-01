@@ -2,9 +2,9 @@
 #define SNESCLASSIC_H
 
 #include "adevice.h"
-#include "telnetconnection.h"
 
 #include <QObject>
+#include <QTcpSocket>
 #include <QTimer>
 
 class SNESClassic : public ADevice
@@ -38,12 +38,12 @@ public slots:
 
 private slots:
     void    onTimerOut();
-    void    onTelnetCommandReturned(QByteArray data);
-    void    onTelnetDisconnected();
+    void    onSocketReadReady();
+    void    onSocketDisconnected();
 
 private:
-    QTimer  m_timer;
-    TelnetConnection*   telCo;
+    QTimer              m_timer;
+    QTcpSocket          socket;
     QString             canoePid;
     unsigned int        putAddr;
     unsigned int        putSize;
@@ -51,8 +51,13 @@ private:
     unsigned int        sramLocation;
     unsigned int        ramLocation;
     bool                cmdWasGet;
+    unsigned int        getSize;
+    QByteArray          getData;
 
     void                findMemoryLocations();
+    void                executeCommand(QByteArray toExec);
+    void                writeSocket(QByteArray toWrite);
+    QByteArray          readCommandReturns();
 };
 
 #endif // SNESCLASSIC_H

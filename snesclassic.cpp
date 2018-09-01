@@ -2,29 +2,64 @@
 
 #include <QEventLoop>
 #include <QLoggingCategory>
+#include <QThread>
 
 Q_LOGGING_CATEGORY(log_snesclassic, "SNESClassic")
 #define sDebug() qCDebug(log_snesclassic)
 
 #define SNES_CLASSIC_IP "169.254.13.37"
-#define MEMSTUFF_PATH "/var/lib/hakchi/rootfs/memstuff"
+//#define MEMSTUFF_PATH "/var/lib/hakchi/rootfs/memstuff"
 
 SNESClassic::SNESClassic()
 {
-    telCo = new TelnetConnection(SNES_CLASSIC_IP, 23, "root", "");
     m_timer.setSingleShot(true);
     m_timer.setInterval(3);
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(onTimerOut()));
-    connect(telCo, SIGNAL(commandReturn(QByteArray)), this, SLOT(onTelnetCommandReturned(QByteArray)));
-    connect(telCo, SIGNAL(disconnected()), this, SLOT(onTelnetDisconnected()));
+    connect(&socket, SIGNAL(readyRead()), this, SLOT(onSocketReadReady()));
+    connect(&socket, SIGNAL(disconnected()), this, SLOT(onSocketDisconnected()));
     sDebug() << "Creating SNES Classic device";
     m_state = CLOSED;
     sramLocation = 0;
     romLocation = 0;
     ramLocation = 0;
+    cmdWasGet = false;
 }
 
+//5757524954455F4D454D20373333203165343365312032390A201D7029FF
+//5757524954455F4D454D20373333203165343365312032390A201D7029FF
 
+
+void SNESClassic::onSocketReadReady()
+{
+    if (m_state == CLOSED)
+        return;
+    QByteArray data = socket.readAll();
+    sDebug() << "Read stuff on socket " << cmdWasGet << " : " << data.size();
+    if (cmdWasGet)
+    {
+        getData += data;
+        if (getData.size() == getSize)
+        {
+            sDebug() << getData;
+            emit getDataReceived(getData);
+            getData.clear();
+            getSize = 0;
+            cmdWasGet = false;
+            goto cmdFinished;
+
+        }
+    } else { // Should be put command
+        sDebug() << data;
+        if (data == "OK\n")
+            goto cmdFinished;
+        if (data == "KO\n") // write command fail, let's close
+            socket.close();
+    }
+    return ;
+cmdFinished:
+    emit commandFinished();
+    m_state = READY;
+}
 
 
 void SNESClassic::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
@@ -48,7 +83,9 @@ void SNESClassic::getAddrCommand(SD2Snes::space space, unsigned int addr, unsign
     }
     sDebug() << "Get Addr" << memAddr;
     cmdWasGet = true;
-    telCo->executeCommand(MEMSTUFF_PATH " " + canoePid + " read " + QString::number(memAddr, 16) + " " + QString::number(size));
+    getSize = size;
+    getData.clear();
+    writeSocket("READ_MEM " + canoePid.toLatin1() + " " + QByteArray::number(memAddr, 16) + " " + QByteArray::number(size) + "\n");
 }
 
 void SNESClassic::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
@@ -62,9 +99,9 @@ void SNESClassic::putAddrCommand(SD2Snes::space space, unsigned int addr, unsign
         memAddr = addr - 0xE00000 + sramLocation;
     if (addr < 0xE00000)
         memAddr = addr + romLocation;
+    cmdWasGet = false;
     sDebug() << "Put address" << QString::number(addr, 16) << QString::number(memAddr, 16);
-    putAddr = memAddr;
-    putSize = size;
+    writeSocket("WRITE_MEM " + canoePid.toLatin1() + " " + QByteArray::number(memAddr, 16) + " " + QByteArray::number(size) + "\n");
 }
 
 void SNESClassic::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
@@ -84,16 +121,8 @@ void SNESClassic::infoCommand()
 
 void SNESClassic::writeData(QByteArray data)
 {
-    static unsigned int receivedSize = 0;
-    static QByteArray received = QByteArray();
-    receivedSize += data.size();
-    received += data;
-    if (receivedSize == putSize)
-    {
-        telCo->executeCommand(MEMSTUFF_PATH "     " + canoePid + " write " + QString::number(putAddr, 16) + " " + QString::number(putSize) + " " + received.toHex());
-        receivedSize = 0;
-        received.clear();
-    }
+    sDebug() << ">>" << data;
+    socket.write(data);
 }
 
 QString SNESClassic::name() const
@@ -140,21 +169,8 @@ void SNESClassic::onTimerOut()
     emit commandFinished();
 }
 
-void SNESClassic::onTelnetCommandReturned(QByteArray data)
-{
-    if (m_state == BUSY)
-    {
-        if (cmdWasGet)
-        {
-            emit getDataReceived(QByteArray::fromHex(data.trimmed()));
-            cmdWasGet = false;
-        }
-        m_state = READY;
-        emit commandFinished();
-    }
-}
 
-void SNESClassic::onTelnetDisconnected()
+void SNESClassic::onSocketDisconnected()
 {
     m_state = CLOSED;
     emit closed();
@@ -162,7 +178,9 @@ void SNESClassic::onTelnetDisconnected()
 
 void SNESClassic::findMemoryLocations()
 {
-    QByteArray pmap = telCo->syncExecuteCommand("pmap " + canoePid + " -x -q | grep -v canoe-shvc | grep -v /lib | grep rwx | grep anon");
+    QByteArray pmap;
+    executeCommand(QByteArray("pmap ") + canoePid.toLatin1() + " -x -q | grep -v canoe-shvc | grep -v /lib | grep rwx | grep anon\n");
+    pmap = readCommandReturns();
     QList<QByteArray> memEntries = pmap.split('\n');
     foreach (QByteArray memEntry, memEntries)
     {
@@ -182,6 +200,35 @@ void SNESClassic::findMemoryLocations()
     sDebug() << "Locations : ram/sram/rom" << QString::number(ramLocation, 16) << QString::number(sramLocation, 16) << QString::number(romLocation, 16);
 }
 
+void SNESClassic::executeCommand(QByteArray toExec)
+{
+    sDebug() << "Executing : " << toExec;
+    writeSocket("CMD " + toExec + "\n");
+}
+
+void SNESClassic::writeSocket(QByteArray toWrite)
+{
+    sDebug() << ">>" << toWrite;
+    socket.write(toWrite);
+}
+
+QByteArray SNESClassic::readCommandReturns()
+{
+    QByteArray toret;
+    socket.waitForReadyRead(50);
+    forever {
+        QByteArray data = socket.readAll();
+        sDebug() << "Reading" << data;
+        if (data.isEmpty())
+            break;
+        toret += data;
+        if (!socket.waitForReadyRead(50))
+            break;
+    }
+    toret.truncate(toret.size() - 4);
+    return toret;
+}
+
 void SNESClassic::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
 {
 }
@@ -198,27 +245,30 @@ void SNESClassic::putFile(QByteArray name, unsigned int size)
 {
 }
 
-
+//TODO need to check for canoe still running the right rom I guess?
 bool SNESClassic::canAttach()
 {
     if (m_state == READY || m_state == BUSY)
         return true;
-    if (telCo->state() == TelnetConnection::Offline)
+    if (socket.state() == QAbstractSocket::UnconnectedState)
     {
-        sDebug() << "Trying to connect to telnet";
-        QEventLoop loop;
-        connect(telCo, SIGNAL(connected()), &loop, SLOT(quit()));
-        connect(telCo, SIGNAL(error()), &loop, SLOT(quit()));
-        telCo->conneect();
-        loop.exec();
+        sDebug() << "Trying to connect to serverstuff";
+        socket.connectToHost(SNES_CLASSIC_IP, 1042);
+        socket.waitForConnected(200);
     }
-    sDebug() << telCo->state();
-    if (telCo->state() == TelnetConnection::Connected || telCo->state() == TelnetConnection::Ready)
+    sDebug() << socket.state();
+    if (socket.state() == QAbstractSocket::ConnectedState)
     {
-        QByteArray data = telCo->syncExecuteCommand("pidof canoe-shvc");
+        executeCommand("pidof canoe-shvc");
+        QByteArray data = readCommandReturns();
         if (!data.isEmpty())
         {
             canoePid = data.trimmed();
+            // canoe in demo mode is useless
+            executeCommand("ps | grep canoe-shvc | grep -v grep");
+            QByteArray canoeArgs = readCommandReturns();
+            if (canoeArgs.indexOf("-resume") != -1)
+                return false;
             findMemoryLocations();
             if (ramLocation != 0 && romLocation != 0 && sramLocation != 0)
             {
