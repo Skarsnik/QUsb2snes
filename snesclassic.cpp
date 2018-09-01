@@ -14,6 +14,8 @@ SNESClassic::SNESClassic()
 {
     m_timer.setSingleShot(true);
     m_timer.setInterval(3);
+    alive_timer.setInterval(2000);
+    connect(&alive_timer, SIGNAL(timeout()), this, SLOT(onAliveTimeout()));
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(onTimerOut()));
     connect(&socket, SIGNAL(readyRead()), this, SLOT(onSocketReadReady()));
     connect(&socket, SIGNAL(disconnected()), this, SLOT(onSocketDisconnected()));
@@ -38,6 +40,11 @@ void SNESClassic::onSocketReadReady()
     if (cmdWasGet)
     {
         getData += data;
+        if (getData.left(9) == "\0\0ERROR\0\0" || (getSize == 9 && getData.left(10) == "\0\0ERROR\0\0\0"))
+        {
+            socket.disconnectFromHost();
+            return ;
+        }
         if (getData.size() == getSize)
         {
             sDebug() << getData;
@@ -53,7 +60,7 @@ void SNESClassic::onSocketReadReady()
         if (data == "OK\n")
             goto cmdFinished;
         if (data == "KO\n") // write command fail, let's close
-            socket.close();
+            socket.disconnectFromHost();
     }
     return ;
 cmdFinished:
@@ -85,7 +92,7 @@ void SNESClassic::getAddrCommand(SD2Snes::space space, unsigned int addr, unsign
     cmdWasGet = true;
     getSize = size;
     getData.clear();
-    writeSocket("READ_MEM " + canoePid.toLatin1() + " " + QByteArray::number(memAddr, 16) + " " + QByteArray::number(size) + "\n");
+    writeSocket("READ_MEM " + canoePid + " " + QByteArray::number(memAddr, 16) + " " + QByteArray::number(size) + "\n");
 }
 
 void SNESClassic::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
@@ -101,7 +108,7 @@ void SNESClassic::putAddrCommand(SD2Snes::space space, unsigned int addr, unsign
         memAddr = addr + romLocation;
     cmdWasGet = false;
     sDebug() << "Put address" << QString::number(addr, 16) << QString::number(memAddr, 16);
-    writeSocket("WRITE_MEM " + canoePid.toLatin1() + " " + QByteArray::number(memAddr, 16) + " " + QByteArray::number(size) + "\n");
+    writeSocket("WRITE_MEM " + canoePid + " " + QByteArray::number(memAddr, 16) + " " + QByteArray::number(size) + "\n");
 }
 
 void SNESClassic::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
@@ -169,18 +176,30 @@ void SNESClassic::onTimerOut()
     emit commandFinished();
 }
 
+void    SNESClassic::onAliveTimeout()
+{
+    QTcpSocket tmpSock;
+    tmpSock.connectToHost(SNES_CLASSIC_IP, 1042);
+    sDebug() << "Alive timer connection : " << tmpSock.waitForConnected(50);
+    tmpSock.write("CMD pidof canoe-shvc\n");
+    QByteArray tmp = readCommandReturns(tmpSock);
+    if (tmp.trimmed() != canoePid)
+        socket.close();
+    tmpSock.disconnectFromHost();
+}
 
 void SNESClassic::onSocketDisconnected()
 {
     m_state = CLOSED;
+    alive_timer.stop();
     emit closed();
 }
 
 void SNESClassic::findMemoryLocations()
 {
     QByteArray pmap;
-    executeCommand(QByteArray("pmap ") + canoePid.toLatin1() + " -x -q | grep -v canoe-shvc | grep -v /lib | grep rwx | grep anon\n");
-    pmap = readCommandReturns();
+    executeCommand(QByteArray("pmap ") + canoePid + " -x -q | grep -v canoe-shvc | grep -v /lib | grep rwx | grep anon\n");
+    pmap = readCommandReturns(socket);
     QList<QByteArray> memEntries = pmap.split('\n');
     foreach (QByteArray memEntry, memEntries)
     {
@@ -212,17 +231,17 @@ void SNESClassic::writeSocket(QByteArray toWrite)
     socket.write(toWrite);
 }
 
-QByteArray SNESClassic::readCommandReturns()
+QByteArray SNESClassic::readCommandReturns(QTcpSocket& msocket)
 {
     QByteArray toret;
-    socket.waitForReadyRead(50);
+    msocket.waitForReadyRead(50);
     forever {
-        QByteArray data = socket.readAll();
+        QByteArray data = msocket.readAll();
         sDebug() << "Reading" << data;
         if (data.isEmpty())
             break;
         toret += data;
-        if (!socket.waitForReadyRead(50))
+        if (!msocket.waitForReadyRead(50))
             break;
     }
     toret.truncate(toret.size() - 4);
@@ -260,19 +279,20 @@ bool SNESClassic::canAttach()
     if (socket.state() == QAbstractSocket::ConnectedState)
     {
         executeCommand("pidof canoe-shvc");
-        QByteArray data = readCommandReturns();
+        QByteArray data = readCommandReturns(socket);
         if (!data.isEmpty())
         {
             canoePid = data.trimmed();
             // canoe in demo mode is useless
             executeCommand("ps | grep canoe-shvc | grep -v grep");
-            QByteArray canoeArgs = readCommandReturns();
+            QByteArray canoeArgs = readCommandReturns(socket);
             if (canoeArgs.indexOf("-resume") != -1)
                 return false;
             findMemoryLocations();
             if (ramLocation != 0 && romLocation != 0 && sramLocation != 0)
             {
                 m_state = READY;
+                alive_timer.start();
                 return true;
             } else {
                 return false;

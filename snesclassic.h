@@ -40,11 +40,13 @@ private slots:
     void    onTimerOut();
     void    onSocketReadReady();
     void    onSocketDisconnected();
+    void    onAliveTimeout();
 
 private:
     QTimer              m_timer;
+    QTimer              alive_timer;
     QTcpSocket          socket;
-    QString             canoePid;
+    QByteArray          canoePid;
     unsigned int        putAddr;
     unsigned int        putSize;
     unsigned int        romLocation;
@@ -57,7 +59,7 @@ private:
     void                findMemoryLocations();
     void                executeCommand(QByteArray toExec);
     void                writeSocket(QByteArray toWrite);
-    QByteArray          readCommandReturns();
+    QByteArray          readCommandReturns(QTcpSocket &msocket);
 };
 
 #endif // SNESCLASSIC_H
