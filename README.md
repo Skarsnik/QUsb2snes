@@ -1,6 +1,6 @@
 # QUsb2snes
 
-QUsb2Snes is a websocket server that provide an unified protocol for accessing hardware/software that act like a SNES (or are a SNES). A classic usage is to use the FileViewer client to upload rom to your SD2SNES.
+QUsb2Snes is a websocket server that provide an unified protocol for accessing hardware/software that act like a SNES (or are a SNES). A classic usage is to use the FileViewer client to upload roms to your SD2SNES.
 But it allows for more advanced usage like reading/writing the memory of the SNES
 
 # Developpers
@@ -15,7 +15,7 @@ Download the latest release of QUsb2Snes (on the release link). Uncompress it so
 
 ## SD2Snes
 
-You need to install the last Usb2Snes firmware by redguy (https://github.com/RedGuyyyy/sd2snes/releases/tag/v7) . Just follows the instruction provided. Don't start usb2snes.exe since QUsb2snes do the same thing that the original software. You sd2snes device should show up on the Devices menu when connected.
+You need to install the last Usb2Snes firmware by redguy (https://github.com/RedGuyyyy/sd2snes/releases/tag/v7) . Just follows the instruction provided. Don't start usb2snes.exe since QUsb2snes do the same thing that the original software. Your sd2snes device should show up on the Devices menu when connected.
 
 ## SNES9x multitroid
 
@@ -31,10 +31,11 @@ For software needing to the patch the ROM (multitroid for example) you etheir ne
 
 I need to patch RetroArch to be able to use any snes core x).
 
-## SNES classic (or SNES mini)
+## SNES classic (called also SNES mini)
 
 Only tested with Super Metroid.
 
-You need to 'hack' your SNES classic with Hakchi2 CE version (https://github.com/TeamShinkansen/hakchi2/releases/) then remove the covershell mod (as explained in https://github.com/TeamShinkansen/hakchi2/releases/tag/v3.4.0). And install the `serverstuff` mod from <TODO>
-It will not work with the 'normal' hakchi2 version as the Hakchi2 CE provide a more stable way to access the SNES Classic.
+You need to 'hack' your SNES classic with the Hakchi2 CE version (https://github.com/TeamShinkansen/hakchi2/releases/) then remove the covershell mod (as explained in https://github.com/TeamShinkansen/hakchi2/releases/tag/v3.4.0). And install the `serverstuff` mod from TODO.
 Start the game and you are ready to go.
+
+It will not work with the 'normal' hakchi2 version as the Hakchi2 CE provide a more stable way to access the SNES Classic.
