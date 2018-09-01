@@ -23,7 +23,9 @@ Multitroid provide a patched version of snes9x with a lua script that allow for 
 
 ## RetroArch with Snes9x 2010 core
 
-You need to use snes9x 2010 core and edit your `retroarch.cfg` file (can be found in %appData%\RetroArch) to set `network_cmd_enable = "true"` to true (default is false). Then you need to activate the RetroArch virtual device on the device menu.
+You need to use snes9x 2010 core and edit your `retroarch.cfg` file (can be found in %appData%\RetroArch) to set `network_cmd_enable = "true"` to true (default is false). Then you need to activate the RetroArch virtual device on the devices menu.
+
+For software needing to the patch the ROM (multitroid for example) you etheir need to patch the rom manually with the IPS file or put the IPS file along side the rom with the same name for retroarch to auto patch it.
 
 ## RetroArch with other core
 
