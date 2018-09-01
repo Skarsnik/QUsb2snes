@@ -155,7 +155,7 @@ void WSServer::onTextMessageReceived(QString message)
     }
     if (wsInfo.attached && !isValidUnAttached(req->opcode))
     {
-        if (wsInfo.attachedTo->state() == ADevice::READY)
+        if (wsInfo.attachedTo->state() == ADevice::READY && pendingRequests[wsInfo.attachedTo].isEmpty())
         {
             ADevice* lowCo = wsInfo.attachedTo;
             if ((isControlCommand(req->opcode) && !lowCo->hasControlCommands()) ||
