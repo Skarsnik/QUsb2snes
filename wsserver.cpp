@@ -155,18 +155,19 @@ void WSServer::onTextMessageReceived(QString message)
     }
     if (wsInfo.attached && !isValidUnAttached(req->opcode))
     {
-        if (wsInfo.attachedTo->state() == ADevice::READY && pendingRequests[wsInfo.attachedTo].isEmpty())
+        ADevice* dev = wsInfo.attachedTo;
+        sDebug() << "Device is " << dev->state();
+        if (dev->state() == ADevice::READY && pendingRequests[dev].isEmpty())
         {
-            ADevice* lowCo = wsInfo.attachedTo;
-            if ((isControlCommand(req->opcode) && !lowCo->hasControlCommands()) ||
-                 isFileCommand(req->opcode) && !lowCo->hasFileCommands())
+            if ((isControlCommand(req->opcode) && !dev->hasControlCommands()) ||
+                 isFileCommand(req->opcode) && !dev->hasFileCommands())
             {
                 setError(ErrorType::DeviceError, QString("The device does not support the command %1").arg(cmdMetaEnum.valueToKey(static_cast<int>(req->opcode))));
                 goto LError;
             }
-            currentRequests[lowCo] = req;
-            devicesInfos[lowCo].currentCommand = req->opcode;
-            devicesInfos[lowCo].currentWS = ws;
+            currentRequests[dev] = req;
+            devicesInfos[dev].currentCommand = req->opcode;
+            devicesInfos[dev].currentWS = ws;
             executeRequest(req);
         } else { // add to queue
             sDebug() << wsInfo.attachedTo->name() << "Adding request in queue " << *req << "(" << pendingRequests[wsInfo.attachedTo].size() << ")";

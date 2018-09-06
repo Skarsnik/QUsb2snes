@@ -1,7 +1,7 @@
 # QUsb2snes
 
 QUsb2Snes is a websocket server that provide an unified protocol for accessing hardware/software that act like a SNES (or are a SNES). A classic usage is to use the FileViewer client to upload roms to your SD2SNES.
-But it allows for more advanced usage like reading/writing the memory of the SNES
+But it allows for more advanced usage like reading/writing the memory of the SNES.
 
 # Developpers
 
@@ -35,7 +35,13 @@ I need to patch RetroArch to be able to use any snes core x).
 
 Only tested with Super Metroid.
 
-You need to 'hack' your SNES classic with the Hakchi2 CE version (https://github.com/TeamShinkansen/hakchi2/releases/) then remove the covershell mod (as explained in https://github.com/TeamShinkansen/hakchi2/releases/tag/v3.4.0). And install the `serverstuff` mod from TODO.
-Start the game and you are ready to go.
+Enable the SNES classic support on the device menu.
+
+You need to 'hack' your SNES classic with the Hakchi2 CE version (https://github.com/TeamShinkansen/hakchi2/releases/) then remove the covershell mod (as explained in https://github.com/TeamShinkansen/hakchi2/releases/tag/v3.4.0). Install the `serverstuff` mod provided by QUsb2snes: copy the `serverstuff.mod` to the `user_mods` directory on Hakchi2, then install the mod with Hakchi2
+Start the game and check if the SNES classic appear on the Devices menu, it should display `SNES classic : no client connected`. If not, try restarting the game.
 
 It will not work with the 'normal' hakchi2 version as the Hakchi2 CE provide a more stable way to access the SNES Classic.
+
+# Licence
+
+QUsb2snes project follow the GPL version 3 licence, you can find the full version of the licence on the LICENCE file.

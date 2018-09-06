@@ -37,6 +37,7 @@ void SNESClassic::onSocketReadReady()
         return;
     QByteArray data = socket.readAll();
     sDebug() << "Read stuff on socket " << cmdWasGet << " : " << data.size();
+    sDebug() << "<<" << data;
     if (cmdWasGet)
     {
         getData += data;
@@ -47,7 +48,6 @@ void SNESClassic::onSocketReadReady()
         }
         if (getData.size() == getSize)
         {
-            sDebug() << getData;
             emit getDataReceived(getData);
             getData.clear();
             getSize = 0;
@@ -64,8 +64,8 @@ void SNESClassic::onSocketReadReady()
     }
     return ;
 cmdFinished:
-    emit commandFinished();
     m_state = READY;
+    emit commandFinished();
 }
 
 
@@ -178,6 +178,7 @@ void SNESClassic::onTimerOut()
 
 void    SNESClassic::onAliveTimeout()
 {
+    return ;
     QTcpSocket tmpSock;
     tmpSock.connectToHost(SNES_CLASSIC_IP, 1042);
     sDebug() << "Alive timer connection : " << tmpSock.waitForConnected(50);
@@ -198,7 +199,7 @@ void SNESClassic::onSocketDisconnected()
 void SNESClassic::findMemoryLocations()
 {
     QByteArray pmap;
-    executeCommand(QByteArray("pmap ") + canoePid + " -x -q | grep -v canoe-shvc | grep -v /lib | grep rwx | grep anon\n");
+    executeCommand(QByteArray("pmap ") + canoePid + " -x -q | grep -v canoe-shvc | grep -v /lib | grep rwx | grep anon");
     pmap = readCommandReturns(socket);
     QList<QByteArray> memEntries = pmap.split('\n');
     foreach (QByteArray memEntry, memEntries)

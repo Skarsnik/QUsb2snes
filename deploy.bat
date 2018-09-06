@@ -1,8 +1,9 @@
 
 set deployPath=D:\Project\build-QUsb2snes-Desktop_Qt_5_11_0_MSVC2017_64bit-Release\qtc_Desktop_Qt_5_11_0_MSVC2017_64bit_Release\install-root
-set projectPath=D:\Project\QUsb2snes\
+set projectPath=D:\Project\QUsb2snes
 set usb2snes=D:\Romhacking\usb2snes_v7\usb2snes_v7
 set magic2snes=D:\Project\deploy\Magic2Snes
+set snesclassicmod=D:\Project\snesclassicstuff\serverstuff\hmod\serverstuff.hmod
 
 cd %deployPath%
 
@@ -22,5 +23,8 @@ mkdir %deployPath%\apps
 mkdir %deployPath%\Magic2Snes
 xcopy %usb2snes%\apps %deployPath%\apps /syq
 xcopy %magic2snes% %deployPath%\Magic2Snes /syq
+xcopy %snesclassicmod% %deployPath%\
+xcopy %projectPath%\LICENSE %deployPath%\
+xcopy %projectPath%\README.md %deployPath%\Readme.txt
 
 cd %projectPath%
