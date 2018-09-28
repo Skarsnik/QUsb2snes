@@ -43,6 +43,7 @@ public:
     virtual QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI) = 0;
     QByteArray      dataRead;
     State           state() const;
+    QString         attachError() const;
 
 signals:
     void            commandFinished();
@@ -57,6 +58,7 @@ public slots:
 
 protected:
     State   m_state;
+    QString m_attachError;
 };
 
 #endif // ADEVICE_H

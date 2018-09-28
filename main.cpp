@@ -59,7 +59,8 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 void    startServer()
 {
     //myTrayIcon->showMessage(QString("Webserver started"), QString("Webserver started"));
-    wsServer.start();
+    if (!wsServer.start())
+        qApp->exit(1);
 }
 
 int main(int ac, char *ag[])
@@ -84,6 +85,6 @@ int main(int ac, char *ag[])
     QTimer::singleShot(10000, &myExit);*/
     AppUi*  appUi = new AppUi();
     appUi->sysTray->show();
-    QTimer::singleShot(1000, &startServer);
+    QTimer::singleShot(200, &startServer);
     return app.exec();
 }

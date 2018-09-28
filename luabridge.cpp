@@ -109,8 +109,9 @@ QList<ADevice::FileInfos> LuaBridge::parseLSCommand(QByteArray &dataI)
 
 bool LuaBridge::canAttach()
 {
-    if (client != NULL)
+    if (client != nullptr)
         return true;
+    m_attachError = "No LUAbridge lua script connected";
     return false;
 }
 

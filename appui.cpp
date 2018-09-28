@@ -39,7 +39,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     luaBridgeAction->setCheckable(true);
     connect(luaBridgeAction, SIGNAL(triggered(bool)), this, SLOT(onLuaBridgeTriggered(bool)));
 
-    snesClassicAction = new QAction(QIcon(":/img/chrysalis.png"), "SNES Classic (experimental)");
+    snesClassicAction = new QAction(QIcon(":/img/chrysalis.png"), "Enable SNES Classic support (experimental)");
     snesClassicAction->setCheckable(true);
     connect(snesClassicAction, SIGNAL(triggered(bool)), this, SLOT(onSNESClassicTriggered(bool)));
 
@@ -122,14 +122,17 @@ void AppUi::onMenuAboutToshow()
     deviceMenu->addAction("Devices state");
     deviceMenu->addSeparator();
     auto piko = wsServer.getDevicesInfo();
-    QMapIterator<QString, QStringList> it(piko);
-    while (it.hasNext())
+    foreach(WSServer::MiniDeviceInfos dInfo, piko)
     {
-        auto p = it.next();
-        if (p.value().isEmpty())
-            deviceMenu->addAction(p.key() + " - No client connected");
-        else
-            deviceMenu->addAction(p.key() + " : " + p.value().join(" - "));
+        if (dInfo.usable)
+        {
+            if (dInfo.clients.isEmpty())
+                deviceMenu->addAction(dInfo.name + " - No client connected");
+            else
+                deviceMenu->addAction(dInfo.name + " : " + dInfo.clients.join(" - "));
+        } else {
+            deviceMenu->addAction(dInfo.name + " - " + dInfo.error)->setEnabled(false);
+        }
     }
     deviceMenu->addSeparator();
     deviceMenu->addAction(retroarchAction);

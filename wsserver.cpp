@@ -96,35 +96,46 @@ void    WSServer::cleanUpDevice(ADevice* device)
     }
     foreach (QWebSocket* ws, toDiscard)
         clientError(ws);
-    if (devInfo.currentWS != NULL)
-        devInfo.currentWS = NULL;
+    if (devInfo.currentWS != nullptr)
+        devInfo.currentWS = nullptr;
 }
 
-QMap<QString, QStringList> WSServer::getDevicesInfo()
+QList<WSServer::MiniDeviceInfos> WSServer::getDevicesInfo()
 {
-    QMap<QString, QStringList> toret;
+    QList<MiniDeviceInfos> toret;
     QListIterator<ADevice*> it(devices);
     QStringList canAttachDev = getDevicesList();
 
     while (it.hasNext())
     {
+        MiniDeviceInfos mInfo;
+        mInfo.usable = true;
         ADevice *dev = it.next();
+        mInfo.name = dev->name();
         if (!canAttachDev.contains(dev->name()))
-            continue;
-        toret[dev->name()] = QStringList();
-        QMapIterator<QWebSocket*, WSInfos> wsIit(wsInfos);
-        while (wsIit.hasNext())
         {
-            auto p = wsIit.next();
-            if (p.value().attachedTo == dev)
+            mInfo.usable = false;
+            mInfo.error = dev->attachError();
+        } else {
+            QMapIterator<QWebSocket*, WSInfos> wsIit(wsInfos);
+            while (wsIit.hasNext())
             {
-                toret[dev->name()] << p.value().name;
+                auto p = wsIit.next();
+                if (p.value().attachedTo == dev)
+                {
+                    mInfo.clients << p.value().name;
+                }
             }
         }
+        toret.append(mInfo);
     }
-    foreach (QString sdev, canAttachDev) {
-        if (!toret.contains(sdev))
-            toret[sdev] = QStringList();
+    /* SD2SNES devices are created only when attached */
+    foreach (QString devName, canAttachDev)
+    {
+        MiniDeviceInfos mInfo;
+        mInfo.name = devName;
+        mInfo.usable = true;
+        toret.append(mInfo);
     }
     return toret;
 }
@@ -160,7 +171,7 @@ void WSServer::onTextMessageReceived(QString message)
         if (dev->state() == ADevice::READY && pendingRequests[dev].isEmpty())
         {
             if ((isControlCommand(req->opcode) && !dev->hasControlCommands()) ||
-                 isFileCommand(req->opcode) && !dev->hasFileCommands())
+                 (isFileCommand(req->opcode) && !dev->hasFileCommands()))
             {
                 setError(ErrorType::DeviceError, QString("The device does not support the command %1").arg(cmdMetaEnum.valueToKey(static_cast<int>(req->opcode))));
                 goto LError;

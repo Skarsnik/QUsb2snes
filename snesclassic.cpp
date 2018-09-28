@@ -274,7 +274,7 @@ bool SNESClassic::canAttach()
     {
         sDebug() << "Trying to connect to serverstuff";
         socket.connectToHost(SNES_CLASSIC_IP, 1042);
-        socket.waitForConnected(200);
+        socket.waitForConnected(100);
     }
     sDebug() << socket.state();
     if (socket.state() == QAbstractSocket::ConnectedState)
@@ -288,7 +288,10 @@ bool SNESClassic::canAttach()
             executeCommand("ps | grep canoe-shvc | grep -v grep");
             QByteArray canoeArgs = readCommandReturns(socket);
             if (canoeArgs.indexOf("-resume") != -1)
+            {
+                m_attachError = "SNES Classic emulator is running in demo mode";
                 return false;
+            }
             findMemoryLocations();
             if (ramLocation != 0 && romLocation != 0 && sramLocation != 0)
             {
@@ -296,9 +299,14 @@ bool SNESClassic::canAttach()
                 alive_timer.start();
                 return true;
             } else {
+                m_attachError = "Can't find memory location, try restarting the emulator";
                 return false;
             }
+        } else {
+            m_attachError = "The SNES Classic emulator is not running";
         }
+    } else {
+        m_attachError = "Can't connect to the SNES Classic";
     }
     sDebug() << "Not ready";
     return false;

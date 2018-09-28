@@ -254,9 +254,12 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
     currentRequests[device]->state = RequestState::DONE;
     sDebug() << "Request " << *(currentRequests.value(device)) << "processed in " << currentRequests.value(device)->timeCreated.msecsTo(QTime::currentTime()) << " ms";
     delete currentRequests[device];
-    currentRequests[device] = NULL;
+    currentRequests[device] = nullptr;
 }
 
+/*
+ * Attach stuff
+ */
 
 QStringList WSServer::getDevicesList()
 {

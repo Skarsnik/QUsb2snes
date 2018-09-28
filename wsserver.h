@@ -84,12 +84,19 @@ private:
     };
 
 public:
+    struct MiniDeviceInfos {
+       QString  name;
+       bool     usable;
+       QString  error;
+       QStringList  clients;
+    };
+
     explicit WSServer(QObject *parent = nullptr);
     bool     start();
     QString&  errorString() const;
     void        addDevice(ADevice* device);
     void        removeDevice(ADevice* device);
-    QMap<QString, QStringList>  getDevicesInfo();
+    QList<MiniDeviceInfos>  getDevicesInfo();
 
 signals:
     void    error();
