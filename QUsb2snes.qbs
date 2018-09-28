@@ -12,6 +12,8 @@ Project {
             "adevice.h",
             "appui.cpp",
             "appui.h",
+            "ipsparse.cpp",
+            "ipsparse.h",
             "luabridge.cpp",
             "luabridge.h",
             "main.cpp",

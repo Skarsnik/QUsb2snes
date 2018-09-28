@@ -20,7 +20,7 @@ LuaBridge::LuaBridge()
     connect(&timer, SIGNAL(timeout()), this, SLOT(onTimerOut()));
     tcpServer->listen(QHostAddress("127.0.0.1"), 65398);
     sDebug() << "LUA bridge created";
-    client = NULL;
+    client = nullptr;
 }
 
 static unsigned int usb2snes_addr_to_snes(unsigned int addr)
@@ -171,7 +171,7 @@ void LuaBridge::onClientDisconnected()
     sDebug() << "Client disconnected";
     client->deleteLater();
     m_state = CLOSED;
-    client = NULL;
+    client = nullptr;
     emit closed();
 }
 

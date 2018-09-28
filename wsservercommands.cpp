@@ -1,3 +1,4 @@
+#include "ipsparse.h"
 #include "usbconnection.h"
 #include "wsserver.h"
 #include <QLoggingCategory>
@@ -26,7 +27,7 @@ bool    WSServer::isControlCommand(USB2SnesWS::opcode opcode)
 
 void    WSServer::executeRequest(MRequest *req)
 {
-    ADevice*  device = NULL;
+    ADevice*  device = nullptr;
     QWebSocket*     ws = req->owner;
     sDebug() << "Executing request : " << *req << "for" << wsInfos.value(ws).name;
     if (wsInfos.value(ws).attached)
@@ -182,6 +183,22 @@ void    WSServer::executeRequest(MRequest *req)
         break;
     }
 
+    /*
+     * PutIPS
+    */
+    case USB2SnesWS::PutIPS : {
+        if (req->arguments.size() < 2)
+        {
+            setError(ErrorType::CommandError, "PutIPS command take at least 2 arguments (Name, SizeInHex)");
+            clientError(ws);
+            return ;
+        }
+        bool    ok;
+        req->state = RequestState::WAITINGREPLY;
+        wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
+        wsInfos[ws].ipsSize = req->arguments.at(1).toUInt(&ok, 16);
+        break;
+    }
     default:
     {
         setError(ErrorType::ProtocolError, "Invalid command or non implemented");
@@ -334,4 +351,39 @@ void WSServer::cmdAttach(MRequest *req)
     setError(ErrorType::CommandError, "Trying to Attach to an unknow device");
     clientError(req->owner);
     return ;
+}
+
+void    WSServer::processIpsData(QWebSocket* ws)
+{
+    sDebug() << "processing IPS data";
+    WSInfos& infos = wsInfos[ws];
+    MRequest* ipsReq = currentRequests[infos.attachedTo];
+    QList<IPSReccord>  ipsReccords = parseIPSData(infos.ipsData);
+
+    // Creating new PutAddress requests
+    unsigned int cpt = 0;
+    sDebug() << "Creating " << ipsReccords.size() << "PutRequests";
+    foreach(IPSReccord ipsr, ipsReccords)
+    {
+        MRequest* newReq = new MRequest();
+        newReq->owner = ws;
+        newReq->state = RequestState::NEW;
+        newReq->space = SD2Snes::space::SNES;
+        newReq->timeCreated = QTime::currentTime();
+                newReq->wasPending = false;
+        newReq->opcode = USB2SnesWS::PutAddress;
+        // Special stuff for patch that install stuff in the NMI of sd2snes
+        if (cpt == 0 && ipsReq->arguments.at(0) == "hook")
+            newReq->flags << "CLRX";
+        if (cpt == (ipsReccords.size() - 2) && ipsReq->arguments.at(0) == "hook")
+            newReq->flags << "SETX";
+        newReq->arguments << QString::number(ipsr.offset, 16) << QString::number(ipsr.size, 16);
+
+        pendingRequests[infos.attachedTo].append(newReq);
+        infos.pendingPutSizes.append(ipsr.size);
+        infos.pendingPutDatas.append(ipsr.data);
+        cpt++;
+    }
+    infos.ipsData.clear();
+    processCommandQueue(infos.attachedTo);
 }

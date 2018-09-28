@@ -102,7 +102,8 @@ enum opcode {
     GetAddress, // Get the value of the address, space is important [offset, size]->datarequested TODO multiarg form
     PutAddress, // put value to the address  [offset, size] then send the binary data.
                 // Also support multiple request in one [offset1, size1, offset2, size2] TODO work on size check/boundary
-    PutIPS, // Apply a patch TODO
+    PutIPS, // Apply a patch - [name, size] then send binary data
+            // a special name is 'hook' for the sd2snes
 
     GetFile, // Get a file - [filepath]->{size}->filedata
     PutFile, // Post a file -  [filepath, size] then send the binary data

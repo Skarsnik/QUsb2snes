@@ -74,6 +74,8 @@ private:
         QList<unsigned int>     pendingPutSizes;
         QList<QByteArray>       pendingPutDatas;
         QByteArray              recvData;
+        QByteArray              ipsData;
+        unsigned int            ipsSize;
         unsigned int            byteReceived;
         bool                    pendingAttach;
     };
@@ -141,7 +143,8 @@ private:
     void        processCommandQueue(ADevice* device);
 
     QStringList getDevicesList();
-    void        cmdAttach(MRequest *req);
+    void        cmdAttach(MRequest* req);
+    void        processIpsData(QWebSocket* ws);
     void        sendReply(QWebSocket* ws, const QStringList& args);
     void        sendReply(QWebSocket* ws, QString args);
 

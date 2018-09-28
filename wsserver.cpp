@@ -45,11 +45,12 @@ void WSServer::onNewConnection()
     WSInfos wi;
     wi.name = "Websocket " + QString::number((size_t)ws, 16);
     wi.attached = false;
-    wi.attachedTo = NULL;
+    wi.attachedTo = nullptr;
     wi.commandState = NOCOMMAND;
     wi.byteReceived = 0;
     wi.pendingAttach = false;
     wi.recvData.clear();
+    wi.ipsSize = 0;
     wsInfos[newSocket] = wi;
 }
 
@@ -196,7 +197,7 @@ LError:
 void    WSServer::addToPendingRequest(ADevice* device, MRequest *req)
 {
     pendingRequests[device].append(req);
-    if (req->opcode == USB2SnesWS::PutAddress)
+    if (req->opcode == USB2SnesWS::PutAddress || req->opcode == USB2SnesWS::PutIPS)
     {
         bool ok;
         wsInfos[req->owner].pendingPutSizes.append(req->arguments.at(1).toInt(&ok, 16));
@@ -217,6 +218,17 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
         setError(ErrorType::ProtocolError, "Sending binary data when nothing waiting for it");
         clientError(ws);
     } else {
+        if (infos.ipsSize != 0)
+        {
+            sDebug() << "Data sent are IPS data";
+            infos.ipsData.append(data);
+            if (infos.ipsData.size() == infos.ipsSize)
+            {
+                infos.recvData.clear();
+                processIpsData(ws);
+            }
+            return ;
+        }
         QList<unsigned int>& pend = infos.pendingPutSizes;
         if (pend.isEmpty()) {
             infos.byteReceived = 0;
@@ -253,7 +265,7 @@ void WSServer::onClientError(QAbstractSocket::SocketError)
 void WSServer::onDeviceCommandFinished()
 {
     ADevice*  device = qobject_cast<ADevice*>(sender());
-    if (devicesInfos[device].currentWS != NULL)
+    if (devicesInfos[device].currentWS != nullptr)
     {
         processDeviceCommandFinished(device);
         processCommandQueue(device);
@@ -277,7 +289,7 @@ void WSServer::onDeviceClosed()
 void WSServer::onDeviceGetDataReceived(QByteArray data)
 {
     ADevice*  device = qobject_cast<ADevice*>(sender());
-    if (devicesInfos.value(device).currentWS == NULL)
+    if (devicesInfos.value(device).currentWS == nullptr)
     {
         sDebug() << "NOOP Sending get data to nothing" << device->name();
         return ;
@@ -317,7 +329,7 @@ WSServer::MRequest* WSServer::requestFromJSON(const QString &str)
 {
     MRequest    *req = new MRequest();
     req->state = RequestState::NEW;
-    req->owner = NULL;
+    req->owner = nullptr;
     QJsonDocument   jdoc = QJsonDocument::fromJson(str.toLatin1());
     QJsonObject job = jdoc.object();
     QString opcode = job["Opcode"].toString();
@@ -377,10 +389,10 @@ void WSServer::cleanUpSocket(QWebSocket *ws)
         ADevice*    dev = wInfo.attachedTo;
         MRequest*   req = currentRequests[dev];
         if (devicesInfos.value(dev).currentWS == ws)
-            devicesInfos[dev].currentWS = NULL;
-        if (req != NULL && req->owner == ws)
+            devicesInfos[dev].currentWS = nullptr;
+        if (req != nullptr && req->owner == ws)
         {
-            req->owner = NULL;
+            req->owner = nullptr;
             req->state = RequestState::CANCELLED;
         }
         // Removing pending request that are tied to this ws
@@ -411,7 +423,7 @@ bool WSServer::isValidUnAttached(const USB2SnesWS::opcode opcode)
 
 void        WSServer::sendReply(QWebSocket* ws, const QStringList& args)
 {
-    if (ws == NULL)
+    if (ws == nullptr)
     {
         sDebug() << "NOOP: Sending reply to a non existing client";
         return ;
