@@ -165,7 +165,16 @@ void    WSServer::executeRequest(MRequest *req)
         // Basic usage of PutAddress
         if (req->arguments.size() == 2)
         {
-            device->putAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+            if (req->flags.isEmpty())
+                device->putAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+            else {
+                unsigned char flags = 0;
+                foreach(QString flag, req->flags)
+                {
+                    flags |= (SD2Snes::server_flags) flagsMetaEnum.keyToValue(qPrintable(flag));
+                }
+                device->putAddrCommand(req->space, flags, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+            }
             if (req->wasPending)
             {
                 device->writeData(wsInfos[ws].pendingPutDatas.takeFirst());

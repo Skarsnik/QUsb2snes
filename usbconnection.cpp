@@ -340,6 +340,14 @@ void USBConnection::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned in
     sendVCommand(SD2Snes::opcode::VPUT, space, SD2Snes::server_flags::NONE, args);
 }
 
+void USBConnection::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
+{
+    responseSizeExpected = 512;
+    QByteArray data1 = int24ToData(addr);
+    QByteArray data2 = int24ToData(size);
+    sendCommand(SD2Snes::opcode::PUT, space, flags, data1, data2);
+}
+
 QList<ADevice::FileInfos>    USBConnection::parseLSCommand(QByteArray& dataI)
 {
     QList<FileInfos>  infos;

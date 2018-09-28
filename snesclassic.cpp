@@ -115,6 +115,11 @@ void SNESClassic::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int,
 {
 }
 
+void SNESClassic::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
+{
+    putAddrCommand(space, addr, size);
+}
+
 void SNESClassic::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray &arg, const QByteArray arg2)
 {
 }

@@ -18,6 +18,8 @@ WSServer::WSServer(QObject *parent) : QObject(parent)
     cmdMetaEnum = mo.enumerator(i);
     i = mo2.indexOfEnumerator("space");
     spaceMetaEnum = mo2.enumerator(i);
+    i = mo2.indexOfEnumerator("server_flags");
+    flagsMetaEnum = mo2.enumerator(i);
 }
 
 bool WSServer::start()

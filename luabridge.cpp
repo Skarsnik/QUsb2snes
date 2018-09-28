@@ -51,6 +51,11 @@ void LuaBridge::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, q
 {
 }
 
+void LuaBridge::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
+{
+    putAddrCommand(space, addr, size);
+}
+
 
 void LuaBridge::infoCommand()
 {

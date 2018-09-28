@@ -31,6 +31,7 @@ public:
     virtual void            getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size) = 0;
     virtual void            putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size) = 0;
     virtual void            putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args) = 0;
+    virtual void            putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size) = 0;
     virtual void            sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray &arg, const QByteArray arg2) = 0;
     virtual void            infoCommand() = 0;
     virtual void            writeData(QByteArray data) = 0;

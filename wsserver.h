@@ -122,6 +122,7 @@ private slots:
 private:
     QMetaEnum                           cmdMetaEnum;
     QMetaEnum                           spaceMetaEnum;
+    QMetaEnum                           flagsMetaEnum;
     QWebSocketServer*                   wsServer;
     QMap<QWebSocket*, WSInfos>          wsInfos;
     QList<ADevice*>                     devices;
