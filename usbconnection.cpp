@@ -12,9 +12,11 @@ USBConnection::USBConnection(QString portName)
     //m_port.baudRate();
     connect(&m_port, SIGNAL(readyRead()), this, SLOT(spReadyRead()));
     connect(&m_port, SIGNAL(aboutToClose()), this, SIGNAL(closed()));
-    connect(&m_port, SIGNAL(errorOccurred(QSerialPort::SerialPortError)), this, SLOT(spErrorOccured(QSerialPort::SerialPortError)));
+    connect(&m_port, SIGNAL(errorOccurred(QSerialPort::SerialPortError)), this, SLOT(spErrorOccurred(QSerialPort::SerialPortError)));
+    connect(&m_port, SIGNAL(dataTerminalReadyChanged(bool)), this, SLOT(onDTRChanged(bool)));
+    connect(&m_port, SIGNAL(requestToSendChanged(bool)), this, SLOT(onRTSChanged(bool)));
     m_state = CLOSED;
-    m_getSize = -1;
+    m_getSize = 0;
     fileGetCmd = false;
     bytesReceived = 0;
 }
@@ -22,6 +24,7 @@ USBConnection::USBConnection(QString portName)
 bool USBConnection::open()
 {
     bool toret = m_port.open(QIODevice::ReadWrite);
+    m_port.clear();
     m_port.setDataTerminalReady(true);
     sDebug() << "BaudRate : " << m_port.baudRate();
     sDebug() << "Databits : " << m_port.dataBits();
@@ -139,7 +142,18 @@ LcmdFinished :
 void USBConnection::spErrorOccurred(QSerialPort::SerialPortError err)
 {
     sDebug() << "Error " << err << m_port.errorString();
+    m_state = CLOSED;
     emit closed();
+}
+
+void    USBConnection::onRTSChanged(bool set)
+{
+    sDebug() << "RTS changed : " << set;
+}
+
+void USBConnection::onDTRChanged(bool set)
+{
+    sDebug() << "DTR changed : " << set;
 }
 
 bool USBConnection::checkEndForLs()
@@ -237,6 +251,7 @@ void USBConnection::writeData(QByteArray data)
         data.append(QByteArray().fill(0, 512 - data.size()));
     quint64 written = m_port.write(data);
     sDebug() << "Written : " << written << " bytes";
+    m_port.flush();
 }
 
 QString USBConnection::name() const

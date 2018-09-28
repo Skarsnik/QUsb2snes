@@ -53,6 +53,8 @@ public slots:
 private slots:
     void    spReadyRead();
     void    spErrorOccurred(QSerialPort::SerialPortError err);
+    void    onDTRChanged(bool set);
+    void    onRTSChanged(bool set);
 
 private:
     QSerialPort m_port;

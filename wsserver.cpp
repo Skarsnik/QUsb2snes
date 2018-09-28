@@ -87,21 +87,6 @@ void WSServer::removeDevice(ADevice *device)
     // TODO remove and disconnect WS
 }
 
-void    WSServer::cleanUpDevice(ADevice* device)
-{
-    DeviceInfos& devInfo = devicesInfos[device];
-    QMapIterator<QWebSocket*, WSInfos> it(wsInfos);
-    QList<QWebSocket*> toDiscard;
-    while (it.hasNext())
-    {
-        if (it.value().attachedTo == device)
-            toDiscard.append(it.key());
-    }
-    foreach (QWebSocket* ws, toDiscard)
-        clientError(ws);
-    if (devInfo.currentWS != nullptr)
-        devInfo.currentWS = nullptr;
-}
 
 QList<WSServer::MiniDeviceInfos> WSServer::getDevicesInfo()
 {
@@ -380,6 +365,28 @@ void WSServer::clientError(QWebSocket *ws)
     ws->close();
     cleanUpSocket(ws);
     emit error();
+}
+
+
+void    WSServer::cleanUpDevice(ADevice* device)
+{
+    sDebug() << "Cleaning up device " << device->name();
+    DeviceInfos& devInfo = devicesInfos[device];
+    QMapIterator<QWebSocket*, WSInfos> it(wsInfos);
+    QList<QWebSocket*> toDiscard;
+    while (it.hasNext())
+    {
+        it.next();
+        if (it.value().attachedTo == device)
+            toDiscard.append(it.key());
+    }
+    foreach (QWebSocket* ws, toDiscard)
+    {
+        setError(WSServer::DeviceError, "Device closed");
+        clientError(ws);
+    }
+    if (devInfo.currentWS != nullptr)
+        devInfo.currentWS = nullptr;
 }
 
 void WSServer::cleanUpSocket(QWebSocket *ws)
