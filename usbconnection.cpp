@@ -24,6 +24,7 @@ USBConnection::USBConnection(QString portName)
 bool USBConnection::open()
 {
     bool toret = m_port.open(QIODevice::ReadWrite);
+    sDebug() << "Opening Serial connection : " << toret;
     m_port.clear();
     m_port.setDataTerminalReady(true);
     sDebug() << "BaudRate : " << m_port.baudRate();
@@ -40,7 +41,8 @@ bool USBConnection::open()
 void USBConnection::close()
 {
     m_port.setDataTerminalReady(false);
-    m_port.close();
+    if (m_state != CLOSED)
+        m_port.close();
     m_state = CLOSED;
 }
 
@@ -142,7 +144,11 @@ LcmdFinished :
 void USBConnection::spErrorOccurred(QSerialPort::SerialPortError err)
 {
     sDebug() << "Error " << err << m_port.errorString();
+    if (err == QSerialPort::NoError)
+        return ;
     m_state = CLOSED;
+    if (m_state != CLOSED)
+        m_port.close();
     emit closed();
 }
 
@@ -202,7 +208,7 @@ void    USBConnection::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space,
         data.replace(252, arg2.size(), arg2);
     if (!arg2.isEmpty() && opcode == SD2Snes::opcode::MV)
         data.replace(8, arg2.size(), arg2);
-    sDebug() << ">>" << data.left(8) << "- 252-272 : " << data.mid(252, 20);
+    sDebug() << ">>" << data.left(8).toHex() << "- 252-272 : " << data.mid(252, 20).toHex();
     m_state = BUSY;
     m_currentCommand = opcode;
     writeData(data);
@@ -249,6 +255,10 @@ void USBConnection::writeData(QByteArray data)
     //sDebug() << ">>" << data.size() << data;
     if (data.size() < 512)
         data.append(QByteArray().fill(0, 512 - data.size()));
+    if (data.size() % 512 != 0)
+    {
+        data.resize((data.size() / 512) * 512 + 512);
+    }
     quint64 written = m_port.write(data);
     sDebug() << "Written : " << written << " bytes";
     m_port.flush();
@@ -311,6 +321,7 @@ static QByteArray   int24ToData(quint32 number)
     data.append((char) (number >> 16) & 0xFF);
     data.append((char)(number >> 8) & 0xFF);
     data.append((char) number & 0xFF);
+    sDebug() << "convertir numnber" << number << "to bitarray : " << data.toHex();
     return data;
 
 }

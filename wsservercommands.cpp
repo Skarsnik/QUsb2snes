@@ -384,7 +384,7 @@ void    WSServer::processIpsData(QWebSocket* ws)
         // Special stuff for patch that install stuff in the NMI of sd2snes
         if (cpt == 0 && ipsReq->arguments.at(0) == "hook")
             newReq->flags << "CLRX";
-        if (cpt == (ipsReccords.size() - 2) && ipsReq->arguments.at(0) == "hook")
+        if (cpt == (ipsReccords.size() - 1) && ipsReq->arguments.at(0) == "hook")
             newReq->flags << "SETX";
         newReq->arguments << QString::number(ipsr.offset, 16) << QString::number(ipsr.size, 16);
 
