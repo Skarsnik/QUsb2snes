@@ -208,6 +208,49 @@ void AppUi::onMagic2SnesMenuTriggered(QAction *action)
 }
 
 
+static bool    searchForQUsb2snesEntry(QString qmlFile)
+{
+    QFile f(qmlFile);
+    if (f.open(QIODevice::Text | QIODevice::ReadOnly))
+    {
+        while (true)
+        {
+            QByteArray line = f.readLine();
+            if (line.isEmpty())
+                return false;
+            if (line.indexOf("USB2Snes") != -1)
+                return true;
+        }
+    }
+    return false;
+}
+
+static QString  searchWindowTitle(QString qmlFile)
+{
+    QFile f(qmlFile);
+    sDebug() << "Searching in " << qmlFile;
+    if (f.open(QIODevice::Text | QIODevice::ReadOnly))
+    {
+        while (true)
+        {
+            QByteArray line = f.readLine();
+            if (line.isEmpty())
+                break;
+            if (line.indexOf("windowTitle") != -1)
+            {
+                sDebug() << line;
+                QRegExp exp("windowTitle\\s*\\:\\s*\"(.+)\"");
+                if (exp.indexIn(line) != -1)
+                {
+                    sDebug() << "Found : " << exp.cap(1);
+                    return exp.cap(1);
+                }
+            }
+         }
+    }
+    return QString();
+}
+
 void AppUi::addMagic2SnesFolder(QString path)
 {
     sDebug() << "Adding magic2snes qml path " << path;
@@ -218,10 +261,29 @@ void AppUi::addMagic2SnesFolder(QString path)
     magic2SnesMenu->addSeparator();
     auto fil = exDir.entryInfoList(QStringList() << "*.qml");
     foreach (QFileInfo efi, fil)
-        magic2SnesMenu->addAction(efi.fileName())->setData(efi.absoluteFilePath());
-    if (fi.baseName() == "examples")
-        magic2SnesMenu->addAction("SMAlttp tracker")->setData(path + "/smalttptracker/smalttpautotracker.qml");
+    {
+        QString wTitle = searchWindowTitle(efi.absoluteFilePath());
+        if (wTitle.isEmpty())
+            magic2SnesMenu->addAction(efi.fileName())->setData(efi.absoluteFilePath());
+        else
+            magic2SnesMenu->addAction(wTitle)->setData(efi.absoluteFilePath());
+    }
+    fil = exDir.entryInfoList(QDir::NoDotAndDotDot | QDir::Dirs);
+    foreach(QFileInfo efi, fil)
+    {
+        auto filI = QDir(efi.absoluteFilePath()).entryInfoList(QStringList() << "*.qml");
+        foreach (QFileInfo qmlFI, filI)
+        if (searchForQUsb2snesEntry(qmlFI.absoluteFilePath()))
+        {
+            QString wTitle = searchWindowTitle(qmlFI.absoluteFilePath());
+            if (wTitle.isEmpty())
+                magic2SnesMenu->addAction(qmlFI.fileName())->setData(qmlFI.absoluteFilePath());
+            else
+                magic2SnesMenu->addAction(wTitle)->setData(qmlFI.absoluteFilePath());
+        }
+    }
 }
+
 
 void AppUi::handleMagic2Snes(QString path)
 {
@@ -232,7 +294,7 @@ void AppUi::handleMagic2Snes(QString path)
     connect(magic2SnesMenu, SIGNAL(triggered(QAction*)), this, SLOT(onMagic2SnesMenuTriggered(QAction*)));
     QFileInfo fi(path);
     QString examplePath = fi.absoluteFilePath() + "/examples";
-    QString scriptPath = fi.absolutePath() + "/scripts";
+    QString scriptPath = fi.absoluteFilePath() + "/scripts";
     if (QFile::exists(examplePath))
         addMagic2SnesFolder(examplePath);
     if (QFile::exists(scriptPath))
