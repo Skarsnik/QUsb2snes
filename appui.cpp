@@ -122,6 +122,8 @@ void AppUi::onMenuAboutToshow()
     deviceMenu->addAction("Devices state");
     deviceMenu->addSeparator();
     auto piko = wsServer.getDevicesInfo();
+    if (piko.isEmpty())
+        deviceMenu->addAction("No device")->setEnabled(false);
     foreach(WSServer::MiniDeviceInfos dInfo, piko)
     {
         if (dInfo.usable)

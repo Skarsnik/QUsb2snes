@@ -300,7 +300,7 @@ QStringList WSServer::getDevicesList()
     QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
     foreach (QSerialPortInfo usbinfo, sinfos) {
         sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
-        if (usbinfo.isBusy() == false && !toret.contains(usbinfo.portName()) && usbinfo.serialNumber() == "DEMO00000000")
+        if (usbinfo.isBusy() == false && !toret.contains(QString("SD2SNES ") + usbinfo.portName()) && usbinfo.serialNumber() == "DEMO00000000")
             toret << "SD2SNES " + usbinfo.portName();
     }
     return toret;
@@ -389,8 +389,8 @@ void    WSServer::processIpsData(QWebSocket* ws)
         newReq->arguments << QString::number(ipsr.offset, 16) << QString::number(ipsr.size, 16);
 
         pendingRequests[infos.attachedTo].append(newReq);
-        infos.pendingPutSizes.append(ipsr.size);
         infos.pendingPutDatas.append(ipsr.data);
+        //sDebug() << "IPS:" <<  QString::number(ipsr.offset, 16) << ipsr.data.toHex();
         cpt++;
     }
     infos.ipsData.clear();

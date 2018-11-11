@@ -146,9 +146,11 @@ void USBConnection::spErrorOccurred(QSerialPort::SerialPortError err)
     sDebug() << "Error " << err << m_port.errorString();
     if (err == QSerialPort::NoError)
         return ;
-    m_state = CLOSED;
     if (m_state != CLOSED)
+    {
+        m_state = CLOSED;
         m_port.close();
+    }
     emit closed();
 }
 

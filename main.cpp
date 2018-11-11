@@ -71,18 +71,7 @@ int main(int ac, char *ag[])
     if (mlog.open(QIODevice::WriteOnly | QIODevice::Text))
         qInstallMessageHandler(myMessageOutput);
     QApplication::setApplicationName("QUsb2Snes");
-    QApplication::setApplicationVersion("0.2");
-    QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
-    /*foreach (QSerialPortInfo usbinfo, sinfos) {
-        if (usbinfo.portName() == "COM3" && usbinfo.isBusy())
-            return 0;
-        qDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << usbinfo.vendorIdentifier() << "Busy : " << usbinfo.isBusy();
-    }*/
-
-    /*qDebug() << "Opening COMD3" << usbco.open();
-    usbco.infoCommand();
-    QTimer::singleShot(1000, &myThing);
-    QTimer::singleShot(10000, &myExit);*/
+    QApplication::setApplicationVersion("0.3");
     AppUi*  appUi = new AppUi();
     appUi->sysTray->show();
     QTimer::singleShot(200, &startServer);

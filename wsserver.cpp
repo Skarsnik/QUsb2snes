@@ -99,6 +99,7 @@ QList<WSServer::MiniDeviceInfos> WSServer::getDevicesInfo()
         MiniDeviceInfos mInfo;
         mInfo.usable = true;
         ADevice *dev = it.next();
+        sDebug() << dev->name();
         mInfo.name = dev->name();
         if (!canAttachDev.contains(dev->name()))
         {
@@ -120,6 +121,14 @@ QList<WSServer::MiniDeviceInfos> WSServer::getDevicesInfo()
     /* SD2SNES devices are created only when attached */
     foreach (QString devName, canAttachDev)
     {
+        bool pass = false;
+        foreach(MiniDeviceInfos mDev, toret)
+        {
+            if (devName == mDev.name)
+                pass = true;
+        }
+        if (pass)
+            continue;
         MiniDeviceInfos mInfo;
         mInfo.name = devName;
         mInfo.usable = true;
@@ -212,6 +221,8 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
             if (infos.ipsData.size() == infos.ipsSize)
             {
                 infos.recvData.clear();
+                infos.byteReceived = 0;
+                infos.ipsSize = 0;
                 processIpsData(ws);
             }
             return ;
