@@ -4,8 +4,10 @@ set projectPath=F:\Project\QUsb2snes
 set usb2snes=F:\Romhacking\usb2snes_v7\usb2snes_v7
 set magic2snes=F:\Project\deploy\Magic2Snes
 set snesclassicmod=F:\Project\snesclassicstuff\serverstuff\hmod\serverstuff.hmod
+set savestate2snes=F:\Project\deploy\Savestate2snes
 
 cd %deployPath%
+
 
 echo "Deploy QT"
 windeployqt.exe --no-translations --no-system-d3d-compiler --no-opengl-sw --no-opengl --no-webkit --no-patchqt --no-webkit2 --release  %deployPath%\QUsb2Snes.exe
@@ -20,9 +22,11 @@ del %deployPath%\vc_redist.x64.exe
 ::xcopy %deployPath% "D:\VM shared\qubs2snes" /syq
 rmdir /Q /S %deployPath%\apps
 mkdir %deployPath%\apps
+mkdir %deployPath%\apps\Savestate2snes
 mkdir %deployPath%\Magic2Snes
 xcopy %usb2snes%\apps %deployPath%\apps /syq
 xcopy %magic2snes% %deployPath%\Magic2Snes /syq
+xcopy %savestate2snes% %deployPath%\apps\Savestate2snes /syq
 xcopy %snesclassicmod% %deployPath%\
 xcopy %projectPath%\LICENSE %deployPath%\
 xcopy %projectPath%\README.md %deployPath%\Readme.txt

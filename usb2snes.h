@@ -93,15 +93,15 @@ enum opcode {
 
     // Special
     Info, // Give information about the sd2snes firmware {firmwareversion, versionstring, romrunning, flag1, flag2...}TOFIX
-    Boot, // Boot a rom [romname] TODO
-    Menu, // Get back to the menu TODO
-    Reset, // Reset TODO
+    Boot, // Boot a rom [romname] TOTEST
+    Menu, // Get back to the menu TOTEST
+    Reset, // Reset TOTEST
     Stream, // TODO
     Fence, // TODO
 
-    GetAddress, // Get the value of the address, space is important [offset, size]->datarequested TODO multiarg form
+    GetAddress, // Get the value of the address, space is important [offset, size]->datarequested TOFIX multiarg form
     PutAddress, // put value to the address  [offset, size] then send the binary data.
-                // Also support multiple request in one [offset1, size1, offset2, size2] TODO work on size check/boundary
+                // Also support multiple request in one [offset1, size1, offset2, size2] TOFIX work on size check/boundary
     PutIPS, // Apply a patch - [name, size] then send binary data
             // a special name is 'hook' for the sd2snes
 
