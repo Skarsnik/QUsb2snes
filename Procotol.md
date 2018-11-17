@@ -14,10 +14,10 @@ Request are in json format and follow this schema :
 
 ``` json
 {
-    Opcode : "opcode name",
-    Space : "SNES",
-    Flags : ["FLAG1", "FLAGS2"],
-    Operands : ["arg1", "arg2", ...]
+    "Opcode" : "opcode name",
+    "Space" : "SNES",
+    "Flags" : ["FLAG1", "FLAGS2"],
+    "Operands" : ["arg1", "arg2", ...]
 }
 ```
 
@@ -32,7 +32,7 @@ The websocket server send you back a json reply this form
 
 ``` json
 {
-    Results : ["data1", "data2"]
+    "Results" : ["data1", "data2"]
 }
 ```
 
@@ -50,21 +50,21 @@ Example
 
 ```json
 {
-    Opcode : "DeviceList",
-    Space : "SNES"
+    "Opcode" : "DeviceList",
+    "Space" : "SNES"
 }
 ```
 usb2snes
 
 ```json
 {
-    Results :  ["COM3", "COM5"]
+    "Results" :  ["COM3", "COM5"]
 }
 ```
 QUsb2snes
 ```json
 {
-    Results: ["SD2SNES COM3", "SNES Classic", "EMU SNES9x"]
+    "Results" : ["SD2SNES COM3", "SNES Classic", "EMU SNES9x"]
 }
 ```
 
@@ -74,9 +74,9 @@ Next command is `Attach` to associate yourself with the device you want.
 
 ```json
 {
-    Opcode : "Attach",
-    Space : "SNES",
-    Operands : ["SD2SNES COM3"]
+    "Opcode" : "Attach",
+    "Space" : "SNES",
+    "Operands" : ["SD2SNES COM3"]
 }
 ```
 
@@ -105,9 +105,9 @@ This read the first 256 bytes from the WRAM
 
 ```json
 {
-    Opcode : "GetAddress",
-    Space : "SNES",
-    Operands : ["F50000", "100"]
+    "Opcode" : "GetAddress",
+    "Space" : "SNES",
+    "Operands" : ["F50000", "100"]
 }
 ```
 
