@@ -21,10 +21,10 @@ Request are in json format and follow this schema :
 }
 ```
 
-`Opcode` is the command you want to be done. MANDATORY
-`Space` can be SNES or CMD, but most of the time you want SNES. MANDATORY
-`Flags` are specific usb2snes firmware flags, you rarely need them. OPTIONNAL
-`Operands` are for the arguments of the command
+* `Opcode` is the command you want to be done. MANDATORY
+* `Space` can be SNES or CMD, but most of the time you want SNES. MANDATORY
+* `Flags` are specific usb2snes firmware flags, you rarely need them. OPTIONNAL
+* `Operands` are for the arguments of the command
 
 ## Reply
 
@@ -119,9 +119,9 @@ This work like GetAddress for argument. After sending the json request, send you
 
 ## Usb2snes address
 
-ROM start at  `0x000000`
-WRAM start at `0xF50000`
-SRAM start at `0xE00000`
+* ROM start at  `0x000000`
+* WRAM start at `0xF50000`
+* SRAM start at `0xE00000`
 
 
 
