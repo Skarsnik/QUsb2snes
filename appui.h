@@ -29,12 +29,14 @@ private slots:
     void    onMenuAboutToshow();
     void    onAppsMenuTriggered(QAction* action);
     void    onMagic2SnesMenuTriggered(QAction*action);
+    void    addWindowsSendToEntry();
 
 private:
     QMenu*              menu;
     QMenu*              deviceMenu;
     QMenu*              appsMenu;
     QMenu*              magic2SnesMenu;
+    QMenu*              miscMenu;
     QString             magic2SnesExe;
     QAction*            retroarchAction;
     QAction*            snesClassicAction;
@@ -48,7 +50,7 @@ private:
     void                checkForApplications();
     void                handleMagic2Snes(QString path);
 
-    void addMagic2SnesFolder(QString path);
+    void                addMagic2SnesFolder(QString path);
 };
 
 #endif // APPUI_H

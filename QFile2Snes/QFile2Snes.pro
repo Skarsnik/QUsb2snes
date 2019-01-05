@@ -4,10 +4,12 @@
 #
 #-------------------------------------------------
 
-QT       += core gui widgets
+QT       += core gui widgets websockets
 
 TARGET = QFile2Snes
 TEMPLATE = app
+
+INCLUDEPATH += ../client
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings
@@ -24,15 +26,32 @@ CONFIG += c++11
 
 SOURCES += \
         main.cpp \
-        qfile2snesw.cpp
+        qfile2snesw.cpp \
+    usb2snesfilemodel.cpp \
+    ../client/usb2snes.cpp \
+    sendtodialog.cpp \
+    dirchangedialog.cpp
 
 HEADERS += \
-        qfile2snesw.h
+        qfile2snesw.h \
+    usb2snesfilemodel.h \
+    ../client/usb2snes.h \
+    sendtodialog.h \
+    dirchangedialog.h
 
 FORMS += \
-        qfile2snesw.ui
+        qfile2snesw.ui \
+    sendtodialog.ui \
+    dirchangedialog.ui
+
+RC_FILE = qfile2snes.rc
+
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+DISTFILES += \
+    qfile2snes.rc \
+    Readme.md

@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QLoggingCategory>
+#include <QMessageBox>
 #include <QProcess>
 #include <QStyle>
 
@@ -70,11 +71,33 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     menu->addSeparator();
     handleMagic2Snes(qApp->applicationDirPath() + "/Magic2Snes");
     menu->addSeparator();
+
+    miscMenu = menu->addMenu("Misc");
+#ifdef Q_OS_WIN
+    QObject::connect(miscMenu->addAction("Add a Send To entry in the Windows menu"),
+                     &QAction::triggered, this, &AppUi::addWindowsSendToEntry);
+    QSettings settings("skarsnik.nyo.fr", "QUsb2Snes");
+    if (!settings.contains("SendToSet"))
+    {
+        QMessageBox msg;
+        msg.setText(tr("Do you want to create a entry in the Send To menu of Windows to upload file to the sd2snes?"));
+        msg.setInformativeText("This will only be asked once, if you want to add it later go into the Misc menu.");
+        msg.setWindowTitle("QUsb2Snes");
+        msg.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+        msg.setDefaultButton(QMessageBox::Ok);
+        int ret = msg.exec();
+        if (ret == QMessageBox::Ok)
+            addWindowsSendToEntry();
+        settings.setValue("SendToSet", true);
+    }
+#endif
+
     QObject::connect(menu->addAction("Exit"), &QAction::triggered, qApp, &QApplication::exit);
     appsMenu->addSeparator();
     appsMenu->addAction("Remote Applications");
     appsMenu->addSeparator();
     appsMenu->addAction(QIcon(":/img/multitroid.png"), "Multitroid");
+
 }
 
 void AppUi::onRetroarchTriggered(bool checked)
@@ -207,6 +230,22 @@ void AppUi::onMagic2SnesMenuTriggered(QAction *action)
         QProcess::startDetached(magic2SnesExe, QStringList() << action->data().toString());
     else
         QProcess::startDetached(magic2SnesExe);
+}
+
+void AppUi::addWindowsSendToEntry()
+{
+    QDir appData(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+    appData.cdUp();
+    appData.cd("Microsoft");
+    appData.cd("Windows");
+    appData.cd("SendTo");
+    bool ok = QFile::link(qApp->applicationDirPath() + "/apps/QFile2Snes/QFile2Snes.exe", appData.path() + "/SD2Snes.lnk");
+    QMessageBox msg;
+    if (ok)
+        msg.setText(tr("Entry in the Send To menu has been added successfully"));
+    else
+        msg.setText(QString(tr("Error while creating the Send To entry.<br>Check in %1 if it does not already exist")).arg(appData.path()));
+    msg.exec();
 }
 
 

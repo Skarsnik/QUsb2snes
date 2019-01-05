@@ -38,12 +38,19 @@ public:
     enum State {
         None,
         Connected,
-        Ready
+        Ready,
+        SendingFile,
+        ReceivfingFile
     };
     enum sd2snesState {
         sd2menu,
         RomRunning
     };
+    struct FileInfo {
+        QString name;
+        bool    dir;
+    };
+
     Q_ENUM(State)
     Q_ENUM(sd2snesState)
     // Should be private, but allow for Qt to register the enum
@@ -59,17 +66,25 @@ public:
     };
     Q_ENUM(InternalState)
 
-    USB2snes();
+    USB2snes(bool autoAttach);
     void                    usePort(QString port);
     QString                 port();
     QString                 getRomName();
     void                    connect();
     void                    close();
     void                    setAppName(QString name);
+    void                    attach(QString deviceName);
     QByteArray              getAddress(unsigned int addr, unsigned int size, Space space = SNES);
     void                    setAddress(unsigned int addr, QByteArray data, Space space = SNES);
+    void                    sendFile(QString path, QByteArray data);
+    void                    getFile(QString path);
+    void                    renameFile(QString oldPath, QString newPath);
+    void                    deleteFile(QString fileName);
+    void                    boot(QString path);
     State                   state();
     QStringList             infos();
+    int                     fileDataSize() const;
+    QList<FileInfo>         ls(QString path);
     QString                 firmwareString();
     QVersionNumber          firmwareVersion();
     QStringList             deviceList();
@@ -83,6 +98,9 @@ signals:
     void    textMessageReceived();
     void    romStarted();
     void    menuStarted();
+    void    fileSendProgress(int size);
+    void    fileSent();
+    void    getFileDataGet(QByteArray data);
 
 
 private slots:
@@ -95,6 +113,7 @@ private slots:
 
 
 private:
+    bool            m_autoAttach;
     QWebSocket      m_webSocket;
     QString         m_port;
     State           m_state;
@@ -107,6 +126,8 @@ private:
     QByteArray      lastBinaryMessage;
     QString         lastTextMessage;
     unsigned int    requestedBinaryReadSize;
+
+    QByteArray      fileDataToSend;
 
     QTimer          timer;
 

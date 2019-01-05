@@ -22,7 +22,7 @@
 Q_LOGGING_CATEGORY(log_Usb2snes, "USB2SNES")
 #define sDebug() qCDebug(log_Usb2snes)
 
-USB2snes::USB2snes() : QObject()
+USB2snes::USB2snes(bool autoAttach = true) : QObject()
 {
     m_state = None;
     m_istate = INone;
@@ -34,6 +34,7 @@ USB2snes::USB2snes() : QObject()
     QObject::connect(&m_webSocket, SIGNAL(binaryMessageReceived(QByteArray)), this, SLOT(onWebSocketBinaryReceived(QByteArray)));
     QObject::connect(&timer, SIGNAL(timeout()), this, SLOT(onTimerTick()));
     requestedBinaryReadSize = 0;
+    m_autoAttach = autoAttach;
 }
 
 void    USB2snes::usePort(QString port)
@@ -77,13 +78,22 @@ void USB2snes::setAppName(QString name)
     sendRequest("Name", QStringList() << name);
 }
 
+void USB2snes::attach(QString deviceName)
+{
+    sendRequest("Attach", QStringList() << deviceName);
+    changeState(Ready);
+}
+
 void USB2snes::onWebSocketConnected()
 {
     sDebug() << "Websocket connected";
     changeState(Connected);
     m_istate = IConnected;
-    m_istate = DeviceListRequested;
-    sendRequest("DeviceList");
+    if (m_autoAttach)
+    {
+        m_istate = DeviceListRequested;
+        sendRequest("DeviceList");
+    }
 }
 
 void USB2snes::onWebSocketDisconnected()
@@ -121,15 +131,18 @@ void USB2snes::onWebSocketTextReceived(QString message)
     {
         QStringList results = getJsonResults(message);
         m_deviceList = results;
-        if (!results.isEmpty())
+        if (m_autoAttach)
         {
-            timer.stop();
-            m_port = results.at(0);
-            sendRequest("Attach", QStringList() << m_port);
-            m_istate = AttachSent;
-            timer.start(200);
-        } else {
-            timer.start(1000);
+            if (!results.isEmpty())
+            {
+                timer.stop();
+                m_port = results.at(0);
+                sendRequest("Attach", QStringList() << m_port);
+                m_istate = AttachSent;
+                timer.start(200);
+            } else {
+                timer.start(1000);
+            }
         }
         break;
     }
@@ -263,6 +276,51 @@ void USB2snes::setAddress(unsigned int addr, QByteArray data, Space space)
     sDebug() << "Done sending data for setAddress " + QString::number(addr, 16);
 }
 
+void USB2snes::sendFile(QString path, QByteArray data)
+{
+    sendRequest("PutFile", QStringList() << path << QString::number(data.size(), 16));
+    changeState(SendingFile);
+    fileDataToSend = data;
+    m_istate = IBusy;
+    if (data.size() <= 1024)
+      m_webSocket.sendBinaryMessage(data);
+    else
+    {
+        int foo = 0;
+        while (data.size() != 0)
+        {
+            m_webSocket.sendBinaryMessage(data.left(1024));
+            data.remove(0, 1024);
+            foo += 1024;
+            emit fileSendProgress(foo);
+        }
+    }
+    emit fileSent();
+    m_istate = IReady;
+    changeState(Ready);
+}
+
+void USB2snes::getFile(QString path)
+{
+    sendRequest("GetFile", QStringList() << path);
+    changeState(SendingFile);
+}
+
+void USB2snes::renameFile(QString oldPath, QString newPath)
+{
+    sendRequest("Rename", QStringList() << oldPath << newPath);
+}
+
+void USB2snes::deleteFile(QString fileName)
+{
+    sendRequest("Remove", QStringList() << fileName);
+}
+
+void USB2snes::boot(QString path)
+{
+    sendRequest("Boot", QStringList() << path);
+}
+
 
 bool USB2snes::patchROM(QString patch)
 {
@@ -295,6 +353,29 @@ QStringList USB2snes::infos()
     return getJsonResults(lastTextMessage);
 }
 
+int USB2snes::fileDataSize() const
+{
+    return fileDataToSend.size();
+}
+
+QList<USB2snes::FileInfo> USB2snes::ls(QString path)
+{
+    QList<FileInfo> toret;
+    sendRequest("List", QStringList() << path);
+    QEventLoop  loop;
+    QObject::connect(this, SIGNAL(textMessageReceived()), &loop, SLOT(quit()));
+    loop.exec();
+    QStringList infos = getJsonResults(lastTextMessage);
+    for (int i = 0; i < infos.size(); i += 2)
+    {
+        FileInfo fi;
+        fi.dir = infos.at(i) == "0";
+        fi.name = infos.at(i + 1);
+        toret << fi;
+    }
+    return toret;
+}
+
 QString USB2snes::firmwareString()
 {
     return m_firmwareString;
@@ -308,7 +389,11 @@ QVersionNumber USB2snes::firmwareVersion()
 
 QStringList USB2snes::deviceList()
 {
-    return m_deviceList;
+    sendRequest("DeviceList");
+    QEventLoop  loop;
+    QObject::connect(this, SIGNAL(textMessageReceived()), &loop, SLOT(quit()));
+    loop.exec();
+    return getJsonResults(lastTextMessage);
 }
 
 QVersionNumber USB2snes::serverVersion()
