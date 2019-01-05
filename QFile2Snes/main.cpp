@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     qDebug() << a.arguments();
     if (a.arguments().size() == 2)
     {
-        SendToDialog diag("F:/Tmp/SMALttP - sm-casual_alttp-no-glitches-v9.2_normal-open_morph-vanilla_ganon_combo_411066146.sfc");
+        SendToDialog diag(a.arguments().at(1));
         if (!diag.init())
             exit(1);
         diag.show();
