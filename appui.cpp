@@ -176,8 +176,13 @@ void AppUi::onAppsMenuTriggered(QAction *action)
     }
     if (action->data().isNull())
         return ;
-    sDebug() << "Running" << action->data().toString();
-    QProcess::startDetached(action->data().toString());
+    QFileInfo fi(action->data().toString());
+    QProcess proc(this);
+    //proc.setWorkingDirectory(fi.path());
+    bool ok = proc.startDetached(fi.absoluteFilePath(), QStringList(), fi.path());
+    sDebug() << "Running " << fi.absoluteFilePath() << " in " << fi.path() << ok;
+    if (!ok)
+        sDebug() << "Error running " << fi.absoluteFilePath() << proc.errorString();
 }
 
 void AppUi::checkForApplications()
