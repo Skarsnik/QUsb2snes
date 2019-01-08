@@ -95,6 +95,11 @@ void SNESClassic::getAddrCommand(SD2Snes::space space, unsigned int addr, unsign
     writeSocket("READ_MEM " + canoePid + " " + QByteArray::number(memAddr, 16) + " " + QByteArray::number(size) + "\n");
 }
 
+void SNESClassic::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
+{
+
+}
+
 void SNESClassic::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
     sDebug() << "Put address" << addr;

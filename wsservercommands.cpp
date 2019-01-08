@@ -141,16 +141,26 @@ void    WSServer::executeRequest(MRequest *req)
     * Address command
     */
     case USB2SnesWS::GetAddress : {
-        if (req->arguments.size() != 2)
+        if (req->arguments.size() < 2)
         {
-            setError(ErrorType::CommandError, "GetAddress command take 2 arguments (AddressInHex, SizeInHex)");
+            setError(ErrorType::CommandError, "GetAddress commands take at least 2 arguments (AddressInHex, SizeInHex)");
             clientError(ws);
             return ;
         }
         connect(device, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onDeviceGetDataReceived(QByteArray)));
-        connect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)));
+        //connect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)));
         bool    ok;
-        device->getAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+        if (req->arguments.size() == 2)
+        {
+            device->getAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+        } else {
+            QList<QPair<unsigned int, quint8> > pairs;
+            for (unsigned int i = 0; i < req->arguments.size(); i += 2)
+            {
+                pairs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUShort(&ok, 16)));
+            }
+            device->getAddrCommand(req->space, pairs);
+        }
         req->state = RequestState::WAITINGREPLY;
         break;
     }
@@ -163,6 +173,7 @@ void    WSServer::executeRequest(MRequest *req)
         }
         bool ok;
         // Basic usage of PutAddress
+        // FIXME add flags in VPUT
         if (req->arguments.size() == 2)
         {
             if (req->flags.isEmpty())
@@ -268,7 +279,7 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
     case USB2SnesWS::GetAddress :
     {
         disconnect(device, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onDeviceGetDataReceived(QByteArray)));
-        disconnect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)));
+        //disconnect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)));
         break;
     }
     default:

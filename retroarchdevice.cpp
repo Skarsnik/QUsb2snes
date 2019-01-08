@@ -225,6 +225,11 @@ void RetroarchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
     read_core_ram(addr, size);
 }
 
+void RetroarchDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
+{
+
+}
+
 void RetroarchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, unsigned int size)
 {
     int addr = addr0;

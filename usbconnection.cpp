@@ -86,7 +86,8 @@ void USBConnection::spReadyRead()
     }
 
     dataReceived.append(dataRead);
-    if (m_currentCommand == SD2Snes::opcode::GET && m_getSize <= 0)
+    if ((m_currentCommand == SD2Snes::opcode::GET || m_currentCommand == SD2Snes::opcode::VGET)
+         && m_getSize <= 0)
     {
         m_getSize = 0;
         sDebug() << responseBlock.mid(252, 4);
@@ -97,6 +98,7 @@ void USBConnection::spReadyRead()
         sDebug() << "Size for data : " << m_getSize;
         emit sizeGet(m_getSize);
     }
+    sDebug() << m_currentCommand;
     if (responseSizeExpected != -1)
     {
         if (bytesReceived == responseSizeExpected)
@@ -104,9 +106,9 @@ void USBConnection::spReadyRead()
             goto LcmdFinished;
         }
     } else {
-        //sDebug() << "Unsized command";
+        sDebug() << "Unsized command" << m_currentCommand;
         if ((this->*checkCommandEnd)()) {
-            if (m_currentCommand == SD2Snes::opcode::GET)
+            if ((m_currentCommand == SD2Snes::opcode::GET || m_currentCommand == SD2Snes::opcode::VGET))
             {
                 if (dataRead.size() == dataReceived.size())
                     emit getDataReceived(dataRead.mid(512, m_getSize));
@@ -115,7 +117,7 @@ void USBConnection::spReadyRead()
             }
             goto LcmdFinished;
         } else {
-            if (m_currentCommand == SD2Snes::opcode::GET)
+            if ((m_currentCommand == SD2Snes::opcode::GET || m_currentCommand == SD2Snes::opcode::VGET))
             {
                 if (firstBlock)
                     emit getDataReceived(dataRead.mid(512));
@@ -191,7 +193,7 @@ bool    USBConnection::checkEndForGet()
     quint64 cmp_size = m_getSize;
     if (m_getSize % 512 != 0)
         cmp_size = (m_getSize / 512) * 512 + 512;
-    //sDebug() << cmp_size;
+    sDebug() << cmp_size;
     return bytesReceived == cmp_size + 512;
 }
 
@@ -354,6 +356,15 @@ void USBConnection::getAddrCommand(SD2Snes::space space, unsigned int addr, unsi
     sendCommand(SD2Snes::opcode::GET, space, SD2Snes::server_flags::NONE, data1, data2);
 }
 
+
+void USBConnection::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
+{
+    responseSizeExpected = -1;
+    m_getSize = 0;
+    checkCommandEnd = &USBConnection::checkEndForGet;
+    sendVCommand(SD2Snes::opcode::VGET, space, SD2Snes::server_flags::NONE, args);
+}
+
 void USBConnection::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
     responseSizeExpected = 512;
@@ -427,4 +438,3 @@ USB2SnesInfo USBConnection::parseInfo(const QByteArray& data)
     if ((flag & (char) SD2Snes::info_flags::FEAT_DMA1) != 0) info.flags.append("FEAT_DMA1");
     return info;
 }
-

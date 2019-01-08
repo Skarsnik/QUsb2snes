@@ -209,3 +209,8 @@ void LuaBridge::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsign
 {
 }
 
+
+
+void LuaBridge::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
+{
+}
