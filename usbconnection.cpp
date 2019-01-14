@@ -19,6 +19,7 @@ USBConnection::USBConnection(QString portName)
     m_getSize = 0;
     fileGetCmd = false;
     bytesReceived = 0;
+    blockSize = 512;
 }
 
 bool USBConnection::open()
@@ -86,7 +87,8 @@ void USBConnection::spReadyRead()
     }
 
     dataReceived.append(dataRead);
-    if ((m_currentCommand == SD2Snes::opcode::GET || m_currentCommand == SD2Snes::opcode::VGET)
+    // FIXME maybe for 64B mode get?
+    if ((m_currentCommand == SD2Snes::opcode::GET)
          && m_getSize <= 0)
     {
         m_getSize = 0;
@@ -108,18 +110,25 @@ void USBConnection::spReadyRead()
     } else {
         sDebug() << "Unsized command" << m_currentCommand;
         if ((this->*checkCommandEnd)()) {
-            if ((m_currentCommand == SD2Snes::opcode::GET || m_currentCommand == SD2Snes::opcode::VGET))
+            if (m_currentCommand == SD2Snes::opcode::GET)
             {
                 if (dataRead.size() == dataReceived.size())
                     emit getDataReceived(dataRead.mid(512, m_getSize));
                 else
                     emit getDataReceived(dataRead.left(bytesReceived - m_getSize));
             }
+            if (m_currentCommand == SD2Snes::opcode::VGET)
+            {
+                if (dataRead.size() == dataReceived.size())
+                    emit getDataReceived(dataRead);
+                else
+                    emit getDataReceived(dataRead.left(m_getSize % 64));
+            }
             goto LcmdFinished;
         } else {
             if ((m_currentCommand == SD2Snes::opcode::GET || m_currentCommand == SD2Snes::opcode::VGET))
             {
-                if (firstBlock)
+                if (firstBlock && (m_commandFlags & SD2Snes::server_flags::NORESP) == 0)
                     emit getDataReceived(dataRead.mid(512));
                 else
                     emit getDataReceived(dataRead);
@@ -191,15 +200,19 @@ bool USBConnection::checkEndForLs()
 bool    USBConnection::checkEndForGet()
 {
     quint64 cmp_size = m_getSize;
-    if (m_getSize % 512 != 0)
-        cmp_size = (m_getSize / 512) * 512 + 512;
+    if (m_getSize % blockSize != 0)
+        cmp_size = (m_getSize / blockSize) * blockSize + blockSize;
     sDebug() << cmp_size;
-    return bytesReceived == cmp_size + 512;
+    if (m_commandFlags & SD2Snes::server_flags::NORESP)
+        return bytesReceived == cmp_size;
+    else
+        return bytesReceived == cmp_size + blockSize;
 }
 
 void    USBConnection::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray& arg, const QByteArray arg2 = QByteArray())
 {
     unsigned int filer_size = 512 - 7;
+    blockSize = 512;
     m_commandFlags = flags;
     sDebug() << "CMD : " << opcode << space << flags << arg;
     QByteArray data("USBA");
@@ -221,7 +234,10 @@ void    USBConnection::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space,
 void    USBConnection::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags,
                                     const QList<QPair<unsigned int, quint8> >& args)
 {
-    unsigned int filer_size = 512 - 7;
+    unsigned int filer_size = 64 - 7;
+    // SD2Snes expect this flags for vget and vput
+    flags |= SD2Snes::server_flags::DATA64B | SD2Snes::server_flags::NORESP;
+    blockSize = 64;
     m_commandFlags = flags;
     sDebug() << "CMD : " << opcode << space << flags << args;
     QByteArray data("USBA");
@@ -230,14 +246,18 @@ void    USBConnection::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space
     data.append((char) flags);
     data.append(QByteArray().fill(0, filer_size));
     unsigned int i = 0;
+    unsigned int tsize = 0;
     foreach (auto infos, args) {
         data[32 + i * 4] = infos.second;
         data[33 + i * 4] = (infos.first >> 16) & 0xFF;
         data[34 + i * 4] = (infos.first >> 8) & 0xFF;
         data[35 + i * 4] = infos.first & 0xFF;
         i++;
+        tsize += infos.second;
     }
     sDebug() << "VCMD Sending : " << data;
+    if (opcode == SD2Snes::opcode::VGET)
+        m_getSize = tsize;
     m_state = BUSY;
     m_currentCommand = opcode;
     writeData(data);

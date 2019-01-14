@@ -44,7 +44,27 @@ Project {
             name : "Qt";
             submodules : ["gui", "core", "widgets", "network", "serialport", "websockets"]
         }
-    }/*
+    }
+
+    QtApplication {
+        name : "TestQUsb2Snes"
+        cpp.cxxLanguageVersion: "c++11"
+        files: [
+            "testmain.cpp",
+            "client/usb2snes.h",
+            "client/usb2snes.cpp",
+        ]
+
+        Group {     // Properties for the produced executable
+            fileTagsFilter: "application"
+            qbs.install: true
+        }
+        Depends {
+            name : "Qt";
+            submodules : ["core", "network", "websockets"]
+        }
+    }
+    /*
     Product {
         name : "deploy"
         Depends {

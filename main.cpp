@@ -71,7 +71,7 @@ int main(int ac, char *ag[])
     if (mlog.open(QIODevice::WriteOnly | QIODevice::Text))
         qInstallMessageHandler(myMessageOutput);
     QApplication::setApplicationName("QUsb2Snes");
-    QApplication::setApplicationVersion("0.4");
+    QApplication::setApplicationVersion("0.5");
     if (app.arguments().size() == 2 && app.arguments().at(1) == "-nogui")
     {
             QTimer::singleShot(100, &startServer);

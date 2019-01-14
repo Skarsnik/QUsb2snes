@@ -296,7 +296,7 @@ void WSServer::onDeviceGetDataReceived(QByteArray data)
     devicesInfos[device].currentWS->sendBinaryMessage(data);
 }
 
-// FIXME Why this exist?
+// Used for Get File
 void WSServer::onDeviceSizeGet(unsigned int size)
 {
     ADevice*  device = qobject_cast<ADevice*>(sender());

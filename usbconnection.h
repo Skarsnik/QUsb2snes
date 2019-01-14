@@ -61,13 +61,15 @@ private:
     QSerialPort m_port;
 
     QByteArray  dataReceived;
-    int responseSizeExpected;
-    int bytesReceived;
-    bool    fileGetCmd;
-    bool    isGetCmd;
+    int         responseSizeExpected;
+    int         bytesReceived;
+    bool        fileGetCmd;
+    bool        isGetCmd;
+    quint16     blockSize;
+
     SD2Snes::opcode m_currentCommand;
-    unsigned char    m_commandFlags;
-    quint64     m_getSize;
+    unsigned char   m_commandFlags;
+    qint64         m_getSize;
 
 
     bool    (USBConnection::*checkCommandEnd)();

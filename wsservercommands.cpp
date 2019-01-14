@@ -93,8 +93,8 @@ void    WSServer::executeRequest(MRequest *req)
     }
     case USB2SnesWS::GetFile : {
         CMD_TAKE_ONE_ARG("GetFile")
-        connect(device, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onDeviceGetDataReceived(QByteArray)));
-        connect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)));
+        connect(device, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onDeviceGetDataReceived(QByteArray)), Qt::UniqueConnection);
+        connect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)), Qt::UniqueConnection);
         device->fileCommand(SD2Snes::opcode::GET, req->arguments.at(0).toLatin1());
         req->state = RequestState::WAITINGREPLY;
         break;
@@ -147,19 +147,35 @@ void    WSServer::executeRequest(MRequest *req)
             clientError(ws);
             return ;
         }
-        connect(device, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onDeviceGetDataReceived(QByteArray)));
+        connect(device, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onDeviceGetDataReceived(QByteArray)), Qt::UniqueConnection);
         //connect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)));
         bool    ok;
         if (req->arguments.size() == 2)
         {
             device->getAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
         } else {
-            QList<QPair<unsigned int, quint8> > pairs;
+
+            QList<QPair<unsigned int, unsigned int> > pairs;
             for (unsigned int i = 0; i < req->arguments.size(); i += 2)
             {
-                pairs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUShort(&ok, 16)));
+                pairs.append(QPair<unsigned int, unsigned int>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUInt(&ok, 16)));
             }
-            device->getAddrCommand(req->space, pairs);
+            //device->getAddrCommand(req->space, pairs);*/
+            // FIXME this is a meh workaround, but it works I guess?
+            device->getAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+            for (unsigned int i = 1; i < pairs.size(); i++)
+            {
+                    MRequest* newReq = new MRequest();
+                    newReq->owner = ws;
+                    newReq->state = RequestState::NEW;
+                    newReq->space = SD2Snes::space::SNES;
+                    newReq->timeCreated = QTime::currentTime();
+                    newReq->wasPending = false;
+                    newReq->opcode = USB2SnesWS::GetAddress;
+                    newReq->arguments.append(QString::number(pairs.at(i).first, 16));
+                    newReq->arguments.append(QString::number(pairs.at(i).second, 16));
+                    pendingRequests[device].append(newReq);
+            }
         }
         req->state = RequestState::WAITINGREPLY;
         break;
@@ -390,7 +406,7 @@ void    WSServer::processIpsData(QWebSocket* ws)
         newReq->state = RequestState::NEW;
         newReq->space = SD2Snes::space::SNES;
         newReq->timeCreated = QTime::currentTime();
-                newReq->wasPending = false;
+        newReq->wasPending = false;
         newReq->opcode = USB2SnesWS::PutAddress;
         // Special stuff for patch that install stuff in the NMI of sd2snes
         if (cpt == 0 && ipsReq->arguments.at(0) == "hook")
