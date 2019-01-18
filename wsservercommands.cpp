@@ -1,5 +1,5 @@
 #include "ipsparse.h"
-#include "usbconnection.h"
+#include "sd2snesdevice.h"
 #include "wsserver.h"
 #include <QLoggingCategory>
 #include <QSerialPortInfo>
@@ -361,7 +361,7 @@ void WSServer::cmdAttach(MRequest *req)
     {
         QString nPort = deviceToAttach;
         nPort.replace("SD2SNES ", "");
-        ADevice* newDev = new USBConnection(nPort);
+        ADevice* newDev = new SD2SnesDevice(nPort);
         if (!newDev->open())
         {
             setError(ErrorType::CommandError, "Attach: Can't open the device on " + deviceToAttach);

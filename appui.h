@@ -1,7 +1,7 @@
 #ifndef APPUI_H
 #define APPUI_H
 
-#include "luabridge.h"
+#include "luabridgedevice.h"
 #include "retroarchdevice.h"
 #include "snesclassic.h"
 
@@ -41,7 +41,7 @@ private:
     QAction*            retroarchAction;
     QAction*            snesClassicAction;
     QAction*            luaBridgeAction;
-    LuaBridge*          luaBridgeDevice;
+    LuaBridgeDevice*          luaBridgeDevice;
     RetroarchDevice*    retroarchDevice;
     SNESClassic*        snesClassicDevice;
     QSettings*          settings;

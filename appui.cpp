@@ -57,7 +57,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     }
     if (settings->value("luabridge").toBool())
     {
-        luaBridgeDevice = new LuaBridge();
+        luaBridgeDevice = new LuaBridgeDevice();
         wsServer.addDevice(luaBridgeDevice);
         luaBridgeAction->setChecked(true);
     }
@@ -118,7 +118,7 @@ void AppUi::onLuaBridgeTriggered(bool checked)
     if (checked == true)
     {
         if (luaBridgeDevice == nullptr)
-            luaBridgeDevice = new LuaBridge();
+            luaBridgeDevice = new LuaBridgeDevice();
         wsServer.addDevice(luaBridgeDevice);
     } else {
         wsServer.removeDevice(luaBridgeDevice);

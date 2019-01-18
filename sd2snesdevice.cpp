@@ -1,12 +1,12 @@
 #include <QDebug>
 #include <QLoggingCategory>
-#include "usbconnection.h"
+#include "sd2snesdevice.h"
 
 Q_LOGGING_CATEGORY(log_usbco, "USBCO")
 #define sDebug() qCDebug(log_usbco)
 
 
-USBConnection::USBConnection(QString portName)
+SD2SnesDevice::SD2SnesDevice(QString portName)
 {
     m_port.setPortName(portName);
     //m_port.baudRate();
@@ -22,7 +22,7 @@ USBConnection::USBConnection(QString portName)
     blockSize = 512;
 }
 
-bool USBConnection::open()
+bool SD2SnesDevice::open()
 {
     bool toret = m_port.open(QIODevice::ReadWrite);
     sDebug() << "Opening Serial connection : " << toret;
@@ -39,7 +39,7 @@ bool USBConnection::open()
     return toret;
 }
 
-void USBConnection::close()
+void SD2SnesDevice::close()
 {
     m_port.setDataTerminalReady(false);
     if (m_state != CLOSED)
@@ -47,7 +47,7 @@ void USBConnection::close()
     m_state = CLOSED;
 }
 
-void USBConnection::spReadyRead()
+void SD2SnesDevice::spReadyRead()
 {
     static QByteArray   responseBlock = QByteArray();
     static bool         firstBlock = true;
@@ -152,7 +152,7 @@ LcmdFinished :
     emit commandFinished();
 }
 
-void USBConnection::spErrorOccurred(QSerialPort::SerialPortError err)
+void SD2SnesDevice::spErrorOccurred(QSerialPort::SerialPortError err)
 {
     sDebug() << "Error " << err << m_port.errorString();
     if (err == QSerialPort::NoError)
@@ -165,17 +165,17 @@ void USBConnection::spErrorOccurred(QSerialPort::SerialPortError err)
     emit closed();
 }
 
-void    USBConnection::onRTSChanged(bool set)
+void    SD2SnesDevice::onRTSChanged(bool set)
 {
     sDebug() << "RTS changed : " << set;
 }
 
-void USBConnection::onDTRChanged(bool set)
+void SD2SnesDevice::onDTRChanged(bool set)
 {
     sDebug() << "DTR changed : " << set;
 }
 
-bool USBConnection::checkEndForLs()
+bool SD2SnesDevice::checkEndForLs()
 {
     if (dataReceived.size() == 512)
         return false;
@@ -197,7 +197,7 @@ bool USBConnection::checkEndForLs()
     return true;
 }
 
-bool    USBConnection::checkEndForGet()
+bool    SD2SnesDevice::checkEndForGet()
 {
     quint64 cmp_size = m_getSize;
     if (m_getSize % blockSize != 0)
@@ -209,7 +209,7 @@ bool    USBConnection::checkEndForGet()
         return bytesReceived == cmp_size + blockSize;
 }
 
-void    USBConnection::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray& arg, const QByteArray arg2 = QByteArray())
+void    SD2SnesDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray& arg, const QByteArray arg2 = QByteArray())
 {
     unsigned int filer_size = 512 - 7;
     blockSize = 512;
@@ -231,7 +231,7 @@ void    USBConnection::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space,
     writeData(data);
 }
 
-void    USBConnection::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags,
+void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags,
                                     const QList<QPair<unsigned int, quint8> >& args)
 {
     unsigned int filer_size = 64 - 7;
@@ -263,18 +263,18 @@ void    USBConnection::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space
     writeData(data);
 }
 
-void USBConnection::infoCommand()
+void SD2SnesDevice::infoCommand()
 {
     responseSizeExpected = 512;
     sendCommand(SD2Snes::opcode::INFO, SD2Snes::space::FILE, SD2Snes::server_flags::NONE, QByteArray());
 }
 
-bool USBConnection::canAttach()
+bool SD2SnesDevice::canAttach()
 {
     return true;
 }
 
-void USBConnection::writeData(QByteArray data)
+void SD2SnesDevice::writeData(QByteArray data)
 {
     //sDebug() << ">>" << data.size() << data;
     if (data.size() < 512)
@@ -288,36 +288,36 @@ void USBConnection::writeData(QByteArray data)
     m_port.flush();
 }
 
-QString USBConnection::name() const
+QString SD2SnesDevice::name() const
 {
     return "SD2SNES " + m_port.portName();
 }
 
-bool USBConnection::hasFileCommands()
+bool SD2SnesDevice::hasFileCommands()
 {
     return true;
 }
 
-bool USBConnection::hasControlCommands()
+bool SD2SnesDevice::hasControlCommands()
 {
     return true;
 }
 
 
-void    USBConnection::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
+void    SD2SnesDevice::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
 {
     responseSizeExpected = 512;
     if (op == SD2Snes::opcode::LS)
     {
         responseSizeExpected = -1;
-        checkCommandEnd = &USBConnection::checkEndForLs;
+        checkCommandEnd = &SD2SnesDevice::checkEndForLs;
     }
     if (op == SD2Snes::opcode::GET)
     {
         responseSizeExpected = -1;
         m_getSize = 0;
         fileGetCmd = true;
-        checkCommandEnd = &USBConnection::checkEndForGet;
+        checkCommandEnd = &SD2SnesDevice::checkEndForGet;
     }
     if (args.size() != 2)
         sendCommand(op, SD2Snes::space::FILE, SD2Snes::server_flags::NONE, args[0]);
@@ -325,14 +325,14 @@ void    USBConnection::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
         sendCommand(op, SD2Snes::space::FILE, SD2Snes::server_flags::NONE, args[0], args[1]);
 }
 
-void USBConnection::fileCommand(SD2Snes::opcode op, QByteArray args)
+void SD2SnesDevice::fileCommand(SD2Snes::opcode op, QByteArray args)
 {
     QVector<QByteArray> p;
     p.append(args);
     fileCommand(op, p);
 }
 
-void USBConnection::controlCommand(SD2Snes::opcode op, QByteArray args)
+void SD2SnesDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
 {
     responseSizeExpected = 512;
     sendCommand(op, SD2Snes::space::SNES, SD2Snes::server_flags::NONE, args);
@@ -351,7 +351,7 @@ static QByteArray   int24ToData(quint32 number)
 }
 
 
-void USBConnection::putFile(QByteArray name, unsigned int size)
+void SD2SnesDevice::putFile(QByteArray name, unsigned int size)
 {
     QByteArray data = int24ToData(size);
     responseSizeExpected = 512;
@@ -361,31 +361,31 @@ void USBConnection::putFile(QByteArray name, unsigned int size)
 }
 
 
-void USBConnection::getSetAddrCommand(SD2Snes::opcode op, unsigned int addr, unsigned int size)
+void SD2SnesDevice::getSetAddrCommand(SD2Snes::opcode op, unsigned int addr, unsigned int size)
 {
 
 }
 
-void USBConnection::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
+void SD2SnesDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
     responseSizeExpected = -1;
     m_getSize = 0;
-    checkCommandEnd = &USBConnection::checkEndForGet;
+    checkCommandEnd = &SD2SnesDevice::checkEndForGet;
     QByteArray data1 = int24ToData(addr);
     QByteArray data2 = int24ToData(size);
     sendCommand(SD2Snes::opcode::GET, space, SD2Snes::server_flags::NONE, data1, data2);
 }
 
 
-void USBConnection::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
+void SD2SnesDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
 {
     responseSizeExpected = -1;
     m_getSize = 0;
-    checkCommandEnd = &USBConnection::checkEndForGet;
+    checkCommandEnd = &SD2SnesDevice::checkEndForGet;
     sendVCommand(SD2Snes::opcode::VGET, space, SD2Snes::server_flags::NONE, args);
 }
 
-void USBConnection::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
+void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
     responseSizeExpected = 512;
     QByteArray data1 = int24ToData(addr);
@@ -393,13 +393,13 @@ void USBConnection::putAddrCommand(SD2Snes::space space, unsigned int addr, unsi
     sendCommand(SD2Snes::opcode::PUT, space, SD2Snes::server_flags::NONE, data1, data2);
 }
 
-void USBConnection::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> >& args)
+void SD2SnesDevice::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> >& args)
 {
     responseSizeExpected = 512;
     sendVCommand(SD2Snes::opcode::VPUT, space, SD2Snes::server_flags::NONE, args);
 }
 
-void USBConnection::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
+void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
 {
     responseSizeExpected = 512;
     QByteArray data1 = int24ToData(addr);
@@ -407,7 +407,7 @@ void USBConnection::putAddrCommand(SD2Snes::space space, unsigned char flags, un
     sendCommand(SD2Snes::opcode::PUT, space, flags, data1, data2);
 }
 
-QList<ADevice::FileInfos>    USBConnection::parseLSCommand(QByteArray& dataI)
+QList<ADevice::FileInfos>    SD2SnesDevice::parseLSCommand(QByteArray& dataI)
 {
     QList<FileInfos>  infos;
     QByteArray data = dataI.mid(512);
@@ -439,7 +439,7 @@ QList<ADevice::FileInfos>    USBConnection::parseLSCommand(QByteArray& dataI)
     return infos;
 }
 
-USB2SnesInfo USBConnection::parseInfo(const QByteArray& data)
+USB2SnesInfo SD2SnesDevice::parseInfo(const QByteArray& data)
 {
     sDebug() << "Parse infos";
     USB2SnesInfo info;
