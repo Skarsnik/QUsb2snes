@@ -87,6 +87,11 @@ void WSServer::removeDevice(ADevice *device)
     // TODO remove and disconnect WS
 }
 
+void WSServer::addDeviceFactory(DeviceFactory *devFact)
+{
+    deviceFactories.append(devFact);
+}
+
 
 QList<WSServer::MiniDeviceInfos> WSServer::getDevicesInfo()
 {

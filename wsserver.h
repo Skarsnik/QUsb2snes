@@ -8,6 +8,7 @@
 #include <QLoggingCategory>
 #include <QMetaEnum>
 #include "adevice.h"
+#include "devicefactory.h"
 #include "retroarchdevice.h"
 
 Q_DECLARE_LOGGING_CATEGORY(log_wsserver)
@@ -98,6 +99,7 @@ public:
     QString&  errorString() const;
     void        addDevice(ADevice* device);
     void        removeDevice(ADevice* device);
+    void        addDeviceFactory(DeviceFactory* devFact);
     QList<MiniDeviceInfos>  getDevicesInfo();
 
 signals:
@@ -126,6 +128,7 @@ private:
     QWebSocketServer*                   wsServer;
     QMap<QWebSocket*, WSInfos>          wsInfos;
     QList<ADevice*>                     devices;
+    QList<DeviceFactory*>               deviceFactories;
     QMap<ADevice*, DeviceInfos>         devicesInfos;
     QMap<ADevice*, MRequest*>           currentRequests;
     QString                             m_errorString;

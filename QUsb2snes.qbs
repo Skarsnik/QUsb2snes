@@ -16,6 +16,8 @@ Project {
             "devicefactory.h",
             "ipsparse.cpp",
             "ipsparse.h",
+            "luabridge.cpp",
+            "luabridge.h",
             "luabridgedevice.cpp",
             "luabridgedevice.h",
             "main.cpp",

@@ -25,7 +25,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     menu->addAction(QIcon(":/img/icon64x64.ico"), "QUsb2Snes v" + QApplication::applicationVersion());
     menu->addSeparator();
     retroarchDevice = nullptr;
-    luaBridgeDevice = nullptr;
+    luaBridge = nullptr;
     snesClassicDevice = nullptr;
 
     deviceMenu = menu->addMenu(QIcon(":/img/deviceicon.svg"), "Devices");
@@ -57,8 +57,8 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     }
     if (settings->value("luabridge").toBool())
     {
-        luaBridgeDevice = new LuaBridgeDevice();
-        wsServer.addDevice(luaBridgeDevice);
+        luaBridge = new LuaBridge();
+        wsServer.addDeviceFactory(luaBridge);
         luaBridgeAction->setChecked(true);
     }
     if (settings->value("snesclassic").toBool())
@@ -117,11 +117,11 @@ void AppUi::onLuaBridgeTriggered(bool checked)
 {
     if (checked == true)
     {
-        if (luaBridgeDevice == nullptr)
-            luaBridgeDevice = new LuaBridgeDevice();
-        wsServer.addDevice(luaBridgeDevice);
+        if (luaBridge == nullptr)
+            luaBridge = new LuaBridge();
+            wsServer.addDeviceFactory(luaBridge);
     } else {
-        wsServer.removeDevice(luaBridgeDevice);
+        //wsServer.removeDevice(luaBridgeDevice);
     }
     settings->setValue("luabridge", checked);
 }

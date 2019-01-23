@@ -1,4 +1,4 @@
-#include "luabridge.h"
+#include "luabridgedevice.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -7,20 +7,20 @@
 
 #include "rommapping/rommapping.h"
 
-Q_LOGGING_CATEGORY(log_luaBridge, "LUABridge")
-#define sDebug() qCDebug(log_luaBridge)
+Q_LOGGING_CATEGORY(log_luaBridgeDevice, "LUABridgeDevice")
+#define sDebug() qCDebug(log_luaBridgeDevice)
 
-LuaBridge::LuaBridge()
+LuaBridgeDevice::LuaBridgeDevice(QTcpSocket* sock, QString name)
 {
-    tcpServer = new QTcpServer(this);
-    connect(tcpServer, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
     timer.setInterval(3);
     timer.setSingleShot(true);
     m_state = CLOSED;
+    m_socket = sock;
     connect(&timer, SIGNAL(timeout()), this, SLOT(onTimerOut()));
-    tcpServer->listen(QHostAddress("127.0.0.1"), 65398);
-    sDebug() << "LUA bridge created";
-    client = nullptr;
+    connect(m_socket, SIGNAL(readyRead()), this, SLOT(onClientReadyRead()));
+    m_name = name;
+    sDebug() << "LUA bridge device created";
+
 }
 
 static unsigned int usb2snes_addr_to_snes(unsigned int addr)
@@ -32,38 +32,38 @@ static unsigned int usb2snes_addr_to_snes(unsigned int addr)
     return rommapping_pc_to_snes(addr, LoROM, false);
 }
 
-void LuaBridge::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
+void LuaBridgeDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
     QByteArray toWrite = "Read|" + QByteArray::number(usb2snes_addr_to_snes(addr)) + "|" + QByteArray::number(size) + "\n";
     sDebug() << ">>" << toWrite;
-    sDebug() << "Writen" << client->write(toWrite) << "Bytes";
+    sDebug() << "Writen" << m_socket->write(toWrite) << "Bytes";
     m_state = BUSY;
 }
 
-void LuaBridge::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
+void LuaBridgeDevice::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
     m_state = BUSY;
     putAddr = addr;
     putSize = size;
 }
 
-void LuaBridge::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
+void LuaBridgeDevice::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
 {
 }
 
-void LuaBridge::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
+void LuaBridgeDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
 {
     putAddrCommand(space, addr, size);
 }
 
 
-void LuaBridge::infoCommand()
+void LuaBridgeDevice::infoCommand()
 {
     m_state = BUSY;
     timer.start();
 }
 
-void LuaBridge::writeData(QByteArray data)
+void LuaBridgeDevice::writeData(QByteArray data)
 {
     static unsigned int receivedSize = 0;
     static QByteArray received = QByteArray();
@@ -76,7 +76,7 @@ void LuaBridge::writeData(QByteArray data)
             toSend += "|" + QByteArray::number((unsigned char) data.at(i));
         toSend += "\n";
         sDebug() << ">>" << toSend;
-        client->write(toSend);
+        m_socket->write(toSend);
         emit commandFinished();
         receivedSize = 0;
         received.clear();
@@ -84,22 +84,22 @@ void LuaBridge::writeData(QByteArray data)
     }
 }
 
-QString LuaBridge::name() const
+QString LuaBridgeDevice::name() const
 {
-    return "EMU SNES9X";
+    return m_name;
 }
 
-bool LuaBridge::hasFileCommands()
-{
-    return false;
-}
-
-bool LuaBridge::hasControlCommands()
+bool LuaBridgeDevice::hasFileCommands()
 {
     return false;
 }
 
-USB2SnesInfo LuaBridge::parseInfo(const QByteArray &data)
+bool LuaBridgeDevice::hasControlCommands()
+{
+    return false;
+}
+
+USB2SnesInfo LuaBridgeDevice::parseInfo(const QByteArray &data)
 {
     USB2SnesInfo info;
     info.romPlaying = "No Info";
@@ -107,49 +107,40 @@ USB2SnesInfo LuaBridge::parseInfo(const QByteArray &data)
     return info;
 }
 
-QList<ADevice::FileInfos> LuaBridge::parseLSCommand(QByteArray &dataI)
+QList<ADevice::FileInfos> LuaBridgeDevice::parseLSCommand(QByteArray &dataI)
 {
     return QList<ADevice::FileInfos>();
 }
 
-bool LuaBridge::canAttach()
+QTcpSocket *LuaBridgeDevice::socket()
 {
-    if (client != nullptr)
-        return true;
-    m_attachError = "No LUAbridge lua script connected";
-    return false;
+    return m_socket;
 }
 
-bool LuaBridge::open()
+bool LuaBridgeDevice::open()
 {
     m_state = READY;
     return true;
 }
 
-void LuaBridge::close()
+void LuaBridgeDevice::close()
 {
-    tcpServer->close();
+    if (m_socket->state() == QAbstractSocket::ConnectedState)
+        m_socket->close();
 }
 
-void LuaBridge::onNewConnection()
-{
-    sDebug() << "Client connected";
-    client = tcpServer->nextPendingConnection();
-    connect(client, SIGNAL(readyRead()), this, SLOT(onClientReadyRead()));
-    connect(client, SIGNAL(disconnected()), this, SLOT(onClientDisconnected()));
-}
 
-void LuaBridge::onServerError()
+void LuaBridgeDevice::onServerError()
 {
     m_state = CLOSED;
     emit closed();
 }
 
-void LuaBridge::onClientReadyRead()
+void LuaBridgeDevice::onClientReadyRead()
 {
     static      QByteArray  dataRead = QByteArray();
 
-    QByteArray  data = client->readAll();
+    QByteArray  data = m_socket->readAll();
     dataRead += data;
 
     //sDebug() << "<<" << data;
@@ -171,16 +162,16 @@ void LuaBridge::onClientReadyRead()
     }
 }
 
-void LuaBridge::onClientDisconnected()
+void LuaBridgeDevice::onClientDisconnected()
 {
     sDebug() << "Client disconnected";
-    client->deleteLater();
+    m_socket->deleteLater();
     m_state = CLOSED;
-    client = nullptr;
+    m_socket = nullptr;
     emit closed();
 }
 
-void LuaBridge::onTimerOut()
+void LuaBridgeDevice::onTimerOut()
 {
     m_state = READY;
     sDebug() << "Fake command finished";
@@ -189,28 +180,28 @@ void LuaBridge::onTimerOut()
 
 
 
-void LuaBridge::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
+void LuaBridgeDevice::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
 {
 }
 
-void LuaBridge::fileCommand(SD2Snes::opcode op, QByteArray args)
+void LuaBridgeDevice::fileCommand(SD2Snes::opcode op, QByteArray args)
 {
 }
 
-void LuaBridge::controlCommand(SD2Snes::opcode op, QByteArray args)
+void LuaBridgeDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
 {
 }
 
-void LuaBridge::putFile(QByteArray name, unsigned int size)
+void LuaBridgeDevice::putFile(QByteArray name, unsigned int size)
 {
 }
 
-void LuaBridge::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray &arg, const QByteArray arg2)
+void LuaBridgeDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray &arg, const QByteArray arg2)
 {
 }
 
 
 
-void LuaBridge::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
+void LuaBridgeDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
 {
 }

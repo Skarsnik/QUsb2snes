@@ -6,12 +6,12 @@
 #include <QVector>
 #include "adevice.h"
 
-class USBConnection : public ADevice
+class SD2SnesDevice : public ADevice
 {
     Q_OBJECT
 public:
 
-    explicit USBConnection(QString portName);
+    explicit SD2SnesDevice(QString portName);
 
     void            fileCommand(SD2Snes::opcode op, QVector<QByteArray> args);
     void            fileCommand(SD2Snes::opcode op, QByteArray args);
@@ -72,7 +72,7 @@ private:
     qint64         m_getSize;
 
 
-    bool    (USBConnection::*checkCommandEnd)();
+    bool    (SD2SnesDevice::*checkCommandEnd)();
 
     bool    checkEndForLs();
 

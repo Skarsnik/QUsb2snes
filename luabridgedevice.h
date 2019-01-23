@@ -1,5 +1,5 @@
-#ifndef LUABRIDGE_H
-#define LUABRIDGE_H
+#ifndef LUABRIDGEDEVICE_H
+#define LUABRIDGEDEVICE_H
 
 #include "adevice.h"
 
@@ -8,12 +8,12 @@
 #include <QTcpSocket>
 #include <QTimer>
 
-class LuaBridge : public ADevice
+class LuaBridgeDevice : public ADevice
 {
     Q_OBJECT
 public:
 
-    LuaBridge();
+    LuaBridgeDevice(QTcpSocket* m_socket, QString name);
 
     // ADevice interface
 public:
@@ -32,27 +32,26 @@ public:
     QString name() const;
     bool hasFileCommands();
     bool hasControlCommands();
-    bool canAttach();
     USB2SnesInfo parseInfo(const QByteArray &data);
     QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI);
+    QTcpSocket* socket();
 
 public slots:
     bool open();
     void close();
 
 private slots:
-    void    onNewConnection();
     void    onServerError();
     void    onClientReadyRead();
     void    onClientDisconnected();
     void    onTimerOut();
 
 private:
-    QTcpServer* tcpServer;
-    QTcpSocket* client;
-    QTimer      timer;
+    QTcpSocket*  m_socket;
+    QTimer       timer;
+    QString      m_name;
     unsigned int putAddr;
     unsigned int putSize;
 };
 
-#endif // LUABRIDGE_H
+#endif // LUABRIDGEDEVICE_H

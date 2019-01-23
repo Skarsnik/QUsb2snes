@@ -318,17 +318,9 @@ QStringList WSServer::getDevicesList()
 {
     QStringList toret;
     sDebug() << "Device List";
-    foreach (ADevice* dev, devices)
+    foreach (DeviceFactory* devFact, deviceFactories)
     {
-        if (dev->canAttach())
-            toret << dev->name();
-    }
-    // SD2Snes connection are created on attach
-    QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
-    foreach (QSerialPortInfo usbinfo, sinfos) {
-        sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
-        if (usbinfo.isBusy() == false && !toret.contains(QString("SD2SNES ") + usbinfo.portName()) && usbinfo.serialNumber() == "DEMO00000000")
-            toret << "SD2SNES " + usbinfo.portName();
+        toret.append(devFact->listDevices());
     }
     return toret;
 }
@@ -337,56 +329,46 @@ void WSServer::cmdAttach(MRequest *req)
 {
     QString deviceToAttach = req->arguments.at(0);
     wsInfos[req->owner].pendingAttach = true;
-    bool    portFound = false;
-    foreach (ADevice* bla, devices) {
-        if (bla->name() == deviceToAttach)
-        {
-            portFound = true;
-            sDebug() << "Found device" << bla->name() << "State : " << bla->state();
-            wsInfos[req->owner].attachedTo = bla;
-            if (bla->state() == ADevice::State::CLOSED)
-            {
-                sDebug() << "Trying to open device";
-                if (!bla->open())
-                {
-                    setError(ErrorType::CommandError, "Attach: Can't open the device on " + deviceToAttach);
-                    clientError(req->owner);
-                    return;
-                }
-            }
-            break;
-        }
-    }
-    if (!portFound)
+    ADevice* devGet = nullptr;
+
+    foreach (DeviceFactory* devFact, deviceFactories)
     {
-        QString nPort = deviceToAttach;
-        nPort.replace("SD2SNES ", "");
-        ADevice* newDev = new SD2SnesDevice(nPort);
-        if (!newDev->open())
+        devGet = devFact->attach(deviceToAttach);
+        if (devGet != nullptr)
+            break;
+        if (!devFact->attachError().isEmpty())
         {
-            setError(ErrorType::CommandError, "Attach: Can't open the device on " + deviceToAttach);
+            setError(ErrorType::CommandError, "Attach Error with " + deviceToAttach + " - " + devFact->attachError());
             clientError(req->owner);
             return ;
-        } else {
-            sDebug() << "Added a new low Connection" << deviceToAttach;
-            addDevice(newDev);
         }
     }
-    foreach (ADevice* dev, devices)
+    if (devGet != nullptr)
     {
-        if (dev->name() == deviceToAttach || (deviceToAttach.left(3) == "COM" && dev->name().right(4) == deviceToAttach))
+        sDebug() << "Found device" << devGet->name() << "State : " << devGet->state();
+        sDebug() << "Attaching " << wsInfos.value(req->owner).name <<  " to " << deviceToAttach;
+        if (devGet->state() == ADevice::State::CLOSED)
         {
-            sDebug() << "Attaching " << wsInfos.value(req->owner).name <<  " to " << deviceToAttach;
-            wsInfos[req->owner].attached = true;
-            wsInfos[req->owner].attachedTo = dev;
-            wsInfos[req->owner].pendingAttach = false;
-            processCommandQueue(dev);
-            return ;
+            sDebug() << "Trying to open device";
+            if (!devGet->open())
+            {
+                setError(ErrorType::CommandError, "Attach: Can't open the device on " + deviceToAttach);
+                clientError(req->owner);
+                return;
+            }
         }
+        if (!devices.contains(devGet))
+            addDevice(devGet);
+        wsInfos[req->owner].attached = true;
+        wsInfos[req->owner].attachedTo = devGet;
+        wsInfos[req->owner].pendingAttach = false;
+        processCommandQueue(devGet);
+        return ;
+    } else {
+        setError(ErrorType::CommandError, "Trying to Attach to an unknow device");
+        clientError(req->owner);
+        return ;
     }
-    setError(ErrorType::CommandError, "Trying to Attach to an unknow device");
-    clientError(req->owner);
-    return ;
 }
 
 void    WSServer::processIpsData(QWebSocket* ws)

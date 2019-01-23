@@ -1,5 +1,5 @@
 #include "appui.h"
-#include "usbconnection.h"
+#include "sd2snesdevice.h"
 #include "wsserver.h"
 
 #include <QSerialPortInfo>
