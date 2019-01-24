@@ -1,5 +1,4 @@
 #include "ipsparse.h"
-#include "sd2snesdevice.h"
 #include "wsserver.h"
 #include <QLoggingCategory>
 #include <QSerialPortInfo>

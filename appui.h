@@ -1,10 +1,10 @@
 #ifndef APPUI_H
 #define APPUI_H
 
-#include "luabridge.h"
-#include "luabridgedevice.h"
-#include "retroarchdevice.h"
-#include "snesclassic.h"
+#include "devices/luabridge.h"
+#include "devices/luabridgedevice.h"
+#include "devices/retroarchdevice.h"
+#include "devices/snesclassic.h"
 
 #include <QMenu>
 #include <QObject>

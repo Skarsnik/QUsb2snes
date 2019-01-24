@@ -11,7 +11,7 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #define sDebug() qCDebug(log_appUi)
 
 #include "appui.h"
-#include "snesclassic.h"
+#include "devices/snesclassic.h"
 #include "wsserver.h"
 
 

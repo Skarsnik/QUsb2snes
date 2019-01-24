@@ -9,7 +9,6 @@
 #include <QMetaEnum>
 #include "adevice.h"
 #include "devicefactory.h"
-#include "retroarchdevice.h"
 
 Q_DECLARE_LOGGING_CATEGORY(log_wsserver)
 

@@ -1,19 +1,17 @@
-#ifndef LUABRIDGEDEVICE_H
-#define LUABRIDGEDEVICE_H
+#ifndef SNESCLASSIC_H
+#define SNESCLASSIC_H
 
-#include "adevice.h"
+#include "../adevice.h"
 
 #include <QObject>
-#include <QTcpServer>
 #include <QTcpSocket>
 #include <QTimer>
 
-class LuaBridgeDevice : public ADevice
+class SNESClassic : public ADevice
 {
     Q_OBJECT
 public:
-
-    LuaBridgeDevice(QTcpSocket* m_socket, QString name);
+    SNESClassic();
 
     // ADevice interface
 public:
@@ -32,26 +30,38 @@ public:
     QString name() const;
     bool hasFileCommands();
     bool hasControlCommands();
+    bool canAttach();
     USB2SnesInfo parseInfo(const QByteArray &data);
     QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI);
-    QTcpSocket* socket();
 
 public slots:
     bool open();
     void close();
 
 private slots:
-    void    onServerError();
-    void    onClientReadyRead();
-    void    onClientDisconnected();
     void    onTimerOut();
+    void    onSocketReadReady();
+    void    onSocketDisconnected();
+    void    onAliveTimeout();
 
 private:
-    QTcpSocket*  m_socket;
-    QTimer       timer;
-    QString      m_name;
-    unsigned int putAddr;
-    unsigned int putSize;
+    QTimer              m_timer;
+    QTimer              alive_timer;
+    QTcpSocket          socket;
+    QByteArray          canoePid;
+    unsigned int        putAddr;
+    unsigned int        putSize;
+    unsigned int        romLocation;
+    unsigned int        sramLocation;
+    unsigned int        ramLocation;
+    bool                cmdWasGet;
+    unsigned int        getSize;
+    QByteArray          getData;
+
+    void                findMemoryLocations();
+    void                executeCommand(QByteArray toExec);
+    void                writeSocket(QByteArray toWrite);
+    QByteArray          readCommandReturns(QTcpSocket &msocket);
 };
 
-#endif // LUABRIDGEDEVICE_H
+#endif // SNESCLASSIC_H

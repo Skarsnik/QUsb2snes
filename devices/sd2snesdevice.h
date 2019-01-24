@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QSerialPort>
 #include <QVector>
-#include "adevice.h"
+#include "../adevice.h"
 
 class SD2SnesDevice : public ADevice
 {

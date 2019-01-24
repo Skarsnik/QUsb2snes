@@ -5,7 +5,7 @@
 #include <QJsonObject>
 #include <QLoggingCategory>
 
-#include "rommapping/rommapping.h"
+#include "../rommapping/rommapping.h"
 
 Q_LOGGING_CATEGORY(log_luaBridgeDevice, "LUABridgeDevice")
 #define sDebug() qCDebug(log_luaBridgeDevice)
