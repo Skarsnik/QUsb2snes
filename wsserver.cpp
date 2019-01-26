@@ -54,6 +54,7 @@ void WSServer::onNewConnection()
     wi.recvData.clear();
     wi.ipsSize = 0;
     wsInfos[newSocket] = wi;
+    sDebug() << "New connection " << wi.name << newSocket->origin() << newSocket->peerAddress();
 }
 
 void WSServer::onWSError(QWebSocketProtocol::CloseCode code)
@@ -280,13 +281,18 @@ void WSServer::onDeviceCommandFinished()
 void WSServer::onDeviceProtocolError()
 {
     ADevice*  device = qobject_cast<ADevice*>(sender());
+    sDebug() << "Device Error";
     setError(ProtocolError, "Error in device protocol");
+    disconnect(device, &ADevice::closed, this, &WSServer::onDeviceClosed);
     cleanUpDevice(device);
 }
 
 void WSServer::onDeviceClosed()
 {
-    cleanUpDevice(qobject_cast<ADevice*>(sender()));
+    ADevice* dev = qobject_cast<ADevice*>(sender());
+    sDebug() << "Device closed" << dev->name();
+    disconnect(dev, &ADevice::closed, this, &WSServer::onDeviceClosed);
+    cleanUpDevice(dev);
 }
 
 void WSServer::onDeviceGetDataReceived(QByteArray data)
@@ -378,9 +384,8 @@ WSServer::MRequest* WSServer::requestFromJSON(const QString &str)
 
 void WSServer::clientError(QWebSocket *ws)
 {
-    sDebug() << "Error with a ws client" << m_errorType << m_errorString;
+    sDebug() << "Error with a ws client " << wsInfos[ws].name << m_errorType << m_errorString;
     ws->close();
-    cleanUpSocket(ws);
     emit error();
 }
 
@@ -404,12 +409,15 @@ void    WSServer::cleanUpDevice(ADevice* device)
     }
     if (devInfo.currentWS != nullptr)
         devInfo.currentWS = nullptr;
+    DeviceFactory* devFact = mapDevFact[device];
+    mapDevFact.remove(device);
+    devFact->deleteDevice(device);
 }
 
 void WSServer::cleanUpSocket(QWebSocket *ws)
 {
     WSInfos wInfo = wsInfos.value(ws);
-    sDebug() << "Cleaning up " << wInfo.name;
+    sDebug() << "Cleaning up wsocket" << wInfo.name;
     if (wInfo.attached)
     {
         ADevice*    dev = wInfo.attachedTo;

@@ -128,6 +128,7 @@ private:
     QMap<QWebSocket*, WSInfos>          wsInfos;
     QList<ADevice*>                     devices;
     QList<DeviceFactory*>               deviceFactories;
+    QMap<ADevice*, DeviceFactory*>      mapDevFact;
     QMap<ADevice*, DeviceInfos>         devicesInfos;
     QMap<ADevice*, MRequest*>           currentRequests;
     QString                             m_errorString;

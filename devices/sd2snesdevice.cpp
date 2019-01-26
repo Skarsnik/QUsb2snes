@@ -2,8 +2,8 @@
 #include <QLoggingCategory>
 #include "sd2snesdevice.h"
 
-Q_LOGGING_CATEGORY(log_usbco, "USBCO")
-#define sDebug() qCDebug(log_usbco)
+Q_LOGGING_CATEGORY(log_sd2snes, "SD2SNES")
+#define sDebug() qCDebug(log_sd2snes())
 
 
 SD2SnesDevice::SD2SnesDevice(QString portName)
@@ -162,7 +162,6 @@ void SD2SnesDevice::spErrorOccurred(QSerialPort::SerialPortError err)
         m_state = CLOSED;
         m_port.close();
     }
-    emit closed();
 }
 
 void    SD2SnesDevice::onRTSChanged(bool set)

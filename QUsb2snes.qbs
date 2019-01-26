@@ -14,6 +14,8 @@ Project {
             "appui.h",
             "devicefactory.cpp",
             "devicefactory.h",
+            "devices/sd2snesfactory.cpp",
+            "devices/sd2snesfactory.h",
             "ipsparse.cpp",
             "ipsparse.h",
             "devices/luabridge.cpp",

@@ -334,7 +334,10 @@ void WSServer::cmdAttach(MRequest *req)
     {
         devGet = devFact->attach(deviceToAttach);
         if (devGet != nullptr)
+        {
+            mapDevFact[devGet] = devFact;
             break;
+        }
         if (!devFact->attachError().isEmpty())
         {
             setError(ErrorType::CommandError, "Attach Error with " + deviceToAttach + " - " + devFact->attachError());

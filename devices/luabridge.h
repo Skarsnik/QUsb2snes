@@ -15,7 +15,7 @@ public:
     // DeviceFactory interface
 public:
     QStringList listDevices();
-    void deleteDevice(ADevice *);
+    bool deleteDevice(ADevice *);
 
 private slots:
     void    onNewConnection();

@@ -25,6 +25,8 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     menu->addAction(QIcon(":/img/icon64x64.ico"), "QUsb2Snes v" + QApplication::applicationVersion());
     menu->addSeparator();
     retroarchDevice = nullptr;
+    sd2snesFactory = new SD2SnesFactory();
+    wsServer.addDeviceFactory(sd2snesFactory);
     luaBridge = nullptr;
     snesClassicDevice = nullptr;
 

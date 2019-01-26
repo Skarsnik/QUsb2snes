@@ -25,7 +25,7 @@ QStringList LuaBridge::listDevices()
     return toret;
 }
 
-void LuaBridge::deleteDevice(ADevice *dev)
+bool LuaBridge::deleteDevice(ADevice *dev)
 {
     LuaBridgeDevice* ldev = static_cast<LuaBridgeDevice*>(dev);
     m_devices.removeAll(dev);
@@ -34,6 +34,7 @@ void LuaBridge::deleteDevice(ADevice *dev)
     clients.removeAll(sock);
     dev->close();
     dev->deleteLater();
+    return true;
 }
 
 void LuaBridge::onNewConnection()

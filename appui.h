@@ -5,6 +5,7 @@
 #include "devices/luabridgedevice.h"
 #include "devices/retroarchdevice.h"
 #include "devices/snesclassic.h"
+#include "devices/sd2snesfactory.h"
 
 #include <QMenu>
 #include <QObject>
@@ -43,6 +44,7 @@ private:
     QAction*            snesClassicAction;
     QAction*            luaBridgeAction;
     LuaBridge*          luaBridge;
+    SD2SnesFactory*     sd2snesFactory;
     RetroarchDevice*    retroarchDevice;
     SNESClassic*        snesClassicDevice;
     QSettings*          settings;

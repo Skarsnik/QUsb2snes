@@ -12,7 +12,7 @@ public:
     virtual QStringList listDevices() = 0;
     QList<ADevice*>     getDevices();
     virtual ADevice*    attach(QString deviceName);
-    virtual void        deleteDevice(ADevice*) = 0;
+    virtual bool        deleteDevice(ADevice*) = 0;
     QString             attachError() const;
 
 signals:
