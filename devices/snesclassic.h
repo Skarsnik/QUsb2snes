@@ -11,7 +11,7 @@ class SNESClassic : public ADevice
 {
     Q_OBJECT
 public:
-    SNESClassic();
+    SNESClassic(QTcpSocket* sock);
 
     // ADevice interface
 public:
@@ -26,14 +26,17 @@ public:
     void putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size);
     void sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray &arg, const QByteArray arg2);
     void infoCommand();
+    void setState(ADevice::State state);
     void writeData(QByteArray data);
     QString name() const;
     bool hasFileCommands();
     bool hasControlCommands();
     bool canAttach();
+    void sockConnect();
     USB2SnesInfo parseInfo(const QByteArray &data);
     QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI);
-
+    void    setMemoryLocation(unsigned int ramLoc, unsigned int sramLoc, unsigned int romLoc);
+    QByteArray          canoePid;
 public slots:
     bool open();
     void close();
@@ -47,8 +50,8 @@ private slots:
 private:
     QTimer              m_timer;
     QTimer              alive_timer;
-    QTcpSocket          socket;
-    QByteArray          canoePid;
+    QTcpSocket*         socket;
+
     unsigned int        putAddr;
     unsigned int        putSize;
     unsigned int        romLocation;
@@ -61,7 +64,7 @@ private:
     void                findMemoryLocations();
     void                executeCommand(QByteArray toExec);
     void                writeSocket(QByteArray toWrite);
-    QByteArray          readCommandReturns(QTcpSocket &msocket);
+    QByteArray          readCommandReturns(QTcpSocket *msocket);
 };
 
 #endif // SNESCLASSIC_H

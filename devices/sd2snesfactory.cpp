@@ -31,6 +31,9 @@ QStringList SD2SnesFactory::listDevices()
 
 ADevice *SD2SnesFactory::attach(QString deviceName)
 {
+    if (deviceName.left(3) != "COM" && deviceName.left(7) != "SD2SNES")
+        return nullptr;
+
     // This is for apps that don't ask the device list
     if (deviceName.left(3) == "COM")
         deviceName = "SD2SNES " + deviceName;
@@ -42,6 +45,23 @@ ADevice *SD2SnesFactory::attach(QString deviceName)
     mapPortDev[deviceName] = newDev;
     m_devices.append(newDev);
     return newDev;
+}
+
+QString SD2SnesFactory::status()
+{
+    QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
+    foreach (QSerialPortInfo usbinfo, sinfos)
+    {
+        sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
+        if (usbinfo.serialNumber() == "DEMO00000000")
+                return "SD2SNES detected on " + usbinfo.portName();
+    }
+    return "No SD2Snes device detected";
+}
+
+QString SD2SnesFactory::name() const
+{
+    return "SD2Snes";
 }
 
 bool SD2SnesFactory::deleteDevice(ADevice *dev)

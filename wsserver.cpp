@@ -90,7 +90,23 @@ void WSServer::removeDevice(ADevice *device)
 
 void WSServer::addDeviceFactory(DeviceFactory *devFact)
 {
+    sDebug() << "Adding Device Factory " << devFact->name();
     deviceFactories.append(devFact);
+}
+
+QStringList WSServer::getClientsName(ADevice *dev)
+{
+    QStringList toret;
+    QMapIterator<QWebSocket*, WSInfos> wsIit(wsInfos);
+    while (wsIit.hasNext())
+    {
+        auto p = wsIit.next();
+        if (p.value().attachedTo == dev)
+        {
+            toret << p.value().name;
+        }
+    }
+    return toret;
 }
 
 

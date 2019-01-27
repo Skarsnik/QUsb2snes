@@ -16,6 +16,8 @@ public:
 public:
     QStringList listDevices();
     ADevice *attach(QString deviceName);
+    QString status();
+    QString name() const;
     bool deleteDevice(ADevice *);
 
 private:

@@ -4,6 +4,7 @@
 #include "devices/luabridge.h"
 #include "devices/luabridgedevice.h"
 #include "devices/retroarchdevice.h"
+#include "devices/snesclassicfactory.h"
 #include "devices/snesclassic.h"
 #include "devices/sd2snesfactory.h"
 
@@ -46,7 +47,7 @@ private:
     LuaBridge*          luaBridge;
     SD2SnesFactory*     sd2snesFactory;
     RetroarchDevice*    retroarchDevice;
-    SNESClassic*        snesClassicDevice;
+    SNESClassicFactory* snesClassic;
     QSettings*          settings;
     QMap<QString, QString>  regularApps;
 
@@ -54,6 +55,7 @@ private:
     void                handleMagic2Snes(QString path);
 
     void                addMagic2SnesFolder(QString path);
+    void addDevicesInfo(DeviceFactory *devFact);
 };
 
 #endif // APPUI_H

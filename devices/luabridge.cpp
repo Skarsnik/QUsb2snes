@@ -37,6 +37,16 @@ bool LuaBridge::deleteDevice(ADevice *dev)
     return true;
 }
 
+QString LuaBridge::status()
+{
+    return "Waiting for connection on 127.0.0.1:65398";
+}
+
+QString LuaBridge::name() const
+{
+    return "Lua Bridge";
+}
+
 void LuaBridge::onNewConnection()
 {
     QTcpSocket* newclient = server->nextPendingConnection();

@@ -28,7 +28,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     sd2snesFactory = new SD2SnesFactory();
     wsServer.addDeviceFactory(sd2snesFactory);
     luaBridge = nullptr;
-    snesClassicDevice = nullptr;
+    snesClassic = nullptr;
 
     deviceMenu = menu->addMenu(QIcon(":/img/deviceicon.svg"), "Devices");
     connect(deviceMenu, SIGNAL(aboutToShow()), this, SLOT(onMenuAboutToshow()));
@@ -65,8 +65,8 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     }
     if (settings->value("snesclassic").toBool())
     {
-        snesClassicDevice = new SNESClassic();
-        wsServer.addDevice(snesClassicDevice);
+        snesClassic = new SNESClassicFactory();
+        wsServer.addDeviceFactory(snesClassic);
         snesClassicAction->setChecked(true);
     }
     checkForApplications();
@@ -132,13 +132,35 @@ void AppUi::onSNESClassicTriggered(bool checked)
 {
     if (checked == true)
     {
-        if (snesClassicDevice == nullptr)
-            snesClassicDevice = new SNESClassic();
-        wsServer.addDevice(snesClassicDevice);
+        if (snesClassic == nullptr)
+            snesClassic = new SNESClassicFactory();
+        wsServer.addDeviceFactory(snesClassic);
     } else {
-        wsServer.removeDevice(snesClassicDevice);
+        //wsServer.removeDevice(snesClassic);
     }
     settings->setValue("snesclassic", checked);
+}
+
+void    AppUi::addDevicesInfo(DeviceFactory* devFact)
+{
+    QString statusString;
+
+    QList<ADevice*> devs = devFact->getDevices();
+    if (devs.isEmpty())
+    {
+        statusString = devFact->status();
+    } else {
+        foreach (ADevice* dev, devs)
+        {
+            statusString = dev->name();
+            QStringList clients = wsServer.getClientsName(dev);
+            if (clients.isEmpty())
+                statusString += " - No client connected";
+            else
+                statusString += " : " + clients.join(" - ");
+        }
+    }
+    deviceMenu->addAction(statusString);
 }
 
 void AppUi::onMenuAboutToshow()
@@ -146,21 +168,12 @@ void AppUi::onMenuAboutToshow()
     deviceMenu->clear();
     deviceMenu->addAction("Devices state");
     deviceMenu->addSeparator();
-    auto piko = wsServer.getDevicesInfo();
-    if (piko.isEmpty())
-        deviceMenu->addAction("No device")->setEnabled(false);
-    foreach(WSServer::MiniDeviceInfos dInfo, piko)
-    {
-        if (dInfo.usable)
-        {
-            if (dInfo.clients.isEmpty())
-                deviceMenu->addAction(dInfo.name + " - No client connected");
-            else
-                deviceMenu->addAction(dInfo.name + " : " + dInfo.clients.join(" - "));
-        } else {
-            deviceMenu->addAction(dInfo.name + " - " + dInfo.error)->setEnabled(false);
-        }
-    }
+    if (sd2snesFactory != nullptr)
+        addDevicesInfo(sd2snesFactory);
+    if (luaBridge != nullptr)
+        addDevicesInfo(luaBridge);
+    if (snesClassic != nullptr)
+        addDevicesInfo(snesClassic);
     deviceMenu->addSeparator();
     deviceMenu->addAction(retroarchAction);
     deviceMenu->addAction(luaBridgeAction);

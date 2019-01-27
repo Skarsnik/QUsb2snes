@@ -332,6 +332,7 @@ void WSServer::cmdAttach(MRequest *req)
 
     foreach (DeviceFactory* devFact, deviceFactories)
     {
+        sDebug() << devFact->name();
         devGet = devFact->attach(deviceToAttach);
         if (devGet != nullptr)
         {
@@ -347,7 +348,7 @@ void WSServer::cmdAttach(MRequest *req)
     }
     if (devGet != nullptr)
     {
-        sDebug() << "Found device" << devGet->name() << "State : " << devGet->state();
+        sDebug() << "Found device" << devGet->name() << "from" << mapDevFact[devGet]->name() << "State : " << devGet->state();
         sDebug() << "Attaching " << wsInfos.value(req->owner).name <<  " to " << deviceToAttach;
         if (devGet->state() == ADevice::State::CLOSED)
         {

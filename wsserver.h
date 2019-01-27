@@ -99,6 +99,7 @@ public:
     void        addDevice(ADevice* device);
     void        removeDevice(ADevice* device);
     void        addDeviceFactory(DeviceFactory* devFact);
+    QStringList getClientsName(ADevice* dev);
     QList<MiniDeviceInfos>  getDevicesInfo();
 
 signals:

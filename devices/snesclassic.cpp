@@ -10,17 +10,19 @@ Q_LOGGING_CATEGORY(log_snesclassic, "SNESClassic")
 #define SNES_CLASSIC_IP "169.254.13.37"
 //#define MEMSTUFF_PATH "/var/lib/hakchi/rootfs/memstuff"
 
-SNESClassic::SNESClassic()
+SNESClassic::SNESClassic(QTcpSocket* sock)
 {
     m_timer.setSingleShot(true);
     m_timer.setInterval(3);
     alive_timer.setInterval(2000);
+    //socket = new QTcpSocket();
+    socket = sock;
     connect(&alive_timer, SIGNAL(timeout()), this, SLOT(onAliveTimeout()));
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(onTimerOut()));
-    connect(&socket, SIGNAL(readyRead()), this, SLOT(onSocketReadReady()));
-    connect(&socket, SIGNAL(disconnected()), this, SLOT(onSocketDisconnected()));
+    connect(socket, SIGNAL(readyRead()), this, SLOT(onSocketReadReady()));
+    connect(socket, SIGNAL(disconnected()), this, SLOT(onSocketDisconnected()));
     sDebug() << "Creating SNES Classic device";
-    m_state = CLOSED;
+    m_state = READY;
     sramLocation = 0;
     romLocation = 0;
     ramLocation = 0;
@@ -35,7 +37,7 @@ void SNESClassic::onSocketReadReady()
 {
     if (m_state == CLOSED)
         return;
-    QByteArray data = socket.readAll();
+    QByteArray data = socket->readAll();
     sDebug() << "Read stuff on socket " << cmdWasGet << " : " << data.size();
     sDebug() << "<<" << data;
     if (cmdWasGet)
@@ -43,7 +45,7 @@ void SNESClassic::onSocketReadReady()
         getData += data;
         if (getData.left(9) == "\0\0ERROR\0\0" || (getSize == 9 && getData.left(10) == "\0\0ERROR\0\0\0"))
         {
-            socket.disconnectFromHost();
+            socket->disconnectFromHost();
             return ;
         }
         if (getData.size() == getSize)
@@ -60,7 +62,7 @@ void SNESClassic::onSocketReadReady()
         if (data == "OK\n")
             goto cmdFinished;
         if (data == "KO\n") // write command fail, let's close
-            socket.disconnectFromHost();
+            socket->disconnectFromHost();
     }
     return ;
 cmdFinished:
@@ -136,10 +138,15 @@ void SNESClassic::infoCommand()
     m_timer.start();
 }
 
+void SNESClassic::setState(ADevice::State state)
+{
+    m_state = state;
+}
+
 void SNESClassic::writeData(QByteArray data)
 {
     sDebug() << ">>" << data;
-    socket.write(data);
+    socket->write(data);
 }
 
 QString SNESClassic::name() const
@@ -170,6 +177,13 @@ QList<ADevice::FileInfos> SNESClassic::parseLSCommand(QByteArray &dataI)
     return QList<ADevice::FileInfos>();
 }
 
+void SNESClassic::setMemoryLocation(unsigned int ramLoc, unsigned int sramLoc, unsigned int romLoc)
+{
+    ramLocation = ramLoc;
+    sramLocation = sramLoc;
+    romLocation = romLoc;
+}
+
 bool SNESClassic::open()
 {
     return m_state == READY;
@@ -189,14 +203,14 @@ void SNESClassic::onTimerOut()
 void    SNESClassic::onAliveTimeout()
 {
     return ;
-    QTcpSocket tmpSock;
+    /*QTcpSocket tmpSock;
     tmpSock.connectToHost(SNES_CLASSIC_IP, 1042);
     sDebug() << "Alive timer connection : " << tmpSock.waitForConnected(50);
     tmpSock.write("CMD pidof canoe-shvc\n");
     QByteArray tmp = readCommandReturns(tmpSock);
     if (tmp.trimmed() != canoePid)
-        socket.close();
-    tmpSock.disconnectFromHost();
+        socket->close();
+    tmpSock.disconnectFromHost();*/
 }
 
 void SNESClassic::onSocketDisconnected()
@@ -206,58 +220,13 @@ void SNESClassic::onSocketDisconnected()
     emit closed();
 }
 
-void SNESClassic::findMemoryLocations()
-{
-    QByteArray pmap;
-    executeCommand(QByteArray("pmap ") + canoePid + " -x -q | grep -v canoe-shvc | grep -v /lib | grep rwx | grep anon");
-    pmap = readCommandReturns(socket);
-    QList<QByteArray> memEntries = pmap.split('\n');
-    foreach (QByteArray memEntry, memEntries)
-    {
-        if (memEntry.isEmpty())
-            continue;
-        QString s = memEntry;
-        bool ok;
-        QStringList ls = s.split(" ", QString::SkipEmptyParts);
-        sDebug() << ls.at(0);
-        if (ls.at(1) == "5092")
-            sramLocation = ls.at(0).toULong(&ok, 16) + 0x26E0;
-        if (ls.at(1) == "6444")
-            ramLocation = ls.at(0).toULong(&ok, 16) + 0x121BF4;
-        if (ls.at(1) == "8196")
-            romLocation = ls.at(0).toULong(&ok, 16) + 0x38;
-    }
-    sDebug() << "Locations : ram/sram/rom" << QString::number(ramLocation, 16) << QString::number(sramLocation, 16) << QString::number(romLocation, 16);
-}
-
-void SNESClassic::executeCommand(QByteArray toExec)
-{
-    sDebug() << "Executing : " << toExec;
-    writeSocket("CMD " + toExec + "\n");
-}
 
 void SNESClassic::writeSocket(QByteArray toWrite)
 {
     sDebug() << ">>" << toWrite;
-    socket.write(toWrite);
+    socket->write(toWrite);
 }
 
-QByteArray SNESClassic::readCommandReturns(QTcpSocket& msocket)
-{
-    QByteArray toret;
-    msocket.waitForReadyRead(50);
-    forever {
-        QByteArray data = msocket.readAll();
-        sDebug() << "Reading" << data;
-        if (data.isEmpty())
-            break;
-        toret += data;
-        if (!msocket.waitForReadyRead(50))
-            break;
-    }
-    toret.truncate(toret.size() - 4);
-    return toret;
-}
 
 void SNESClassic::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
 {
@@ -280,44 +249,10 @@ bool SNESClassic::canAttach()
 {
     if (m_state == READY || m_state == BUSY)
         return true;
-    if (socket.state() == QAbstractSocket::UnconnectedState)
-    {
-        sDebug() << "Trying to connect to serverstuff";
-        socket.connectToHost(SNES_CLASSIC_IP, 1042);
-        socket.waitForConnected(100);
-    }
-    sDebug() << socket.state();
-    if (socket.state() == QAbstractSocket::ConnectedState)
-    {
-        executeCommand("pidof canoe-shvc");
-        QByteArray data = readCommandReturns(socket);
-        if (!data.isEmpty())
-        {
-            canoePid = data.trimmed();
-            // canoe in demo mode is useless
-            executeCommand("ps | grep canoe-shvc | grep -v grep");
-            QByteArray canoeArgs = readCommandReturns(socket);
-            if (canoeArgs.indexOf("-resume") != -1)
-            {
-                m_attachError = "SNES Classic emulator is running in demo mode";
-                return false;
-            }
-            findMemoryLocations();
-            if (ramLocation != 0 && romLocation != 0 && sramLocation != 0)
-            {
-                m_state = READY;
-                alive_timer.start();
-                return true;
-            } else {
-                m_attachError = "Can't find memory location, try restarting the emulator";
-                return false;
-            }
-        } else {
-            m_attachError = "The SNES Classic emulator is not running";
-        }
-    } else {
-        m_attachError = "Can't connect to the SNES Classic";
-    }
-    sDebug() << "Not ready";
-    return false;
+
+}
+
+void SNESClassic::sockConnect()
+{
+    socket->connectToHost(SNES_CLASSIC_IP, 1042);
 }

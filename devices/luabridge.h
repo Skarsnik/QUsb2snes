@@ -16,6 +16,8 @@ public:
 public:
     QStringList listDevices();
     bool deleteDevice(ADevice *);
+    QString status();
+    QString name() const;
 
 private slots:
     void    onNewConnection();

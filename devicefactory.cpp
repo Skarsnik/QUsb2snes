@@ -18,7 +18,7 @@ ADevice *DeviceFactory::attach(QString deviceName)
         if (dev->name() == deviceName)
             return dev;
     }
-    m_attachError = "Device named " + deviceName + " Not found";
+    //m_attachError = "Device named " + deviceName + " Not found";
     return nullptr;
 }
 

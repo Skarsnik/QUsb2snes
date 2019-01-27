@@ -16,6 +16,8 @@ Project {
             "devicefactory.h",
             "devices/sd2snesfactory.cpp",
             "devices/sd2snesfactory.h",
+            "devices/snesclassicfactory.cpp",
+            "devices/snesclassicfactory.h",
             "ipsparse.cpp",
             "ipsparse.h",
             "devices/luabridge.cpp",
