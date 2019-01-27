@@ -93,17 +93,19 @@ public:
        QStringList  clients;
     };
 
-    explicit WSServer(QObject *parent = nullptr);
-    bool     start();
-    QString&  errorString() const;
+    explicit    WSServer(QObject *parent = nullptr);
+    bool        start();
+    QString&    errorString() const;
     void        addDevice(ADevice* device);
     void        removeDevice(ADevice* device);
     void        addDeviceFactory(DeviceFactory* devFact);
     QStringList getClientsName(ADevice* dev);
     QList<MiniDeviceInfos>  getDevicesInfo();
+    void        addTrusted(QString origin);
 
 signals:
     void    error();
+    void    untrustedConnection(QString origin);
 
 public slots:
 
@@ -135,6 +137,7 @@ private:
     QString                             m_errorString;
     ErrorType                           m_errorType;
     QStringList                         deviceList;
+    QStringList                         trustedOrigin;
 
     QMap<ADevice*, QList<MRequest*> >   pendingRequests;
 

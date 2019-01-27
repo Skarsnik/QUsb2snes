@@ -33,6 +33,7 @@ private slots:
     void    onAppsMenuTriggered(QAction* action);
     void    onMagic2SnesMenuTriggered(QAction*action);
     void    addWindowsSendToEntry();
+    void    onUntrustedConnection(QString origin);
 
 private:
     QMenu*              menu;

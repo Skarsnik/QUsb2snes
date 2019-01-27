@@ -20,6 +20,8 @@ WSServer::WSServer(QObject *parent) : QObject(parent)
     spaceMetaEnum = mo2.enumerator(i);
     i = mo2.indexOfEnumerator("server_flags");
     flagsMetaEnum = mo2.enumerator(i);
+    trustedOrigin.append("http://localhost");
+    trustedOrigin.append("");
 }
 
 bool WSServer::start()
@@ -38,6 +40,15 @@ bool WSServer::start()
 void WSServer::onNewConnection()
 {
     QWebSocket* newSocket = wsServer->nextPendingConnection();
+    sDebug() << "New connection " << newSocket->origin();
+    if (!trustedOrigin.contains(newSocket->origin()))
+    {
+        sDebug() << "Connection from untrusted origin";
+        emit untrustedConnection(newSocket->origin());
+        sDebug() << "Closing Connection";
+        newSocket->close(QWebSocketProtocol::CloseCodePolicyViolated, "Not in trusted origin");
+        return ;
+    }
 
     connect(newSocket, SIGNAL(textMessageReceived(QString)), this, SLOT(onTextMessageReceived(QString)));
     connect(newSocket, SIGNAL(binaryMessageReceived(QByteArray)), this, SLOT(onBinaryMessageReceived(QByteArray)));
@@ -54,12 +65,12 @@ void WSServer::onNewConnection()
     wi.recvData.clear();
     wi.ipsSize = 0;
     wsInfos[newSocket] = wi;
-    sDebug() << "New connection " << wi.name << newSocket->origin() << newSocket->peerAddress();
+    sDebug() << "New connection accepted " << wi.name << newSocket->origin() << newSocket->peerAddress();
 }
 
 void WSServer::onWSError(QWebSocketProtocol::CloseCode code)
 {
-    sDebug() << "Websocket error";
+    sDebug() << "Websocket error" << code;
 }
 
 void WSServer::onWSClosed()
@@ -157,6 +168,11 @@ QList<WSServer::MiniDeviceInfos> WSServer::getDevicesInfo()
         toret.append(mInfo);
     }
     return toret;
+}
+
+void WSServer::addTrusted(QString origin)
+{
+    trustedOrigin.append(origin);
 }
 
 

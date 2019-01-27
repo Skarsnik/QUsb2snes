@@ -21,6 +21,7 @@ extern WSServer    wsServer;
 AppUi::AppUi(QObject *parent) : QObject(parent)
 {
     sysTray = new QSystemTrayIcon(QIcon(":/img/icon64x64.ico"));
+    qApp->setQuitOnLastWindowClosed(false);
     menu = new QMenu();
     menu->addAction(QIcon(":/img/icon64x64.ico"), "QUsb2Snes v" + QApplication::applicationVersion());
     menu->addSeparator();
@@ -31,6 +32,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     snesClassic = nullptr;
 
     deviceMenu = menu->addMenu(QIcon(":/img/deviceicon.svg"), "Devices");
+    connect(&wsServer, &WSServer::untrustedConnection, this, &AppUi::onUntrustedConnection);
     connect(deviceMenu, SIGNAL(aboutToShow()), this, SLOT(onMenuAboutToshow()));
 
 
@@ -68,6 +70,14 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
         snesClassic = new SNESClassicFactory();
         wsServer.addDeviceFactory(snesClassic);
         snesClassicAction->setChecked(true);
+    }
+    if (settings->contains("trustedOrigin"))
+    {
+        sDebug() << settings->value("trustedOrigin").toString().split(";");
+        foreach (QString ori, settings->value("trustedOrigin").toString().split(";"))
+        {
+            wsServer.addTrusted(ori);
+        }
     }
     checkForApplications();
     menu->addSeparator();
@@ -237,21 +247,6 @@ void AppUi::checkForApplications()
 }
 
 
-/*
- * MAGIC2SNES Stuff
-*/
-
-
-void AppUi::onMagic2SnesMenuTriggered(QAction *action)
-{
-    if (!action->data().isNull() && action->data().toString() == "DDDDIR")
-        return ;
-    if (!action->data().isNull())
-        QProcess::startDetached(magic2SnesExe, QStringList() << action->data().toString());
-    else
-        QProcess::startDetached(magic2SnesExe);
-}
-
 void AppUi::addWindowsSendToEntry()
 {
     QDir appData(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
@@ -266,6 +261,41 @@ void AppUi::addWindowsSendToEntry()
     else
         msg.setText(QString(tr("Error while creating the Send To entry.<br>Check in %1 if it does not already exist")).arg(appData.path()));
     msg.exec();
+}
+
+void AppUi::onUntrustedConnection(QString origin)
+{
+    QMessageBox msg;
+    msg.setText(QString(tr("Received a connection from an untrusted origin %1. Do you want to add this source to the trusted origin list")).arg(origin));
+    msg.setWindowTitle(tr("Untrusted origin"));
+    msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msg.setDefaultButton(QMessageBox::No);
+    int but = msg.exec();
+    sDebug() << but;
+    if (but == QMessageBox::Yes)
+    {
+        wsServer.addTrusted(origin);
+        QStringList tList = settings->value("trustedOrigin").toString().split(";");
+        tList.append(origin);
+        settings->setValue("trustedOrigin", tList.join(";"));
+    }
+}
+
+
+
+/*
+ * MAGIC2SNES Stuff
+*/
+
+
+void AppUi::onMagic2SnesMenuTriggered(QAction *action)
+{
+    if (!action->data().isNull() && action->data().toString() == "DDDDIR")
+        return ;
+    if (!action->data().isNull())
+        QProcess::startDetached(magic2SnesExe, QStringList() << action->data().toString());
+    else
+        QProcess::startDetached(magic2SnesExe);
 }
 
 
