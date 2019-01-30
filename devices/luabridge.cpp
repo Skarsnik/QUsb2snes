@@ -1,7 +1,7 @@
 #include "luabridge.h"
 
 #include <QLoggingCategory>
-#include <QRandomGenerator>
+//#include <QRandomGenerator>
 
 Q_LOGGING_CATEGORY(log_luaBridge, "LUABridge")
 #define sDebug() qCDebug(log_luaBridge)
@@ -54,9 +54,15 @@ void LuaBridge::onNewConnection()
     QStringList names;
     names << "Cloudchaser" << "Flitter" << "Bonbon" << "Thunderlane" << "Cloud Kicker"
           << "Derpy Hooves" << "Roseluck" << "Octavia Melody" << "Dj-Pon3" << "Berrypunch";
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     QString devName = names.at(QRandomGenerator::global()->bounded(10));
     while (allocatedNames.contains(devName))
         devName = names.at(QRandomGenerator::global()->bounded(10));
+#else
+    QString devName = names.at(qrand() % 10);
+    while (allocatedNames.contains(devName))
+        devName = names.at(qrand() % 10);
+#endif
     sDebug() << "New client connected" << devName;
     allocatedNames << devName;
     LuaBridgeDevice*    newDev = new LuaBridgeDevice(newclient, devName);

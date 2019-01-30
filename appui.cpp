@@ -131,7 +131,7 @@ void AppUi::onLuaBridgeTriggered(bool checked)
     {
         if (luaBridge == nullptr)
             luaBridge = new LuaBridge();
-            wsServer.addDeviceFactory(luaBridge);
+        wsServer.addDeviceFactory(luaBridge);
     } else {
         //wsServer.removeDevice(luaBridgeDevice);
     }
@@ -217,7 +217,7 @@ void AppUi::checkForApplications()
         return ;
     foreach (QFileInfo fi, appsDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
     {
-        sDebug() << "Scanning " << fi;
+        sDebug() << "Scanning " << fi.absoluteFilePath();
         if (QFile::exists(fi.absoluteFilePath() + "/" + fi.baseName() + ".exe"))
         {
             regularApps[fi.baseName()] = fi.absoluteFilePath() + "/" + fi.baseName() + ".exe";
