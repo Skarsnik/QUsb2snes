@@ -52,7 +52,7 @@ QUsb2Snes currently support:
 
 # Application
 
-A list of applications and what they do is available on the [application page](https://skarsnik.github.io/QUsb2Snes/Application)
+A list of applications and what they do is available on the [application page](https://skarsnik.github.io/QUsb2snes/Application)
 
 # Magic2Snes
 
