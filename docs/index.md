@@ -1,5 +1,5 @@
 ---
-layout: page
+layout: default
 title: QUsb2Snes
 ---
 
@@ -66,7 +66,7 @@ For now you will have to compile the source yourself, see the Compiling.txt file
 
 # Usage
 
-If you don't use a SD2Snes, you will have to activate the support for your way to play SNES in the `device` menu.
+If you don't use a SD2Snes, you will have to activate the support for your way to play SNES in the `devices` menu.
 
 ## SD2Snes
 
