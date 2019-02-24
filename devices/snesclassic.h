@@ -11,7 +11,7 @@ class SNESClassic : public ADevice
 {
     Q_OBJECT
 public:
-    SNESClassic(QTcpSocket* sock);
+    SNESClassic();
 
     // ADevice interface
 public:

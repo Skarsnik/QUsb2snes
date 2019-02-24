@@ -113,7 +113,7 @@ QStringList SNESClassicFactory::listDevices()
             if (device == nullptr)
             {
                 sDebug() << "Creating SNES Classic device";
-                device = new SNESClassic(socket);
+                device = new SNESClassic();
                 device->canoePid = canoePid;
                 //device->sockConnect();
                 m_devices.append(device);

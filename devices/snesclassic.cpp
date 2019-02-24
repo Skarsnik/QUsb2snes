@@ -10,13 +10,14 @@ Q_LOGGING_CATEGORY(log_snesclassic, "SNESClassic")
 #define SNES_CLASSIC_IP "169.254.13.37"
 //#define MEMSTUFF_PATH "/var/lib/hakchi/rootfs/memstuff"
 
-SNESClassic::SNESClassic(QTcpSocket* sock)
+SNESClassic::SNESClassic()
 {
     m_timer.setSingleShot(true);
     m_timer.setInterval(3);
     alive_timer.setInterval(2000);
-    //socket = new QTcpSocket();
-    socket = sock;
+    socket = new QTcpSocket();
+    socket->connectToHost(SNES_CLASSIC_IP, 1042);
+    //socket = sock;
     connect(&alive_timer, SIGNAL(timeout()), this, SLOT(onAliveTimeout()));
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(onTimerOut()));
     connect(socket, SIGNAL(readyRead()), this, SLOT(onSocketReadReady()));

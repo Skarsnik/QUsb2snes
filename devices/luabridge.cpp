@@ -1,7 +1,9 @@
 #include "luabridge.h"
 
 #include <QLoggingCategory>
-//#include <QRandomGenerator>
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+    #include <QRandomGenerator>
+#endif
 
 Q_LOGGING_CATEGORY(log_luaBridge, "LUABridge")
 #define sDebug() qCDebug(log_luaBridge)
