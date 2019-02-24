@@ -37,6 +37,7 @@ QUsb2Snes is a replacement for the middle part of the previous diagram. Since no
 does not access directly the Sd2Snes through the Usb connection. Nothing prevent this intermediate part to trick the applications to make them access something else, like a Snes Emulator or a SNES Classic
 
 For example Snes9x
+
 ![Lua connection](images/luaconnection.png)
 
 
@@ -48,6 +49,10 @@ QUsb2Snes currently support:
 * [Snes9x multitroid](https://drive.google.com/open?id=1_ej-pwWtCAHYXIrvs5Hro16A1s9Hi3Jz) with Lua support
 * SNES classic moded with [Hakchi2 CE](https://github.com/TeamShinkansen/hakchi2/releases)
 * RetroArch support is removed in latest version since it depends on old snes9x core.
+
+# Application
+
+A list of applications and what they do is available on the [application page](https://skarsnik.github.io/QUsb2Snes/Application)
 
 # Installation
 
