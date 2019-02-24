@@ -54,6 +54,12 @@ QUsb2Snes currently support:
 
 A list of applications and what they do is available on the [application page](https://skarsnik.github.io/QUsb2Snes/Application)
 
+# Magic2Snes
+
+Magic2Snes is a special application that make writing applications for Usb2Snes easier for non developpers. You will find more informations on [Magic2Snes](https://github.com/Skarsnik/Magic2snes/wiki)
+
+By default QUsb2Snes comes with various Magic2Snes scripts.
+
 # Installation
 
 ## Windows
