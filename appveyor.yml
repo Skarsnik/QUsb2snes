@@ -3,6 +3,7 @@ image: Visual Studio 2017
 init:
   - set QTDIR=C:\Qt\5.12.1\msvc2017_64
   - set PATH=%PATH%;C:\Qt\5.12.1\msvc2017_64\bin;
+  - call "C:\Program Files (x86)\Microsoft Visual Studio 15.0\VC\vcvarsall.bat" %PLATFORM%
 build_script:
   - qmake QUsb2snes.pro -spec win32-msvc "CONFIG+=release"
   - nmake
