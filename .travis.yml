@@ -23,14 +23,15 @@ script:
 - make
 
 before_deploy:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; macdeployqt -dmg QUsb2Snes.app ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then macdeployqt -dmg QUsb2Snes.app ; fi
 
 deploy:
   provider: releases
   api_key:
     secure: F4cmHA0l6eccnngbcgI+kloiPq7D1772RFmfEp7bfBc7ybuAEEIemBGE48Sp70rnhuYyZRec9aQTQF6KizrAD23jHoaRW6Fu9E3nJ1ETCuLMbfQ0D/BxV2TiAggLxx0EUac4dY2xOyqaiCFctSxkHN9T6jJXm7e0zHQT7h1zquL56shVGPksYC5S4oBYZ1gJNCj762Kk9r10AIzyI4JQfeEQUf3rgoVpstPU49L+BGiE2lWWyz53UDz0uAvr4n9lO/zyU5XAq4Dsjn/ZCWtFHYI1UQtLJplQIIC1OOs6ehiAbobdWNrX6ZvcTdANxK/pHNG5LsNCXRwR8EPxCl2BdK5iHTQ0eZTKrbGd4fgWlCyVDkPDtoe6wQkbHC64bv7Q78giZJWw944bQ5wBUSVUiIAJQoT/gRm6LdhRpm5RR1ZIUferlXUHLnGWDvdQJKOdReRZVyEoT39Vn3b1nOBkEcFj1x/o9AeiqvifaKZhxrUCloQrRHaBzK3XGKw5Q4WSgh3PtQKgKRCcsoxp/TuU+bOYnFA+7trPRozxT1wmMwBiNeKdS0HUHIkmZaZsGHg+sh2pz3b2p4yqcrPtNlDwsp28JBdWvEaMtiIv23V3uyXCwwBgDKC0gYpvqF0ImyvbIj0oSCrA9oVqPQsM3LJ40o7jcUVkHjzFmWOzm/ECUtg=
   file: QUsb2Snes.dmg
+  draft: true
   on:
     repo: Skarsnik/QUsb2snes
-    tags: true
+    tags: false
     condition: $TRAVIS_OS_NAME = osx
