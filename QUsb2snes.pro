@@ -33,8 +33,6 @@ HEADERS = adevice.h \
           devices/luabridge.h \
           devices/luabridgedevice.h \
           devices/retroarchdevice.h \
-          rommapping/mapping_hirom.h \
-          rommapping/mapping_lorom.h \
           rommapping/rommapping.h \
           devices/sd2snesdevice.h \
           devices/snesclassic.h \

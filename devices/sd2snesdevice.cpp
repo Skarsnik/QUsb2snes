@@ -257,6 +257,8 @@ void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space
     sDebug() << "VCMD Sending : " << data;
     if (opcode == SD2Snes::opcode::VGET)
         m_getSize = tsize;
+    if (opcode == SD2Snes::opcode::VPUT)
+        m_putSize = tsize + data.size();
     m_state = BUSY;
     m_currentCommand = opcode;
     writeData(data);
@@ -276,15 +278,29 @@ bool SD2SnesDevice::canAttach()
 void SD2SnesDevice::writeData(QByteArray data)
 {
     //sDebug() << ">>" << data.size() << data;
-    if (data.size() < 512)
-        data.append(QByteArray().fill(0, 512 - data.size()));
-    if (data.size() % 512 != 0)
+    if (data.size() < blockSize)
+        data.append(QByteArray().fill(0, blockSize - data.size()));
+    if (data.size() % blockSize != 0)
     {
-        data.resize((data.size() / 512) * 512 + 512);
+        data.resize((data.size() / blockSize) * blockSize + blockSize);
     }
     quint64 written = m_port.write(data);
     sDebug() << "Written : " << written << " bytes";
     m_port.flush();
+    if (m_currentCommand == SD2Snes::VPUT)
+    {
+        m_putSize -= data.size();
+        if (m_putSize != 0)
+            return ;
+        m_state = READY;
+        dataRead = dataReceived;
+        dataReceived.clear();
+        bytesReceived = 0;
+        fileGetCmd = false;
+        m_getSize = -1;
+        sDebug() << "Command finished";
+        emit commandFinished();
+    }
 }
 
 QString SD2SnesDevice::name() const
