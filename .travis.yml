@@ -21,16 +21,13 @@ script:
   ; fi
 - qmake QUsb2snes.pro
 - make
-
 before_deploy:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then macdeployqt QUsb2Snes.app -dmg ; fi
-
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then macdeployqt QUsb2Snes.app -dmg ; fi
 deploy:
   provider: releases
   api_key:
-    secure: F4cmHA0l6eccnngbcgI+kloiPq7D1772RFmfEp7bfBc7ybuAEEIemBGE48Sp70rnhuYyZRec9aQTQF6KizrAD23jHoaRW6Fu9E3nJ1ETCuLMbfQ0D/BxV2TiAggLxx0EUac4dY2xOyqaiCFctSxkHN9T6jJXm7e0zHQT7h1zquL56shVGPksYC5S4oBYZ1gJNCj762Kk9r10AIzyI4JQfeEQUf3rgoVpstPU49L+BGiE2lWWyz53UDz0uAvr4n9lO/zyU5XAq4Dsjn/ZCWtFHYI1UQtLJplQIIC1OOs6ehiAbobdWNrX6ZvcTdANxK/pHNG5LsNCXRwR8EPxCl2BdK5iHTQ0eZTKrbGd4fgWlCyVDkPDtoe6wQkbHC64bv7Q78giZJWw944bQ5wBUSVUiIAJQoT/gRm6LdhRpm5RR1ZIUferlXUHLnGWDvdQJKOdReRZVyEoT39Vn3b1nOBkEcFj1x/o9AeiqvifaKZhxrUCloQrRHaBzK3XGKw5Q4WSgh3PtQKgKRCcsoxp/TuU+bOYnFA+7trPRozxT1wmMwBiNeKdS0HUHIkmZaZsGHg+sh2pz3b2p4yqcrPtNlDwsp28JBdWvEaMtiIv23V3uyXCwwBgDKC0gYpvqF0ImyvbIj0oSCrA9oVqPQsM3LJ40o7jcUVkHjzFmWOzm/ECUtg=
-  file: QUsb2Snes.dmg
-  draft: true
+    secure: DrWL121m9dQ6lEiwpzKFV1Ha3BvkQ763RRaLN3iWZWnhfqlr+0oei2GObJpzh3jK4nnLdOWGa6iIHPIxGXtfysWEJu4M1joihOOfoTCdjvhTFe0QFl8cQGi/WQkSff8PW6DROE1UrJSKRrgP9InAz4T93IcCP1SNF9Bx4/t3btNY+V8ojTTMzJhj5tyVflInn1h08LzQNxNKLMWJPwca48bwQGKxf6hNJ517OqcmypKMPIIwnPr+FKTL6vICHhIcq47m3jWtzQTh47NoeZfSFNZOZAs+KInRb4MViInUqlobKaJ6Eosz8c+bk9b2bilbwaqOHniHcfNqtruixSrcTuVCBlbP38wLZksnve9k3o7zoJaGpmdItG1jcVJ8oVRF13eTTLPCQ0SMbsRYpL3sHyNOrIHzmFnWB26YbVEhkQ2veYNH1uJQrY6Y8s7G85RpzzgPgbEx9ZGoGl+/nc4OTczIc4ZcAbs/vZtBZrabYSwbeBIAfdiABFBOCXjH1QXkQILvRIQn7zKKhta9KW7hY78aMgfJ4vGcHLPUjKubQ4CcWLh/IevWChV6/GH76lwWIOxXUj7SdeLvoAsQZBqw/MdLjrBN1boB6cpRYV2KmMAUlC4dnKinGyrI0uU7HuP9vQ9p5S6KJRoelbCgI5ck9CbAeJ7WGWeiia3km4UFeuI=
+    draft: true
   on:
     repo: Skarsnik/QUsb2snes
     tags: false
