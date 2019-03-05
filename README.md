@@ -11,7 +11,7 @@ Look at the `usb2snes.h` file to have a detailed view of the command of websocke
 
 ## Usage
 
-Download the latest release of QUsb2Snes (on the release link). Uncompress it somewhere and start QUsb2Snes.exe
+Download the latest release of [QUsb2Snes](https://github.com/Skarsnik/QUsb2snes/releases). Uncompress it somewhere and start QUsb2Snes.exe
 
 ## SD2Snes
 
