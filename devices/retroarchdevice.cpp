@@ -6,10 +6,10 @@
 Q_LOGGING_CATEGORY(log_retroarch, "RETROARCH")
 #define sDebug() qCDebug(log_retroarch)
 
-RetroarchDevice::RetroarchDevice()
+RetroArchDevice::RetroArchDevice(QUdpSocket* sock)
 {
-    m_sock = new QUdpSocket(this);
-    m_state = CLOSED;
+    m_sock = sock;
+    m_state = READY;
     sDebug() << "Retroarch device created";
     m_timer = new QTimer();
     m_timer->setInterval(5);
@@ -22,13 +22,13 @@ RetroarchDevice::RetroarchDevice()
 }
 
 
-QString RetroarchDevice::name() const
+QString RetroArchDevice::name() const
 {
-    return "EMU RETROARCH";
+    return "EMU RetroArch";
 }
 
 
-USB2SnesInfo RetroarchDevice::parseInfo(const QByteArray &data)
+USB2SnesInfo RetroArchDevice::parseInfo(const QByteArray &data)
 {
     Q_UNUSED(data);
     USB2SnesInfo    info;
@@ -38,52 +38,17 @@ USB2SnesInfo RetroarchDevice::parseInfo(const QByteArray &data)
     return info;
 }
 
-QList<ADevice::FileInfos> RetroarchDevice::parseLSCommand(QByteArray &dataI)
+QList<ADevice::FileInfos> RetroArchDevice::parseLSCommand(QByteArray &dataI)
 {
     return QList<ADevice::FileInfos>();
 }
 
-bool RetroarchDevice::canAttach()
-{
-    if (m_state != CLOSED)
-        return true;
-    if (!(m_sock->state() == QUdpSocket::ConnectedState || m_sock->state() == QUdpSocket::BoundState))
-    {
-        sDebug() << "Trying to connect to retroarch";
-        m_sock->connectToHost(QHostAddress::LocalHost, 55355);
-        if (!m_sock->waitForConnected(500))
-            return false;
-        sDebug() << "Connected";
-    }
-    checkingRetroarch = true;
-    m_sock->write("READ_CORE_RAM 0 1");
-    QEventLoop loop;
-    QTimer tt;
-    tt.setSingleShot(true);
-    tt.start(200);
-    connect(this, SIGNAL(checkReturned()), &loop, SLOT(quit()));
-    connect(&tt, SIGNAL(timeout()), &loop, SLOT(quit()));
-    loop.exec();
-    checkingRetroarch = false;
-    if (tt.isActive())
-    {
-        tt.stop();
-        if (checkReturnedValue != "-1")
-        {
-            m_state = READY;
-            return true;
-        }
-    }
-    return false;
-}
-
-
-bool RetroarchDevice::open()
+bool RetroArchDevice::open()
 {
     return m_state != CLOSED;
 }
 
-void RetroarchDevice::close()
+void RetroArchDevice::close()
 {
     m_state = CLOSED;
     m_sock->close();
@@ -92,21 +57,17 @@ void RetroarchDevice::close()
 // READ_CORE_RAM 200 20
 // READ_CORE_RAM 200 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 
-void RetroarchDevice::onUdpReadyRead()
+void RetroArchDevice::onUdpReadyRead()
 {
     QByteArray data = m_sock->readAll();
     sDebug() << ">>" << data;
+    if (data.isEmpty())
+    {
+        emit closed();
+        return ;
+    }
     QList<QByteArray> tList = data.trimmed().split(' ');
     sDebug() << tList;
-    if (checkingRetroarch)
-    {
-        if (tList.size() < 3)
-            checkReturnedValue = "-1";
-        else
-            checkReturnedValue = tList.at(2);
-        emit checkReturned();
-        return;
-    }
     if (tList.at(2) != "-1")
     {
         tList = tList.mid(2);
@@ -143,7 +104,7 @@ void RetroarchDevice::onUdpReadyRead()
     m_state = READY;
 }
 
-void    RetroarchDevice::read_core_ram(unsigned int addr, unsigned int size)
+void    RetroArchDevice::read_core_ram(unsigned int addr, unsigned int size)
 {
     QByteArray data = "READ_CORE_RAM " + QByteArray::number(addr, 16) + " " + QByteArray::number(size);
     sDebug() << ">>" << data;
@@ -151,39 +112,39 @@ void    RetroarchDevice::read_core_ram(unsigned int addr, unsigned int size)
     m_sock->write(data);
 }
 
-void RetroarchDevice::timedCommandDone()
+void RetroArchDevice::timedCommandDone()
 {
     sDebug() << "Fake cmd finished";
     m_state = READY;
     emit commandFinished();
 }
 
-bool RetroarchDevice::hasFileCommands()
+bool RetroArchDevice::hasFileCommands()
 {
     return false;
 }
 
-bool RetroarchDevice::hasControlCommands()
+bool RetroArchDevice::hasControlCommands()
 {
     return false;
 }
 
-void RetroarchDevice::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
+void RetroArchDevice::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
 {
 
 }
 
-void RetroarchDevice::fileCommand(SD2Snes::opcode op, QByteArray args)
+void RetroArchDevice::fileCommand(SD2Snes::opcode op, QByteArray args)
 {
 
 }
 
-void RetroarchDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
+void RetroArchDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
 {
 
 }
 
-void RetroarchDevice::putFile(QByteArray name, unsigned int size)
+void RetroArchDevice::putFile(QByteArray name, unsigned int size)
 {
 
 }
@@ -201,7 +162,7 @@ static int addr_to_addr(int addr)
     return addr;
 }
 
-void RetroarchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
+void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
     sDebug() << "GetAddress " << space << addr << size;
     m_state = BUSY;
@@ -225,12 +186,12 @@ void RetroarchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
     read_core_ram(addr, size);
 }
 
-void RetroarchDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
+void RetroArchDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
 {
 
 }
 
-void RetroarchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, unsigned int size)
+void RetroArchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, unsigned int size)
 {
     int addr = addr0;
     m_state = BUSY;
@@ -243,28 +204,28 @@ void RetroarchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, u
     dataToWrite = "WRITE_CORE_RAM " + QByteArray::number(addr, 16) + " ";
 }
 
-void RetroarchDevice::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
+void RetroArchDevice::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
 {
 
 }
 
-void RetroarchDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
+void RetroArchDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
 {
     putAddrCommand(space, addr, size);
 }
 
-void RetroarchDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray &arg, const QByteArray arg2)
+void RetroArchDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray &arg, const QByteArray arg2)
 {
 
 }
 
-void RetroarchDevice::infoCommand()
+void RetroArchDevice::infoCommand()
 {
     sDebug() << "Info command";
     m_timer->start();
 }
 
-void RetroarchDevice::writeData(QByteArray data)
+void RetroArchDevice::writeData(QByteArray data)
 {
     dataToWrite.append(data.toHex(' '));
     sDebug() << "<<" << dataToWrite;

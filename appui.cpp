@@ -25,7 +25,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     menu = new QMenu();
     menu->addAction(QIcon(":/img/icon64x64.ico"), "QUsb2Snes v" + QApplication::applicationVersion());
     menu->addSeparator();
-    retroarchDevice = nullptr;
+    retroarchFactory = nullptr;
     sd2snesFactory = new SD2SnesFactory();
     wsServer.addDeviceFactory(sd2snesFactory);
     luaBridge = nullptr;
@@ -55,8 +55,8 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     settings = new QSettings("config.ini", QSettings::IniFormat);
     if (settings->value("retroarchdevice").toBool())
     {
-        retroarchDevice = new RetroarchDevice();
-        wsServer.addDevice(retroarchDevice);
+        retroarchFactory = new RetroArchFactory();
+        wsServer.addDeviceFactory(retroarchFactory);
         retroarchAction->setChecked(true);
     }
     if (settings->value("luabridge").toBool())
@@ -116,11 +116,11 @@ void AppUi::onRetroarchTriggered(bool checked)
 {
     if (checked == true)
     {
-        if (retroarchDevice == nullptr)
-            retroarchDevice = new RetroarchDevice();
-        wsServer.addDevice(retroarchDevice);
+        if (retroarchFactory == nullptr)
+            retroarchFactory = new RetroArchFactory();
+        wsServer.addDeviceFactory(retroarchFactory);
     } else {
-        wsServer.removeDevice(retroarchDevice);
+        //wsServer.removeDevice(retroarchFactory);
     }
     settings->setValue("retroarchdevice", checked);
 }
@@ -184,6 +184,8 @@ void AppUi::onMenuAboutToshow()
         addDevicesInfo(luaBridge);
     if (snesClassic != nullptr)
         addDevicesInfo(snesClassic);
+    if (retroarchFactory != nullptr)
+        addDevicesInfo(retroarchFactory);
     deviceMenu->addSeparator();
     deviceMenu->addAction(retroarchAction);
     deviceMenu->addAction(luaBridgeAction);

@@ -2,11 +2,9 @@
 #define APPUI_H
 
 #include "devices/luabridge.h"
-#include "devices/luabridgedevice.h"
-#include "devices/retroarchdevice.h"
 #include "devices/snesclassicfactory.h"
-#include "devices/snesclassic.h"
 #include "devices/sd2snesfactory.h"
+#include "devices/retroarchfactory.h"
 
 #include <QMenu>
 #include <QObject>
@@ -47,7 +45,7 @@ private:
     QAction*            luaBridgeAction;
     LuaBridge*          luaBridge;
     SD2SnesFactory*     sd2snesFactory;
-    RetroarchDevice*    retroarchDevice;
+    RetroArchFactory*   retroarchFactory;
     SNESClassicFactory* snesClassic;
     QSettings*          settings;
     QMap<QString, QString>  regularApps;

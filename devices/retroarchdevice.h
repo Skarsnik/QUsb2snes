@@ -8,11 +8,11 @@
 #include <qtimer.h>
 
 
-class RetroarchDevice : public ADevice
+class RetroArchDevice : public ADevice
 {
     Q_OBJECT
 public:
-    RetroarchDevice();
+    RetroArchDevice(QUdpSocket* sock);
 
     // ADevice interface
 public:
@@ -55,7 +55,7 @@ private:
     unsigned int lastRCRSize;
     bool         checkingRetroarch;
     QByteArray   checkReturnedValue;
-    void read_core_ram(unsigned int addr, unsigned int size);
+    void         read_core_ram(unsigned int addr, unsigned int size);
 
 signals:
     void    checkReturned();
