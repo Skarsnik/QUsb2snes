@@ -44,7 +44,7 @@ QStringList RetroArchFactory::listDevices()
         tt.stop();
         raVersion = m_sock->readAll().trimmed();
     }
-    m_sock->write("READ_CORE_RAM 0 1");
+    m_sock->write("READ_CORE_RAM FFC0 32");
     tt.start(100);
     loop.exec();
     if (tt.isActive())
@@ -54,7 +54,39 @@ QStringList RetroArchFactory::listDevices()
         sDebug() << "In check for RA received" << data;
         if (data != "-1" && data != "")
         {
-            retroDev = new RetroArchDevice(m_sock);
+            /* Detect retroarch core capabilities, and SNES header info if possible */
+            QList<QByteArray> tList = data.trimmed().split(' ');
+            sDebug() << tList;
+
+            bool hasSnesMemoryMap = false;
+            bool hasSnesLoromMap = false;
+            QString gameName = "Not Available";
+
+            if(tList.at(2) == "-1")
+            {
+                hasSnesMemoryMap = false;
+            } else {
+                unsigned char romType = (unsigned char)QByteArray::fromHex(tList.at(23))[0];
+                sDebug() << romType;
+                unsigned char romSize = (unsigned char)QByteArray::fromHex(tList.at(24))[0];
+                sDebug() << romSize;
+                if(romType > 0 && romSize > 0)
+                {
+                    bool loRom = (romType & 1) == 0;
+                    auto romSpeed = (romType & 0x30);
+                    sDebug() << romSpeed;
+                    sDebug() << "Checking rom name";
+                    if(romSpeed != 0 && tList.at(2) != "00")
+                    {
+                        auto romName = QByteArray::fromHex(tList.mid(2, 21).join()).toStdString();
+                        hasSnesMemoryMap = true;
+                        hasSnesLoromMap = loRom;
+                        gameName = QString::fromStdString(romName);
+                    }
+                }
+            }
+
+            retroDev = new RetroArchDevice(m_sock, raVersion, gameName, hasSnesLoromMap, hasSnesMemoryMap);
             m_devices.append(retroDev);
             toret << retroDev->name();
         }

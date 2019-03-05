@@ -36,7 +36,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     connect(deviceMenu, SIGNAL(aboutToShow()), this, SLOT(onMenuAboutToshow()));
 
 
-    retroarchAction = new QAction(QIcon(":/img/retroarch.png"), "Enable RetroArch virtual device (snes9x 2010 core only)");
+    retroarchAction = new QAction(QIcon(":/img/retroarch.png"), "Enable RetroArch virtual device (use bsnes-mercury if possible)");
     retroarchAction->setCheckable(true);
     connect(retroarchAction, SIGNAL(triggered(bool)), this, SLOT(onRetroarchTriggered(bool)));
 
