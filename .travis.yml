@@ -33,5 +33,5 @@ deploy:
   skip_cleanup: true
   on:
     repo: Skarsnik/QUsb2snes
-    tags: false
+    tags: true
     condition: $TRAVIS_OS_NAME = osx
