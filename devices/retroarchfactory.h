@@ -24,6 +24,7 @@ private slots:
     void    onUdpDisconnected();
 private:
     QUdpSocket*      m_sock;
+    QString          raVersion;
     RetroArchDevice* retroDev;
 };
 

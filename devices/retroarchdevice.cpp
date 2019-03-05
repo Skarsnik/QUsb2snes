@@ -60,7 +60,7 @@ void RetroArchDevice::close()
 void RetroArchDevice::onUdpReadyRead()
 {
     QByteArray data = m_sock->readAll();
-    sDebug() << ">>" << data;
+    sDebug() << "<<" << data;
     if (data.isEmpty())
     {
         emit closed();

@@ -15,6 +15,7 @@ SOURCES = adevice.cpp \
           devices/luabridge.cpp \
           devices/luabridgedevice.cpp \
           devices/retroarchdevice.cpp \
+          devices/retroarchfactory.cpp \
           main.cpp \
           rommapping/mapping_hirom.c \
           rommapping/mapping_lorom.c \
@@ -29,6 +30,7 @@ HEADERS = adevice.h \
           devicefactory.h \
           devices/sd2snesfactory.h \
           devices/snesclassicfactory.h \
+          devices/retroarchfactory.h \
           ipsparse.h \
           devices/luabridge.h \
           devices/luabridgedevice.h \

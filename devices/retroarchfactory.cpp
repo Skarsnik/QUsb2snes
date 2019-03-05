@@ -31,13 +31,21 @@ QStringList RetroArchFactory::listDevices()
         }
         sDebug() << "Connected";
     }
-    m_sock->write("READ_CORE_RAM 0 1");
+    m_sock->write("VERSION");
     QEventLoop loop;
     QTimer tt;
     tt.setSingleShot(true);
     tt.start(100);
     connect(&tt, SIGNAL(timeout()), &loop, SLOT(quit()));
     connect(m_sock, &QUdpSocket::readyRead, &loop, &QEventLoop::quit);
+    loop.exec();
+    if (tt.isActive())
+    {
+        tt.stop();
+        raVersion = m_sock->readAll().trimmed();
+    }
+    m_sock->write("READ_CORE_RAM 0 1");
+    tt.start(100);
     loop.exec();
     if (tt.isActive())
     {
@@ -50,7 +58,7 @@ QStringList RetroArchFactory::listDevices()
             m_devices.append(retroDev);
             toret << retroDev->name();
         }
-        m_attachError = "RetroArch core selected does not support memory read";
+        m_attachError = QString("RetroArch %1 - Current core does not support memory read").arg(raVersion);
     }
     return toret;
 }
@@ -68,7 +76,7 @@ QString RetroArchFactory::status()
 {
     listDevices();
     if (retroDev != nullptr)
-        return "RetroArch device ready";
+        return QString("RetroArch %1 device ready").arg(raVersion);
     else
         return m_attachError;
 }
@@ -82,5 +90,6 @@ void RetroArchFactory::onUdpDisconnected()
 {
     retroDev->closed();
     m_devices.clear();
+    raVersion.clear();
     deleteDevice(retroDev);
 }
