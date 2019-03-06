@@ -33,7 +33,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: JF5Ki0Bz+mvMrqw5k0u7273c8GsUAqMwe/P7ts5PKLR+G7InkGqkvTqlAZb6GDGv
-  artifact: QUsb2Snes.exe, QUsb2Snes$(APPVEYOR_REPO_TAG_NAME).7z
+  artifact: release\QUsb2Snes.exe, QUsb2Snes$(APPVEYOR_REPO_TAG_NAME).7z
   draft: true
   prerelease: false
   on:
