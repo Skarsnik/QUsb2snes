@@ -258,7 +258,7 @@ void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space
     if (opcode == SD2Snes::opcode::VGET)
         m_getSize = tsize;
     if (opcode == SD2Snes::opcode::VPUT)
-        m_putSize = tsize + data.size();
+        m_putSize = tsize + blockSize;
     m_state = BUSY;
     m_currentCommand = opcode;
     writeData(data);
@@ -278,6 +278,8 @@ bool SD2SnesDevice::canAttach()
 void SD2SnesDevice::writeData(QByteArray data)
 {
     //sDebug() << ">>" << data.size() << data;
+    auto sendSize = data.size();
+
     if (data.size() < blockSize)
         data.append(QByteArray().fill(0, blockSize - data.size()));
     if (data.size() % blockSize != 0)
@@ -289,9 +291,11 @@ void SD2SnesDevice::writeData(QByteArray data)
     m_port.flush();
     if (m_currentCommand == SD2Snes::VPUT)
     {
-        m_putSize -= data.size();
+        sDebug() << "Putsize: " << m_putSize << " sendSize:" << sendSize;
+        m_putSize -= sendSize;
         if (m_putSize != 0)
             return ;
+
         m_state = READY;
         dataRead = dataReceived;
         dataReceived.clear();
