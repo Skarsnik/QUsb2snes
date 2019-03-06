@@ -53,6 +53,7 @@ private:
     bool         bigGet;
     unsigned int sizeBigGet;
     unsigned int sizeRequested;
+    unsigned int sizePrevBigGet;
     unsigned int addrBigGet;
     unsigned int lastRCRSize;
     bool         checkingRetroarch;

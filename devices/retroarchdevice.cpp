@@ -129,7 +129,6 @@ void RetroArchDevice::onUdpReadyRead()
 
     if (bigGet)
     {
-        sDebug() << "bigGet";
         if (sizeRequested == sizeBigGet)
         {
             bigGet = false;
@@ -145,7 +144,23 @@ void RetroArchDevice::onUdpReadyRead()
             else
                 mSize = sizeBigGet - sizeRequested;
 
-            addrBigGet += sizeRequested;
+
+            addrBigGet += sizePrevBigGet;
+
+            if(hasSnesLoromMap && (addrBigGet < 0x700000 || addrBigGet >= 0x800000))
+            {
+                if(((addrBigGet&0xFFFF) + sizePrevBigGet) > 0xFFFF)
+                {
+                    addrBigGet += 0x8000;
+                }
+
+                if(((addrBigGet + mSize)&0xFFFF) < 0x8000)
+                {
+                    mSize = 0x10000 - (addrBigGet&0xFFFF);
+                }
+            }
+
+            sizePrevBigGet = mSize;
             sizeRequested += mSize;
             read_core_ram(addrBigGet, mSize);
          }
@@ -252,14 +267,30 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
         m_timer->start();
         return ;
     }
+
     if (size > 78)
     {
         bigGet = true;
         sizeBigGet = size;
         sizeRequested = 78;
         size = 78;
+        sizePrevBigGet = 78;
         addrBigGet = addr;
     }
+
+    if (hasSnesLoromMap && (addr < 0x700000 || addr >= 0x800000))
+    {
+        if(((addr+size)&0xFFFF) < 0x8000)
+        {
+            bigGet = true;
+            sizeBigGet = size;
+            sizeRequested = 0x10000 - (addr&0xFFFF);
+            size = sizeRequested;
+            sizePrevBigGet = size;
+            addrBigGet = addr;
+        }
+    }
+
     read_core_ram(addr, size);
 }
 
