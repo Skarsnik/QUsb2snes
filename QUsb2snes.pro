@@ -43,4 +43,6 @@ HEADERS = adevice.h \
 
 RESOURCES = ressources.qrc
 
+ICONS = cheer128x128.icns
+
 RC_FILE = qusb2snes.rc
