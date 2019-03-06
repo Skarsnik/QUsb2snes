@@ -1,10 +1,13 @@
 #include <QEventLoop>
 #include <QLoggingCategory>
 #include <QTimer>
+#include <QSettings>
 #include "retroarchfactory.h"
 
 Q_LOGGING_CATEGORY(log_retroarchfact, "RA Factory")
 #define sDebug() qCDebug(log_retroarchfact)
+
+extern QSettings* globalSettings;
 
 RetroArchFactory::RetroArchFactory()
 {
@@ -23,7 +26,15 @@ QStringList RetroArchFactory::listDevices()
     if (!(m_sock->state() == QUdpSocket::ConnectedState || m_sock->state() == QUdpSocket::BoundState))
     {
         sDebug() << "Trying to connect to RetroArch";
-        m_sock->connectToHost(QHostAddress::LocalHost, 55355);
+
+        if(!globalSettings->contains("RetroArchHost"))
+        {
+            globalSettings->setValue("RetroArchHost", "127.0.0.1");
+        }
+
+        auto retroarchHost = QHostAddress(globalSettings->value("RetroArchHost").toString());
+
+        m_sock->connectToHost(retroarchHost, 55355);
         if (!m_sock->waitForConnected(50))
         {
             m_attachError = "Can't connect to RetroArch";
