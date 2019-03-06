@@ -19,7 +19,7 @@ after_build:
   - copy /y ..\LICENSE LICENCE-GPLV3.txt
   - copy /y ..\README.md Readme.txt
   - cd ..
-  - 7za a QUsb2Snes%APPVEYOR_REPO_TAG_NAME%.7z QUsb2Snes
+  - 7z a QUsb2Snes%APPVEYOR_REPO_TAG_NAME%.7z QUsb2Snes
 
 
 artifacts:
