@@ -12,8 +12,11 @@
 #include <QMessageBox>
 #include <QMenu>
 #include <QObject>
+#include <QHostInfo>
 
 WSServer    wsServer;
+QSettings*  globalSettings;
+
 
 static QTextStream logfile;
 //static QTextStream lowlogfile;
@@ -59,7 +62,13 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 void    startServer()
 {
     //myTrayIcon->showMessage(QString("Webserver started"), QString("Webserver started"));
-    if (!wsServer.start())
+    quint16 port = 8080;
+    QHostAddress addr("127.0.0.1");
+    if (globalSettings->contains("listen"))
+        addr = QHostInfo::fromName(globalSettings->value("listen").toString()).addresses().first();
+    if (globalSettings->contains("port"))
+        port = globalSettings->value("port").toUInt();
+    if (!wsServer.start(addr, port))
         qApp->exit(1);
 }
 
@@ -68,6 +77,7 @@ int main(int ac, char *ag[])
     QApplication app(ac, ag);
     QFile   mlog(qApp->applicationDirPath() + "/log.txt");
     logfile.setDevice(&mlog);
+    globalSettings = new QSettings("config.ini", QSettings::IniFormat);
     if (mlog.open(QIODevice::WriteOnly | QIODevice::Text))
         qInstallMessageHandler(myMessageOutput);
     QApplication::setApplicationName("QUsb2Snes");

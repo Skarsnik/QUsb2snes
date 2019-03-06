@@ -3,9 +3,12 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLoggingCategory>
+#include <QSettings>
 
 Q_LOGGING_CATEGORY(log_wsserver, "WSServer")
 #define sDebug() qCDebug(log_wsserver)
+
+extern QSettings*          globalSettings;
 
 quint64 WSServer::MRequest::gId = 0;
 
@@ -24,11 +27,11 @@ WSServer::WSServer(QObject *parent) : QObject(parent)
     trustedOrigin.append("");
 }
 
-bool WSServer::start()
+bool WSServer::start(QHostAddress lAddress, quint16 port)
 {
-    if (wsServer->listen(QHostAddress::Any, 8080))
+    if (wsServer->listen(lAddress, port))
     {
-        sDebug() << "WebSocket server started : listenning on port 8080";
+        sDebug() << "WebSocket server started : listenning " << lAddress << "port : " << port;
         connect(wsServer, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
         connect(wsServer, SIGNAL(closed()), this, SLOT(onWSClosed()));
         connect(wsServer, SIGNAL(serverError(QWebSocketProtocol::CloseCode)), this, SLOT(onWSError(QWebSocketProtocol::CloseCode)));

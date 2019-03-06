@@ -94,7 +94,7 @@ public:
     };
 
     explicit    WSServer(QObject *parent = nullptr);
-    bool        start();
+    bool        start(QHostAddress lAddress, quint16 port);
     QString&    errorString() const;
     void        addDevice(ADevice* device);
     void        removeDevice(ADevice* device);

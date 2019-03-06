@@ -16,7 +16,8 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 
 
 
-extern WSServer    wsServer;
+extern WSServer            wsServer;
+extern QSettings*          globalSettings;
 
 AppUi::AppUi(QObject *parent) : QObject(parent)
 {
@@ -52,29 +53,28 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     appsMenu->addAction("No applications");
 
     sysTray->setContextMenu(menu);
-    settings = new QSettings("config.ini", QSettings::IniFormat);
-    if (settings->value("retroarchdevice").toBool())
+    if (globalSettings->value("retroarchdevice").toBool())
     {
         retroarchFactory = new RetroArchFactory();
         wsServer.addDeviceFactory(retroarchFactory);
         retroarchAction->setChecked(true);
     }
-    if (settings->value("luabridge").toBool())
+    if (globalSettings->value("luabridge").toBool())
     {
         luaBridge = new LuaBridge();
         wsServer.addDeviceFactory(luaBridge);
         luaBridgeAction->setChecked(true);
     }
-    if (settings->value("snesclassic").toBool())
+    if (globalSettings->value("snesclassic").toBool())
     {
         snesClassic = new SNESClassicFactory();
         wsServer.addDeviceFactory(snesClassic);
         snesClassicAction->setChecked(true);
     }
-    if (settings->contains("trustedOrigin"))
+    if (globalSettings->contains("trustedOrigin"))
     {
-        sDebug() << settings->value("trustedOrigin").toString().split(";");
-        foreach (QString ori, settings->value("trustedOrigin").toString().split(";"))
+        sDebug() << globalSettings->value("trustedOrigin").toString().split(";");
+        foreach (QString ori, globalSettings->value("trustedOrigin").toString().split(";"))
         {
             wsServer.addTrusted(ori);
         }
@@ -88,8 +88,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
 #ifdef Q_OS_WIN
     QObject::connect(miscMenu->addAction("Add a Send To entry in the Windows menu"),
                      &QAction::triggered, this, &AppUi::addWindowsSendToEntry);
-    QSettings settings("skarsnik.nyo.fr", "QUsb2Snes");
-    if (!settings.contains("SendToSet"))
+    if (!globalSettings->contains("SendToSet"))
     {
         QMessageBox msg;
         msg.setText(tr("Do you want to create a entry in the Send To menu of Windows to upload file to the sd2snes?"));
@@ -100,7 +99,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
         int ret = msg.exec();
         if (ret == QMessageBox::Ok)
             addWindowsSendToEntry();
-        settings.setValue("SendToSet", true);
+        globalSettings->setValue("SendToSet", true);
     }
 #endif
 
@@ -122,7 +121,7 @@ void AppUi::onRetroarchTriggered(bool checked)
     } else {
         //wsServer.removeDevice(retroarchFactory);
     }
-    settings->setValue("retroarchdevice", checked);
+    globalSettings->setValue("retroarchdevice", checked);
 }
 
 void AppUi::onLuaBridgeTriggered(bool checked)
@@ -135,7 +134,7 @@ void AppUi::onLuaBridgeTriggered(bool checked)
     } else {
         //wsServer.removeDevice(luaBridgeDevice);
     }
-    settings->setValue("luabridge", checked);
+    globalSettings->setValue("luabridge", checked);
 }
 
 void AppUi::onSNESClassicTriggered(bool checked)
@@ -148,7 +147,7 @@ void AppUi::onSNESClassicTriggered(bool checked)
     } else {
         //wsServer.removeDevice(snesClassic);
     }
-    settings->setValue("snesclassic", checked);
+    globalSettings->setValue("snesclassic", checked);
 }
 
 void    AppUi::addDevicesInfo(DeviceFactory* devFact)
@@ -277,9 +276,9 @@ void AppUi::onUntrustedConnection(QString origin)
     if (but == QMessageBox::Yes)
     {
         wsServer.addTrusted(origin);
-        QStringList tList = settings->value("trustedOrigin").toString().split(";");
+        QStringList tList = globalSettings->value("trustedOrigin").toString().split(";");
         tList.append(origin);
-        settings->setValue("trustedOrigin", tList.join(";"));
+        globalSettings->setValue("trustedOrigin", tList.join(";"));
     }
 }
 

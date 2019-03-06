@@ -11,6 +11,7 @@
 #include <QSettings>
 #include <QSystemTrayIcon>
 
+
 class AppUi : public QObject
 {
     Q_OBJECT
@@ -47,7 +48,6 @@ private:
     SD2SnesFactory*     sd2snesFactory;
     RetroArchFactory*   retroarchFactory;
     SNESClassicFactory* snesClassic;
-    QSettings*          settings;
     QMap<QString, QString>  regularApps;
 
     void                checkForApplications();
