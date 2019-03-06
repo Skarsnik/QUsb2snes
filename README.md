@@ -3,7 +3,7 @@
 QUsb2Snes is a websocket server that provide an unified protocol for accessing hardware/software that act like a SNES (or are a SNES). A classic usage is to use the FileViewer client to upload roms to your SD2SNES.
 But it allows for more advanced usage like reading/writing the memory of the SNES.
 
-[![Build Status](https://travis-ci.com/Skarsnik/QUsb2snes.svg?branch=master)](https://travis-ci.com/Skarsnik/QUsb2snes
+[![Build Status](https://travis-ci.com/Skarsnik/QUsb2snes.svg?branch=master)](https://travis-ci.com/Skarsnik/QUsb2snes)
 [![Build status](https://ci.appveyor.com/api/projects/status/r8t2hpt21ux5r7mi/branch/master?svg=true)](https://ci.appveyor.com/project/Skarsnik/qusb2snes/branch/master)
 
 # Developpers
