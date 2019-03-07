@@ -88,6 +88,8 @@ void SD2SnesDevice::spReadyRead()
 
     dataReceived.append(dataRead);
     // FIXME maybe for 64B mode get?
+    // We ignore the user size and only care for what the firmware
+    // reply to us for Get Ccommand
     if ((m_currentCommand == SD2Snes::opcode::GET)
          && m_getSize <= 0)
     {
@@ -98,9 +100,11 @@ void SD2SnesDevice::spReadyRead()
                     (quint32 ((quint8) responseBlock.at(254)) << 8)  |
                     ((quint8)(responseBlock.at(255)));
         sDebug() << "Size for data : " << m_getSize;
-        emit sizeGet(m_getSize);
+        if (fileGetCmd)
+            emit sizeGet(m_getSize);
     }
     sDebug() << m_currentCommand;
+    // Some command has a fixed size response, like Infos
     if (responseSizeExpected != -1)
     {
         if (bytesReceived == responseSizeExpected)
@@ -108,6 +112,7 @@ void SD2SnesDevice::spReadyRead()
             goto LcmdFinished;
         }
     } else {
+        // command can end differently, LS is special while Get is pretty generic
         sDebug() << "Unsized command" << m_currentCommand;
         if ((this->*checkCommandEnd)()) {
             if (m_currentCommand == SD2Snes::opcode::GET)
