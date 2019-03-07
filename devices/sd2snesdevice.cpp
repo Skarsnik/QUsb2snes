@@ -88,19 +88,23 @@ void SD2SnesDevice::spReadyRead()
 
     dataReceived.append(dataRead);
     // FIXME maybe for 64B mode get?
+    // We ignore the user size and only care for what the firmware
+    // reply to us for Get Ccommand
     if ((m_currentCommand == SD2Snes::opcode::GET)
          && m_getSize <= 0)
     {
         m_getSize = 0;
-        sDebug() << responseBlock.mid(252, 4);
+        sDebug() << responseBlock.mid(252, 4).toHex();
         m_getSize = ((quint32 ((quint8)(responseBlock.at(252))) << 24)) |
                     (quint32 ((quint8) responseBlock.at(253)) << 16) |
                     (quint32 ((quint8) responseBlock.at(254)) << 8)  |
                     ((quint8)(responseBlock.at(255)));
         sDebug() << "Size for data : " << m_getSize;
-        emit sizeGet(m_getSize);
+        if (fileGetCmd)
+            emit sizeGet(m_getSize);
     }
     sDebug() << m_currentCommand;
+    // Some command has a fixed size response, like Infos
     if (responseSizeExpected != -1)
     {
         if (bytesReceived == responseSizeExpected)
@@ -108,6 +112,7 @@ void SD2SnesDevice::spReadyRead()
             goto LcmdFinished;
         }
     } else {
+        // command can end differently, LS is special while Get is pretty generic
         sDebug() << "Unsized command" << m_currentCommand;
         if ((this->*checkCommandEnd)()) {
             if (m_currentCommand == SD2Snes::opcode::GET)
@@ -115,7 +120,8 @@ void SD2SnesDevice::spReadyRead()
                 if (dataRead.size() == dataReceived.size())
                     emit getDataReceived(dataRead.mid(512, m_getSize));
                 else
-                    emit getDataReceived(dataRead.left(bytesReceived - m_getSize));
+                    // Need to remove the padding
+                    emit getDataReceived(dataRead.left(dataRead.size() - (bytesReceived - m_getSize - blockSize)));
             }
             if (m_currentCommand == SD2Snes::opcode::VGET)
             {
@@ -201,7 +207,7 @@ bool    SD2SnesDevice::checkEndForGet()
     quint64 cmp_size = m_getSize;
     if (m_getSize % blockSize != 0)
         cmp_size = (m_getSize / blockSize) * blockSize + blockSize;
-    sDebug() << cmp_size;
+    //sDebug() << cmp_size;
     if (m_commandFlags & SD2Snes::server_flags::NORESP)
         return bytesReceived == cmp_size;
     else

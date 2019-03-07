@@ -63,7 +63,7 @@ void    startServer()
 {
     //myTrayIcon->showMessage(QString("Webserver started"), QString("Webserver started"));
     quint16 port = 8080;
-    QHostAddress addr("127.0.0.1");
+    QHostAddress addr = QHostInfo::fromName("localhost").addresses().first();
     if (globalSettings->contains("listen"))
         addr = QHostInfo::fromName(globalSettings->value("listen").toString()).addresses().first();
     if (globalSettings->contains("port"))
