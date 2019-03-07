@@ -92,7 +92,7 @@ void SD2SnesDevice::spReadyRead()
          && m_getSize <= 0)
     {
         m_getSize = 0;
-        sDebug() << responseBlock.mid(252, 4);
+        sDebug() << responseBlock.mid(252, 4).toHex();
         m_getSize = ((quint32 ((quint8)(responseBlock.at(252))) << 24)) |
                     (quint32 ((quint8) responseBlock.at(253)) << 16) |
                     (quint32 ((quint8) responseBlock.at(254)) << 8)  |
@@ -115,7 +115,8 @@ void SD2SnesDevice::spReadyRead()
                 if (dataRead.size() == dataReceived.size())
                     emit getDataReceived(dataRead.mid(512, m_getSize));
                 else
-                    emit getDataReceived(dataRead.left(bytesReceived - m_getSize));
+                    // Need to remove the padding
+                    emit getDataReceived(dataRead.left(dataRead.size() - (bytesReceived - m_getSize - blockSize)));
             }
             if (m_currentCommand == SD2Snes::opcode::VGET)
             {
@@ -201,7 +202,7 @@ bool    SD2SnesDevice::checkEndForGet()
     quint64 cmp_size = m_getSize;
     if (m_getSize % blockSize != 0)
         cmp_size = (m_getSize / blockSize) * blockSize + blockSize;
-    sDebug() << cmp_size;
+    //sDebug() << cmp_size;
     if (m_commandFlags & SD2Snes::server_flags::NORESP)
         return bytesReceived == cmp_size;
     else
