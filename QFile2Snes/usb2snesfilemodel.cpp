@@ -91,10 +91,13 @@ QStringList Usb2SnesFileModel::mimeTypes() const
 QMimeData *Usb2SnesFileModel::mimeData(const QModelIndexList &indexes) const
 {
     QMimeData* mData = new QMimeData;
+    QString text;
+    QList<QUrl> urls;
     foreach(QModelIndex idx, indexes)
     {
-        mData->setText(m_currentDir + "/" + fileInfos.at(idx.row()).name);
+        urls.append(QUrl(m_currentDir + "/" + fileInfos.at(idx.row()).name));
     }
+    mData->setUrls(urls);
     return mData;
 }
 
@@ -133,5 +136,9 @@ Qt::DropActions Usb2SnesFileModel::supportedDropActions() const
 Qt::ItemFlags Usb2SnesFileModel::flags(const QModelIndex &index) const
 {
     Qt::ItemFlags defaultFlags = QAbstractListModel::flags(index);
-    return Qt::ItemIsDropEnabled | defaultFlags;
+    Qt::ItemFlags toret;
+    toret = Qt::ItemIsDropEnabled | defaultFlags;
+    if (index.isValid() && !fileInfos.at(index.row()).dir)
+        toret |= Qt::ItemIsDragEnabled;
+    return toret;
 }

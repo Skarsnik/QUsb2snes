@@ -185,6 +185,16 @@ void USB2snes::onWebSocketBinaryReceived(QByteArray message)
       sDebug() << "<<B" << message.toHex('-') << message;
     else
       sDebug() << "<<B" << "Received " << message.size() << " byte of data";
+    if (m_state == ReceivingFile)
+    {
+        m_fileGetDataSent += message.size();
+        emit getFileDataGet(message);
+        sDebug() << m_fileGetDataSent << m_fileSize;
+        if (m_fileGetDataSent == m_fileSize)
+
+            changeState(Ready);
+        return ;
+    }
     buffer.append(message);
     if ((unsigned int) buffer.size() == requestedBinaryReadSize)
     {
@@ -300,10 +310,20 @@ void USB2snes::sendFile(QString path, QByteArray data)
     changeState(Ready);
 }
 
-void USB2snes::getFile(QString path)
+int USB2snes::getFile(QString path)
 {
     sendRequest("GetFile", QStringList() << path);
-    changeState(SendingFile);
+    m_istate = IBusy;
+    m_fileGetDataSent = 0;
+    QEventLoop  loop;
+    changeState(ReceivingFile);
+    QObject::connect(this, SIGNAL(textMessageReceived()), &loop, SLOT(quit()));
+    QObject::connect(this, SIGNAL(disconnected()), &loop, SLOT(quit()));
+    loop.exec();
+    QStringList results = getJsonResults(lastTextMessage);
+    bool ok;
+    m_fileSize = results.at(0).toInt(&ok, 16);
+    return m_fileSize;
 }
 
 void USB2snes::renameFile(QString oldPath, QString newPath)
@@ -319,6 +339,16 @@ void USB2snes::deleteFile(QString fileName)
 void USB2snes::boot(QString path)
 {
     sendRequest("Boot", QStringList() << path);
+}
+
+void USB2snes::reset()
+{
+    sendRequest("Reset");
+}
+
+void USB2snes::menu()
+{
+    sendRequest("Menu");
 }
 
 
@@ -342,15 +372,21 @@ USB2snes::State USB2snes::state()
     return m_state;
 }
 
-QStringList USB2snes::infos()
+USB2snes::DeviceInfo USB2snes::infos()
 {
+    USB2snes::DeviceInfo info;
     if (m_istate != IReady)
-        return QStringList();
+        return info;
     sendRequest("Info");
     QEventLoop  loop;
     QObject::connect(this, SIGNAL(textMessageReceived()), &loop, SLOT(quit()));
     loop.exec();
-    return getJsonResults(lastTextMessage);
+    QStringList results = getJsonResults(lastTextMessage);
+    info.firmwareVersion = results.at(0);
+    info.versionString = results.at(1);
+    info.romPlaying = results.at(2);
+    info.flags = results.mid(3);
+    return info;
 }
 
 int USB2snes::fileDataSize() const

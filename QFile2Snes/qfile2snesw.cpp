@@ -1,13 +1,15 @@
-#include "qfile2snesw.h"
-#include "ui_qfile2snesw.h"
 #include <QDebug>
 
+#include <QMessageBox>
 #include <QStorageInfo>
-#include <QFileSystemModel>
+
 #include <QStandardPaths>
 #include <QModelIndex>
 #include <QDir>
 #include <QInputDialog>
+#include "qfile2snesw.h"
+#include "ui_qfile2snesw.h"
+#include "myfilesystemmodel.h"
 
 QFile2SnesW::QFile2SnesW(QWidget *parent) :
     QMainWindow(parent),
@@ -15,25 +17,45 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
 {
     ui->setupUi(this);
     //fillDriveCombo();
-    QFileSystemModel *fileModel = new QFileSystemModel();
+    MyFileSystemModel *fileModel = new MyFileSystemModel();
     qDebug() << fileModel->filter();
     fileModel->sort(0);
     fileModel->setFilter(QDir::Dirs | QDir::AllDirs | QDir::Files | QDir::Drives | QDir::AllEntries);
     qDebug() << QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
     fileModel->setRootPath("/");
     ui->driveComboBox->setModel(fileModel);
+    m_settings = new QSettings("skarsnik.nyo.fr", "QFile2Snes");
+    QString currentDir;
+    if (m_settings->contains("lastLocalDir"))
+        currentDir = m_settings->value("lastLocalDir").toString();
+    else
+        currentDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    if (m_settings->contains("windowGeometry"))
+    {
+        restoreGeometry(m_settings->value("windowGeometry").toByteArray());
+        restoreState(m_settings->value("windowState").toByteArray());
+    }
     ui->localFilesListView->setModel(fileModel);
-    ui->localFilesListView->setRootIndex(fileModel->index(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)));    
+    ui->localFilesListView->setRootIndex(fileModel->index(currentDir));
+    fileModel->filePath(ui->localFilesListView->rootIndex());
+    QStorageInfo si(currentDir);
+    ui->driveComboBox->setCurrentIndex(ui->driveComboBox->findData(si.rootPath().left(2), Qt::DisplayRole));
     usb2snes = new USB2snes(true);
     usb2snesModel = new Usb2SnesFileModel(usb2snes);
+    fileModel->setUsb2Snes(usb2snes);
     ui->usb2snesListView->setModel(usb2snesModel);
     m_state = NOTCONNECTED;
     usb2snes->connect();
     qDebug() << fileModel->mimeTypes();
+    ui->transfertProgressBar->setVisible(false);
+    ui->infoLabel->setText(tr("Trying to find the SD2Snes device"));
     connect(usb2snes, SIGNAL(stateChanged()), this, SLOT(onUsb2SnesStateChanged()));
     connect(usb2snes, SIGNAL(fileSendProgress(int)), this, SLOT(onUsb2SnesFileSendProgress(int)));
     connect(ui->usb2snesListView->selectionModel(), SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)), this, SLOT(onSDViewSelectionChanged(const QItemSelection&, const QItemSelection&)));
     connect(ui->usb2snesListView->selectionModel(), SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(onSDViewCurrentChanged(const QModelIndex&, const QModelIndex&)));
+    connect(fileModel, &MyFileSystemModel::aboutToOverwroteFile, this, &QFile2SnesW::onAboutToOverwriteFile);
+    connect(fileModel, &MyFileSystemModel::directoryLoaded, this, &QFile2SnesW::onLocalDirectoryLoaded);
+    started = false;
 }
 
 QFile2SnesW::~QFile2SnesW()
@@ -41,19 +63,19 @@ QFile2SnesW::~QFile2SnesW()
     delete ui;
 }
 
-void QFile2SnesW::on_driveComboBox_currentIndexChanged(int index)
-{
-    QFileSystemModel* mod = static_cast<QFileSystemModel*> (ui->driveComboBox->model());
-    QString path = mod->fileInfo(ui->driveComboBox->view()->currentIndex()).absoluteFilePath();
-    ui->localFilesListView->setRootIndex(mod->index(path));
-    mod->sort(0);
-}
-
 void QFile2SnesW::on_localFilesListView_doubleClicked(const QModelIndex &index)
 {
     const QFileSystemModel* mod = static_cast<const QFileSystemModel*>(index.model());
     QString path = mod->fileInfo(index).absoluteFilePath();
     ui->localFilesListView->setRootIndex(mod->index(path));
+    ui->currentPathLabel->setText(path.left(3) + path.mid(3).right(100));
+
+}
+
+void    QFile2SnesW::refreshStatus()
+{
+    USB2snes::DeviceInfo infos = usb2snes->infos();
+    ui->infoLabel->setText(QString(tr("Firmware version : %1 - Rom Playing : %2")).arg(infos.firmwareVersion, infos.romPlaying));
 }
 
 void QFile2SnesW::onUsb2SnesStateChanged()
@@ -64,8 +86,10 @@ void QFile2SnesW::onUsb2SnesStateChanged()
         {
             m_state = IDLE;
             usb2snes->setAppName("QFile2Snes");
+            listAndAttach();
+            refreshStatus();
         }
-        if (m_state == SENDINDFILE)
+        if (m_state == SENDINDFILE || m_state == GETTINGFILE)
         {
             qDebug() << "requesting info";
             usb2snes->infos();
@@ -78,8 +102,16 @@ void QFile2SnesW::onUsb2SnesStateChanged()
     if (usb2snes->state() == USB2snes::SendingFile)
     {
         qDebug() << "Sending file";
+        ui->transfertProgressBar->setVisible(true);
         ui->transfertProgressBar->setValue(99);
         m_state = SENDINDFILE;
+    }
+    if (usb2snes->state() == USB2snes::ReceivingFile)
+    {
+        qDebug() << "Receiving file";
+        ui->transfertProgressBar->setVisible(true);
+        ui->transfertProgressBar->setValue(99);
+        m_state = GETTINGFILE;
     }
 }
 
@@ -88,6 +120,11 @@ bool QFile2SnesW::listAndAttach()
     QStringList devices = usb2snes->deviceList();
     /*if (devices.size() != 0)
         usb2snes->usePort(devices.at(0));*/
+    ui->deviceComboBox->clear();
+    foreach(QString dev, devices)
+    {
+        ui->deviceComboBox->addItem(dev);
+    }
     return false;
 }
 
@@ -124,6 +161,7 @@ void QFile2SnesW::onUsb2SnesFileSendProgress(int size)
 
 void QFile2SnesW::onSDViewSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected)
 {
+    Q_UNUSED(deselected)
     qDebug() << "Selection changed";
     ui->renameButton->setEnabled(!selected.isEmpty());
     ui->deleteButton->setEnabled(!selected.isEmpty());
@@ -131,7 +169,14 @@ void QFile2SnesW::onSDViewSelectionChanged(const QItemSelection &selected, const
 
 void QFile2SnesW::onSDViewCurrentChanged(const QModelIndex &current, const QModelIndex &previous)
 {
+    Q_UNUSED(previous)
+    Q_UNUSED(current)
     qDebug() << "current Changed";
+    ui->bootButton->setEnabled(false);
+    QString fileName = usb2snesModel->data(ui->usb2snesListView->currentIndex()).toString();
+    if (fileName.right(4) == ".smc" || fileName.right(4) == ".sfc")
+        ui->bootButton->setEnabled(true);
+
 }
 
 void QFile2SnesW::on_renameButton_clicked()
@@ -153,4 +198,60 @@ void QFile2SnesW::on_deleteButton_clicked()
     QString currentName = usb2snesModel->data(ui->usb2snesListView->currentIndex()).toString();
     usb2snes->deleteFile(usb2snesModel->currentDir() + "/" + currentName);
     usb2snesModel->setPath(usb2snesModel->currentDir());
+}
+
+void QFile2SnesW::onAboutToOverwriteFile(QByteArray data)
+{
+    MyFileSystemModel* model = static_cast<MyFileSystemModel*>(ui->localFilesListView->model());
+    QString fileName = model->getFilePath();
+    int ret = QMessageBox::warning(this, tr("Writing over an existing file"), QString(tr("You are about to overwrite %1 do you want to continue?")).arg(fileName), QMessageBox::Ok | QMessageBox::Cancel);
+    if (ret == QMessageBox::Ok)
+    {
+        qDebug() << "Creating " << fileName << "of " << data.size();
+        QFile file(model->getFilePath());
+        file.open(QIODevice::WriteOnly);
+        file.write(data);
+        file.close();
+    }
+}
+
+void QFile2SnesW::on_bootButton_clicked()
+{
+    QString currentName = usb2snesModel->data(ui->usb2snesListView->currentIndex()).toString();
+    usb2snes->boot(usb2snesModel->currentDir() + "/" + currentName);
+    refreshStatus();
+}
+
+void QFile2SnesW::on_resetButton_clicked()
+{
+    usb2snes->reset();
+}
+
+void QFile2SnesW::on_menuButton_clicked()
+{
+    usb2snes->menu();
+    refreshStatus();
+}
+
+void QFile2SnesW::onLocalDirectoryLoaded(const QString& path)
+{
+    ui->currentPathLabel->setText(path.left(3) + path.mid(3).right(100));
+}
+
+void QFile2SnesW::on_driveComboBox_activated(const QString &arg1)
+{
+    QFileSystemModel* mod = static_cast<QFileSystemModel*> (ui->driveComboBox->model());
+    QString path = mod->fileInfo(ui->driveComboBox->view()->currentIndex()).absoluteFilePath();
+    ui->localFilesListView->setRootIndex(mod->index(path));
+    mod->sort(0);
+}
+
+
+void QFile2SnesW::closeEvent(QCloseEvent *event)
+{
+    Q_UNUSED(event)
+    m_settings->setValue("windowState", saveState());
+    m_settings->setValue("windowGeometry", saveGeometry());
+    const QFileSystemModel* mod = static_cast<const QFileSystemModel*>(ui->localFilesListView->model());
+    m_settings->setValue("lastLocalDir", mod->fileInfo(ui->localFilesListView->rootIndex()).absoluteFilePath());
 }

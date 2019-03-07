@@ -40,7 +40,7 @@ public:
         Connected,
         Ready,
         SendingFile,
-        ReceivfingFile
+        ReceivingFile
     };
     enum sd2snesState {
         sd2menu,
@@ -49,6 +49,12 @@ public:
     struct FileInfo {
         QString name;
         bool    dir;
+    };
+    struct DeviceInfo {
+        QString firmwareVersion;
+        QString versionString;
+        QString romPlaying;
+        QStringList flags;
     };
 
     Q_ENUM(State)
@@ -61,6 +67,7 @@ public:
         AttachSent,
         FirmwareVersionRequested,
         ServerVersionRequested,
+        IWaitingFileSize,
         IReady,
         IBusy
     };
@@ -77,12 +84,14 @@ public:
     QByteArray              getAddress(unsigned int addr, unsigned int size, Space space = SNES);
     void                    setAddress(unsigned int addr, QByteArray data, Space space = SNES);
     void                    sendFile(QString path, QByteArray data);
-    void                    getFile(QString path);
+    int                     getFile(QString path);
     void                    renameFile(QString oldPath, QString newPath);
     void                    deleteFile(QString fileName);
     void                    boot(QString path);
+    void                    reset();
+    void                    menu();
     State                   state();
-    QStringList             infos();
+    DeviceInfo              infos();
     int                     fileDataSize() const;
     QList<FileInfo>         ls(QString path);
     QString                 firmwareString();
@@ -123,6 +132,8 @@ private:
     QVersionNumber  m_serverVersion;
     InternalState   m_istate;
     QStringList     m_deviceList;
+    int             m_fileSize;
+    int             m_fileGetDataSent;
     QByteArray      lastBinaryMessage;
     QString         lastTextMessage;
     unsigned int    requestedBinaryReadSize;

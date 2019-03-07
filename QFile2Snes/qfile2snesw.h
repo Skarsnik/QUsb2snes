@@ -26,7 +26,6 @@ public:
     ~QFile2SnesW();
 
 private slots:
-    void on_driveComboBox_currentIndexChanged(int index);
 
     void on_localFilesListView_doubleClicked(const QModelIndex &index);
 
@@ -42,6 +41,16 @@ private slots:
     void on_renameButton_clicked();
 
     void on_deleteButton_clicked();
+    void onAboutToOverwriteFile(QByteArray data);
+
+    void on_bootButton_clicked();
+
+    void on_resetButton_clicked();
+
+    void on_menuButton_clicked();
+    void    onLocalDirectoryLoaded(const QString& path);
+
+    void on_driveComboBox_activated(const QString &arg1);
 
 private:
     State               m_state;
@@ -49,9 +58,15 @@ private:
     QSettings*          m_settings;
     USB2snes*           usb2snes;
     Usb2SnesFileModel*  usb2snesModel;
+    bool                started;
 
     void    setLFilepath(QString path);
     bool    listAndAttach();
+    void refreshStatus();
+
+    // QWidget interface
+protected:
+    void closeEvent(QCloseEvent *event);
 };
 
 #endif // QFILE2SNESW_H
