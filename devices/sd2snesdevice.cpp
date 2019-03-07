@@ -52,29 +52,25 @@ void SD2SnesDevice::spReadyRead()
     static QByteArray   responseBlock = QByteArray();
     static bool         firstBlock = true;
 
-    bytesReceived += m_port.bytesAvailable();
+    qint64 bytesToRead = m_port.bytesAvailable();
+    bytesReceived += bytesToRead;
     dataRead = m_port.readAll();
-    if (dataRead.size() <= 2056)
+    dataReceived.append(dataRead);
+
+    sDebug() << "SP Received: " << bytesToRead << " (" << bytesReceived << ")";
+
+    /* If we've received over 512 bytes and NORESP is not set, parse response header */
+    if(responseBlock.isEmpty() && dataReceived.size() >= 512 && (m_currentCommand & SD2Snes::server_flags::NORESP) == 0)
     {
-        sDebug() << "<<" << dataRead.size() << " bytes - total received : " << bytesReceived;
-        /*for (unsigned int i = 0; i < dataRead.size(); i += 512)
+        responseBlock = dataReceived.left(512);
+        dataReceived = dataReceived.mid(512);
+        if(responseBlock.left(5) != (QByteArray("USBA") + (char)SD2Snes::opcode::RESPONSE) || responseBlock.at(5) == 1)
         {
-            sDebug() << dataRead.mid(i, 512);
-            sDebug() << "---------";
-        }*/
-    }
-    else
-        sDebug() << "<<" << dataRead.size() << " bytes - total received : " << bytesReceived;
-    if (responseBlock.isEmpty() && (m_commandFlags & SD2Snes::server_flags::NORESP) == 0)
-    {
-        responseBlock = dataRead.left(512);
-        if (responseBlock.left(5) != (QByteArray("USBA") + (char) SD2Snes::opcode::RESPONSE)
-            || responseBlock.at(5) == 1)
-        {
-            sDebug() << "Protocol Error, invalid response block";
+            sDebug() << "Protocol error:" << responseBlock.left(6);
             m_state = READY;
-            if (fileGetCmd)
-                fileData = dataRead.mid(512, m_getSize);
+            if(fileGetCmd)
+                fileData = dataReceived.mid(0, m_getSize);
+            dataRead.clear();
             dataReceived.clear();
             bytesReceived = 0;
             fileGetCmd = false;
@@ -86,68 +82,60 @@ void SD2SnesDevice::spReadyRead()
         }
     }
 
-    dataReceived.append(dataRead);
-    // FIXME maybe for 64B mode get?
-    // We ignore the user size and only care for what the firmware
-    // reply to us for Get Ccommand
-    if ((m_currentCommand == SD2Snes::opcode::GET)
-         && m_getSize <= 0)
+    if(m_getSize <= 0 && (m_currentCommand == SD2Snes::opcode::GET) && responseBlock.size() > 0)
     {
-        m_getSize = 0;
-        sDebug() << responseBlock.mid(252, 4).toHex();
-        m_getSize = ((quint32 ((quint8)(responseBlock.at(252))) << 24)) |
-                    (quint32 ((quint8) responseBlock.at(253)) << 16) |
-                    (quint32 ((quint8) responseBlock.at(254)) << 8)  |
-                    ((quint8)(responseBlock.at(255)));
-        sDebug() << "Size for data : " << m_getSize;
-        if (fileGetCmd)
-            emit sizeGet(m_getSize);
+        m_getSize = (responseBlock.at(252)&0xFF) << 24;
+        m_getSize += (responseBlock.at(253)&0xFF) << 16;
+        m_getSize += (responseBlock.at(254)&0xFF) << 8;
+        m_getSize += (responseBlock.at(255)&0xFF);
+        sDebug() << "Received block size:" << m_getSize;
+        emit sizeGet(m_getSize);
     }
-    sDebug() << m_currentCommand;
-    // Some command has a fixed size response, like Infos
-    if (responseSizeExpected != -1)
+
+    if(responseSizeExpected == -1)
     {
-        if (bytesReceived == responseSizeExpected)
+        if((this->*checkCommandEnd)() == false)
         {
-            goto LcmdFinished;
+            /* Still waiting for more data */
+            if(dataReceived.size() >= 512)
+            {
+                if(m_getSize >= 0)
+                {
+                    emit getDataReceived(dataReceived.left(m_getSize));
+                    m_getSize = -2;
+                } else {
+                    emit getDataReceived(dataReceived.left(512));
+                }
+                dataReceived = dataReceived.mid(512);
+
+            }
+            sDebug() << "Waiting for more data to arrive";
+            return;
         }
     } else {
-        // command can end differently, LS is special while Get is pretty generic
-        sDebug() << "Unsized command" << m_currentCommand;
-        if ((this->*checkCommandEnd)()) {
-            if (m_currentCommand == SD2Snes::opcode::GET)
-            {
-                if (dataRead.size() == dataReceived.size())
-                    emit getDataReceived(dataRead.mid(512, m_getSize));
-                else
-                    // Need to remove the padding
-                    emit getDataReceived(dataRead.left(dataRead.size() - (bytesReceived - m_getSize - blockSize)));
-            }
-            if (m_currentCommand == SD2Snes::opcode::VGET)
-            {
-                if (dataRead.size() == dataReceived.size())
-                    emit getDataReceived(dataRead);
-                else
-                    emit getDataReceived(dataRead.left(m_getSize % 64));
-            }
-            goto LcmdFinished;
-        } else {
-            if ((m_currentCommand == SD2Snes::opcode::GET || m_currentCommand == SD2Snes::opcode::VGET))
-            {
-                if (firstBlock && (m_commandFlags & SD2Snes::server_flags::NORESP) == 0)
-                    emit getDataReceived(dataRead.mid(512));
-                else
-                    emit getDataReceived(dataRead);
-            }
+        if(bytesReceived != responseSizeExpected)
+        {
+            return;
         }
     }
-    firstBlock = false;
-    return;
-LcmdFinished :
+
+    if(m_getSize != -2)
+    {
+        if(m_getSize >= 0)
+        {
+            emit getDataReceived(dataReceived.left(m_getSize));
+        } else {
+            emit getDataReceived(dataReceived);
+        }
+    }
+
     m_state = READY;
     dataRead = dataReceived;
     if (fileGetCmd)
-        fileData = dataRead.mid(512, m_getSize);
+    {
+        fileData = dataRead.left(m_getSize);
+    }
+    dataRead.clear();
     dataReceived.clear();
     bytesReceived = 0;
     fileGetCmd = false;
@@ -156,6 +144,7 @@ LcmdFinished :
     responseBlock.clear();
     sDebug() << "Command finished";
     emit commandFinished();
+
 }
 
 void SD2SnesDevice::spErrorOccurred(QSerialPort::SerialPortError err)
