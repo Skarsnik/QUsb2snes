@@ -27,7 +27,7 @@ after_build:
   # QFile2Snes deployment
   - mkdir QUsb2Snes\apps\QFile2Snes
   - xcopy QFile2Snes\release\QFile2Snes.exe QUsb2Snes\apps\QFile2Snes\
-  - xcopy QFile2Snes\icon50x50.png QUsb2Snes\apps\QFile2Snes\icone.png
+  - copy QFile2Snes\icon50x50.png QUsb2Snes\apps\QFile2Snes\icone.png
   - xcopy QFile2Snes\qusb2snesapp.json QUsb2Snes\apps\QFile2Snes\
 
   - 7z a QUsb2Snes-%APPVEYOR_REPO_TAG_NAME%.7z QUsb2Snes
