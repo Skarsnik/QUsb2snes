@@ -15,7 +15,7 @@ public:
 public:
     bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
     Qt::ItemFlags flags(const QModelIndex &index) const;
-    void          setUsb2Snes(USB2snes* usb);
+    void          setUsb2Snes(Usb2Snes* usb);
     const QString&      getFilePath() const;
 
     Qt::DropActions supportedDropActions() const;
@@ -27,7 +27,7 @@ private slots:
     void     OnUsbFileData(QByteArray data);
 
 private:
-    USB2snes*    usb2snes;
+    Usb2Snes*    usb2snes;
     int          m_fileSize;
     int          m_sizeReceived;
     QByteArray   m_fileData;

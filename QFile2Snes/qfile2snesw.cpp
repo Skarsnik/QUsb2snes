@@ -40,7 +40,7 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
     fileModel->filePath(ui->localFilesListView->rootIndex());
     QStorageInfo si(currentDir);
     ui->driveComboBox->setCurrentIndex(ui->driveComboBox->findData(si.rootPath().left(2), Qt::DisplayRole));
-    usb2snes = new USB2snes(true);
+    usb2snes = new Usb2Snes(true);
     usb2snesModel = new Usb2SnesFileModel(usb2snes);
     fileModel->setUsb2Snes(usb2snes);
     ui->usb2snesListView->setModel(usb2snesModel);
@@ -74,13 +74,13 @@ void QFile2SnesW::on_localFilesListView_doubleClicked(const QModelIndex &index)
 
 void    QFile2SnesW::refreshStatus()
 {
-    USB2snes::DeviceInfo infos = usb2snes->infos();
+    Usb2Snes::DeviceInfo infos = usb2snes->infos();
     ui->infoLabel->setText(QString(tr("Firmware version : %1 - Rom Playing : %2")).arg(infos.firmwareVersion, infos.romPlaying));
 }
 
 void QFile2SnesW::onUsb2SnesStateChanged()
 {
-    if (usb2snes->state() == USB2snes::Ready)
+    if (usb2snes->state() == Usb2Snes::Ready)
     {
         if (m_state == NOTCONNECTED)
         {
@@ -99,17 +99,19 @@ void QFile2SnesW::onUsb2SnesStateChanged()
         usb2snesModel->setPath(usb2snesModel->currentDir());
         //ui->transfertProgressBar->setEnabled(false);
     }
-    if (usb2snes->state() == USB2snes::SendingFile)
+    if (usb2snes->state() == Usb2Snes::SendingFile)
     {
         qDebug() << "Sending file";
         ui->transfertProgressBar->setVisible(true);
+        ui->transfertProgressBar->setInvertedAppearance(false);
         ui->transfertProgressBar->setValue(99);
         m_state = SENDINDFILE;
     }
-    if (usb2snes->state() == USB2snes::ReceivingFile)
+    if (usb2snes->state() == Usb2Snes::ReceivingFile)
     {
         qDebug() << "Receiving file";
         ui->transfertProgressBar->setVisible(true);
+        ui->transfertProgressBar->setInvertedAppearance(true);
         ui->transfertProgressBar->setValue(99);
         m_state = GETTINGFILE;
     }

@@ -4,7 +4,7 @@
 #include <QDebug>
 #include <QFile>
 
-Usb2SnesFileModel::Usb2SnesFileModel(USB2snes *usb, QObject *parent)
+Usb2SnesFileModel::Usb2SnesFileModel(Usb2Snes *usb, QObject *parent)
     : QAbstractListModel(parent)
 {
         usb2snes = usb;
@@ -44,11 +44,11 @@ QVariant Usb2SnesFileModel::data(const QModelIndex &index, int role) const
 void Usb2SnesFileModel::setPath(QString path)
 {
     m_currentDir = path;
-    QList<USB2snes::FileInfo> li = usb2snes->ls(path);
+    QList<Usb2Snes::FileInfo> li = usb2snes->ls(path);
     if (dirOnly)
     {
         fileInfos.clear();
-        foreach(USB2snes::FileInfo fi, li)
+        foreach(Usb2Snes::FileInfo fi, li)
         {
             if (fi.dir)
                 fileInfos.append(fi);

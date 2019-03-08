@@ -7,6 +7,9 @@ init:
 build_script:
   - qmake QUsb2snes.pro -spec win32-msvc "CONFIG+=release"
   - nmake
+  - cd QFile2Snes
+  - qmake QFile2Snes.pro -spec win32-msvc "CONFIG+=release"
+  - nmake
 
 after_build:
   - mkdir QUsb2Snes

@@ -30,7 +30,7 @@ private slots:
 private:
     Ui::SendToDialog *ui;
     QFileInfo   fileInfos;
-    USB2snes*   usb2snes;
+    Usb2Snes*   usb2snes;
     QProcess    wsServer;
     QSettings*  settings;
     QTimer      progressTimer;

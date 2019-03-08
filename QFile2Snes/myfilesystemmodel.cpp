@@ -34,10 +34,10 @@ Qt::ItemFlags MyFileSystemModel::flags(const QModelIndex &index) const
     return defaultFlags;
 }
 
-void MyFileSystemModel::setUsb2Snes(USB2snes *usb)
+void MyFileSystemModel::setUsb2Snes(Usb2Snes *usb)
 {
     usb2snes = usb;
-    connect(usb2snes,  &USB2snes::getFileDataGet, this, &MyFileSystemModel::OnUsbFileData);
+    connect(usb2snes,  &Usb2Snes::getFileDataGet, this, &MyFileSystemModel::OnUsbFileData);
 }
 
 const QString &MyFileSystemModel::getFilePath() const

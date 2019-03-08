@@ -26,7 +26,7 @@
 #define USB2SNESURL "ws://localhost:8080/"
 
 
-class USB2snes : public QObject
+class Usb2Snes : public QObject
 {
     Q_OBJECT
 public:
@@ -73,7 +73,7 @@ public:
     };
     Q_ENUM(InternalState)
 
-    USB2snes(bool autoAttach);
+    Usb2Snes(bool autoAttach);
     void                    usePort(QString port);
     QString                 port();
     QString                 getRomName();

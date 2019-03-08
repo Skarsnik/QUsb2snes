@@ -56,7 +56,7 @@ private:
     State               m_state;
     Ui::QFile2SnesW     *ui;
     QSettings*          m_settings;
-    USB2snes*           usb2snes;
+    Usb2Snes*           usb2snes;
     Usb2SnesFileModel*  usb2snesModel;
     bool                started;
 

@@ -40,7 +40,7 @@ bool SendToDialog::init()
         QMessageBox::critical(this, tr("QFile2Snes error"), tr("Cannot connect to a usb2snes application or can't start one"));
         return false;
     }
-    usb2snes = new USB2snes(false);
+    usb2snes = new Usb2Snes(false);
     connect(usb2snes, SIGNAL(stateChanged()), this, SLOT(onUsb2SnesStateChanged()));
     connect(usb2snes, SIGNAL(disconnect()), this, SLOT(onUsb2SnesDisconnected()));
     usb2snes->connect();
@@ -54,15 +54,15 @@ SendToDialog::~SendToDialog()
 
 void SendToDialog::onUsb2SnesStateChanged()
 {
-    static USB2snes::State prevState = USB2snes::None;
-    USB2snes::State uState = usb2snes->state();
-    if (uState == USB2snes::Connected)
+    static Usb2Snes::State prevState = Usb2Snes::None;
+    Usb2Snes::State uState = usb2snes->state();
+    if (uState == Usb2Snes::Connected)
     {
         attachToSD2Snes();
     }
-    if (uState == USB2snes::Ready)
+    if (uState == Usb2Snes::Ready)
     {
-        if (prevState == USB2snes::SendingFile)
+        if (prevState == Usb2Snes::SendingFile)
         {
             usb2snes->ls("/");
             setStatusLabel(tr("File transfered"));
@@ -71,7 +71,7 @@ void SendToDialog::onUsb2SnesStateChanged()
                 usb2snes->boot(ui->dirLineEdit->text() + "/" + fileInfos.fileName());
             goto endState;
         }
-        if (prevState == USB2snes::Connected)
+        if (prevState == Usb2Snes::Connected)
         {
             ui->progressBar->setValue(20);
         }
@@ -79,7 +79,7 @@ void SendToDialog::onUsb2SnesStateChanged()
         progressTimer.start(1000);
         usb2snes->setAppName("SendToDialog");
     }
-    if (uState == USB2snes::SendingFile)
+    if (uState == Usb2Snes::SendingFile)
     {
         progressTimer.start(500);
     }
