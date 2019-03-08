@@ -24,11 +24,13 @@ You need to install the last Usb2Snes firmware by redguy (https://github.com/Red
 
 Multitroid provide a patched version of snes9x with a lua script that allow for external software to communicate with it. Get the emulator on http://multitroid.com/. Activate the snes9x bridge on the device menu of QUsb2Snes then run the multibridge.lua scripts on snes9x.
 
-## RetroArch with Snes9x 2010 core
+## RetroArch with Snes core
 
-You need to use snes9x 2010 core and edit your `retroarch.cfg` file (can be found in %appData%\RetroArch) to set `network_cmd_enable = "true"` to true (default is false). Then you need to activate the RetroArch virtual device on the devices menu.
+You can use snex9x or bsnes-mercury cores and edit your `retroarch.cfg` file (can be found in %appData%\RetroArch) to set `network_cmd_enable = "true"` to true (default is false). Then you need to activate the RetroArch virtual device on the devices menu. Any flavor of bsnes-mercury is prefered as we can access the ROM data.
 
-For software needing to the patch the ROM (multitroid for example) you etheir need to patch the rom manually with the IPS file or put the IPS file along side the rom with the same name for retroarch to auto patch it.
+Snex9x core : For software needing to the patch the ROM (multitroid for example) you etheir need to patch the rom manually with the IPS file or put the IPS file along side the rom with the same name for retroarch to auto patch it.
+
+You can connect to a remote RetroArch by adding a RetroArchHost=yourownhost in the config.ini file
 
 ## RetroArch with other core
 
