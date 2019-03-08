@@ -9,7 +9,6 @@ Q_LOGGING_CATEGORY(log_sd2snes, "SD2SNES")
 SD2SnesDevice::SD2SnesDevice(QString portName)
 {
     m_port.setPortName(portName);
-    //m_port.baudRate();
     connect(&m_port, SIGNAL(readyRead()), this, SLOT(spReadyRead()));
     connect(&m_port, SIGNAL(aboutToClose()), this, SIGNAL(closed()));
     connect(&m_port, SIGNAL(errorOccurred(QSerialPort::SerialPortError)), this, SLOT(spErrorOccurred(QSerialPort::SerialPortError)));
@@ -51,6 +50,7 @@ void SD2SnesDevice::spReadyRead()
 {
     static QByteArray   responseBlock = QByteArray();
     static bool         firstBlock = true;
+    static int          dataSent = 0;
 
     qint64 bytesToRead = m_port.bytesAvailable();
     bytesReceived += bytesToRead;
@@ -63,14 +63,12 @@ void SD2SnesDevice::spReadyRead()
     if(responseBlock.isEmpty() && dataReceived.size() >= 512 && (m_currentCommand & SD2Snes::server_flags::NORESP) == 0)
     {
         responseBlock = dataReceived.left(512);
-        dataReceived = dataReceived.mid(512);
-        if(responseBlock.left(5) != (QByteArray("USBA") + (char)SD2Snes::opcode::RESPONSE) || responseBlock.at(5) == 1)
+        if(responseBlock.left(5) != (QByteArray("USBA").append(SD2Snes::opcode::RESPONSE)) || responseBlock.at(5) == 1)
         {
             sDebug() << "Protocol error:" << responseBlock.left(6);
             m_state = READY;
             if(fileGetCmd)
-                fileData = dataReceived.mid(0, m_getSize);
-            dataRead.clear();
+                fileData = dataReceived.mid(512, m_getSize);
             dataReceived.clear();
             bytesReceived = 0;
             fileGetCmd = false;
@@ -84,30 +82,27 @@ void SD2SnesDevice::spReadyRead()
 
     if(m_getSize <= 0 && (m_currentCommand == SD2Snes::opcode::GET) && responseBlock.size() > 0)
     {
-        m_getSize = (responseBlock.at(252)&0xFF) << 24;
-        m_getSize += (responseBlock.at(253)&0xFF) << 16;
-        m_getSize += (responseBlock.at(254)&0xFF) << 8;
-        m_getSize += (responseBlock.at(255)&0xFF);
+        dataSent = 512;
+        m_getSize =  ((responseBlock.at(252)&0xFF) << 24);
+        m_getSize += ((responseBlock.at(253)&0xFF) << 16);
+        m_getSize += ((responseBlock.at(254)&0xFF) << 8);
+        m_getSize += ((responseBlock.at(255)&0xFF));
         sDebug() << "Received block size:" << m_getSize;
-        emit sizeGet(m_getSize);
+        if(fileGetCmd)
+        {
+            emit sizeGet(static_cast<unsigned int>(m_getSize));
+        }
     }
 
     if(responseSizeExpected == -1)
     {
         if((this->*checkCommandEnd)() == false)
         {
-            /* Still waiting for more data */
-            if(dataReceived.size() >= 512)
+            if((m_getSize >= 0 && m_getSize > bytesReceived && bytesReceived > 512) || m_getSize < 0)
             {
-                if(m_getSize >= 0)
-                {
-                    emit getDataReceived(dataReceived.left(m_getSize));
-                    m_getSize = -2;
-                } else {
-                    emit getDataReceived(dataReceived.left(512));
-                }
-                dataReceived = dataReceived.mid(512);
-
+                auto dSend = dataReceived.mid(dataSent);
+                emit getDataReceived(dSend);
+                dataSent += dSend.size();
             }
             sDebug() << "Waiting for more data to arrive";
             return;
@@ -115,27 +110,26 @@ void SD2SnesDevice::spReadyRead()
     } else {
         if(bytesReceived != responseSizeExpected)
         {
+            dataSent = 0;
             return;
         }
     }
 
-    if(m_getSize != -2)
+    sDebug() << m_currentCommand;
+
+    if(m_getSize >= 0)
     {
-        if(m_getSize >= 0)
-        {
-            emit getDataReceived(dataReceived.left(m_getSize));
-        } else {
-            emit getDataReceived(dataReceived);
-        }
+        emit getDataReceived(dataReceived.mid(dataSent, (m_getSize + 512) - dataSent));
+    } else {
+        emit getDataReceived(dataReceived.mid(dataSent));
     }
 
     m_state = READY;
     dataRead = dataReceived;
     if (fileGetCmd)
     {
-        fileData = dataRead.left(m_getSize);
+        fileData = dataRead.mid(512, m_getSize);
     }
-    dataRead.clear();
     dataReceived.clear();
     bytesReceived = 0;
     fileGetCmd = false;
