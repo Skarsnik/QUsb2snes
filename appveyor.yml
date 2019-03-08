@@ -10,6 +10,7 @@ build_script:
   - cd QFile2Snes
   - qmake QFile2Snes.pro -spec win32-msvc "CONFIG+=release"
   - nmake
+  - cd ..
 
 after_build:
   - mkdir QUsb2Snes
@@ -33,7 +34,7 @@ after_build:
 
 
 artifacts:
-  - path: QUsb2Snes$(APPVEYOR_REPO_TAG_NAME).7z
+  - path: QUsb2Snes-$(APPVEYOR_REPO_TAG_NAME).7z
     name: package
   - path: release\QUsb2Snes.exe
     name: executable
