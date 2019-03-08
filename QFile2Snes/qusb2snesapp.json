@@ -1,0 +1,7 @@
+{
+    "name" : "QFile2Snes",
+    "description" : "A basic file explorer for Usb2Snes firmware",
+    "executable" : "QFile2Snes",
+    "icon" : "icone.png",
+    "QtApp" : true
+}

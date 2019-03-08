@@ -13,6 +13,7 @@ build_script:
 
 after_build:
   - mkdir QUsb2Snes
+  - mkdir QUsb2Snes\apps
   - xcopy release\QUsb2Snes.exe QUsb2Snes\
   - cd QUsb2Snes
   - windeployqt.exe --no-translations --no-system-d3d-compiler --no-opengl-sw --no-opengl --no-webkit --no-patchqt --no-webkit2 --release  QUsb2Snes.exe
@@ -22,6 +23,12 @@ after_build:
   - copy /y ..\LICENSE LICENCE-GPLV3.txt
   - copy /y ..\README.md Readme.txt
   - cd ..
+  # QFile2Snes deployment
+  - mkdir QUsb2Snes\apps\QFile2Snes
+  - xcopy QFile2Snes\release\QFile2Snes.exe QUsb2Snes\apps\QFile2Snes\
+  - xcopy QFile2Snes\icone.png QUsb2Snes\apps\QFile2Snes\
+  - xcopy QFile2Snes\qusb2snesapp.json QUsb2Snes\apps\QFile2Snes\
+
   - 7z a QUsb2Snes-%APPVEYOR_REPO_TAG_NAME%.7z QUsb2Snes
 
 
