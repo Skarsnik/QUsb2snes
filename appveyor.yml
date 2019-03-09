@@ -29,6 +29,8 @@ after_build:
   - xcopy QFile2Snes\release\QFile2Snes.exe QUsb2Snes\apps\QFile2Snes\
   - copy QFile2Snes\icon50x50.png QUsb2Snes\apps\QFile2Snes\icone.png
   - xcopy QFile2Snes\qusb2snesapp.json QUsb2Snes\apps\QFile2Snes\
+  - appveyor DownloadFile https://github.com/Skarsnik/snesclassicstuff/releases/download/serverstuffmod_v1/serverstuff.hmod -FileName serverstuff.hmod
+  - copy serverstuff.hmod QUsb2Snes\
 
   - 7z a QUsb2Snes-%APPVEYOR_REPO_TAG_NAME%.7z QUsb2Snes
 
