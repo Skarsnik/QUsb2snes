@@ -283,6 +283,7 @@ void SD2SnesDevice::writeData(QByteArray data)
 
     auto written = m_port.write(data);
     sDebug() << "Written : " << written << " bytes";
+    m_port.flush();
     if (m_currentCommand == SD2Snes::VPUT)
     {
         sDebug() << "Putsize: " << m_putSize << " sendSize:" << sendSize;

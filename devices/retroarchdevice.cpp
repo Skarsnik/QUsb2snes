@@ -1,12 +1,13 @@
 #include <QEventLoop>
 #include <QLoggingCategory>
+#include <QUuid>
 
 #include "retroarchdevice.h"
 
 Q_LOGGING_CATEGORY(log_retroarch, "RETROARCH")
 #define sDebug() qCDebug(log_retroarch)
 
-RetroArchDevice::RetroArchDevice(QUdpSocket* sock, QString raVersion, QString gameName, bool snesMemoryMap, bool snesLoromMap)
+RetroArchDevice::RetroArchDevice(QUdpSocket* sock, QString raVersion, QString gameName, int bSize, bool snesMemoryMap, bool snesLoromMap)
 {
     m_sock = sock;
     m_state = READY;
@@ -24,12 +25,14 @@ RetroArchDevice::RetroArchDevice(QUdpSocket* sock, QString raVersion, QString ga
     checkingInfo = false;
     m_raVersion = raVersion;
     m_gameName = gameName;
+    blockSize = static_cast<unsigned int>(bSize);
+    m_uuid = QUuid::createUuid().toString(QUuid::Id128).left(24);
 }
 
 
 QString RetroArchDevice::name() const
 {
-    return "EMU RetroArch";
+    return QString("RetroArch %1").arg(m_uuid);
 }
 
 
@@ -59,6 +62,7 @@ USB2SnesInfo RetroArchDevice::parseInfo(const QByteArray &data)
 
 QList<ADevice::FileInfos> RetroArchDevice::parseLSCommand(QByteArray &dataI)
 {
+    Q_UNUSED(dataI);
     return QList<ADevice::FileInfos>();
 }
 
@@ -73,20 +77,17 @@ void RetroArchDevice::close()
     m_sock->close();
 }
 
-// READ_CORE_RAM 200 20
-// READ_CORE_RAM 200 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-
 void RetroArchDevice::onUdpReadyRead()
 {
     QByteArray data = m_sock->readAll();
-    sDebug() << "<<" << data;
+    //sDebug() << "<<" << data;
     if (data.isEmpty())
     {
         emit closed();
         return ;
     }
     QList<QByteArray> tList = data.trimmed().split(' ');
-    sDebug() << tList;
+    //sDebug() << tList;
 
     if(checkingInfo)
     {
@@ -95,8 +96,8 @@ void RetroArchDevice::onUdpReadyRead()
         {
             hasSnesMemoryMap = false;
         } else {
-            unsigned char romType = (unsigned char)QByteArray::fromHex(tList.at(23))[0];
-            unsigned char romSize = (unsigned char)QByteArray::fromHex(tList.at(24))[0];
+            unsigned char romType = static_cast<unsigned char>(QByteArray::fromHex(tList.at(23))[0]);
+            unsigned char romSize = static_cast<unsigned char>(QByteArray::fromHex(tList.at(24))[0]);
             if(romType > 0 && romSize > 0)
             {
                 bool loRom = (romType & 1) == 0;
@@ -120,11 +121,10 @@ void RetroArchDevice::onUdpReadyRead()
     {
         tList = tList.mid(2);
         data = tList.join();
-        sDebug() << "Sending : " << QByteArray::fromHex(data).toHex();
         emit getDataReceived(QByteArray::fromHex(data));
     } else {
         sDebug() << "Not giving data : sending" << lastRCRSize << "bytes";
-        emit getDataReceived(QByteArray(lastRCRSize, 0));
+        emit getDataReceived(QByteArray(static_cast<int>(lastRCRSize), 0));
     }
 
     if (bigGet)
@@ -139,8 +139,8 @@ void RetroArchDevice::onUdpReadyRead()
             emit commandFinished();
         } else {
             unsigned int mSize = 0;
-            if (sizeRequested + 78 <= sizeBigGet)
-                mSize = 78;
+            if (sizeRequested + blockSize <= sizeBigGet)
+                mSize = blockSize;
             else
                 mSize = sizeBigGet - sizeRequested;
 
@@ -173,7 +173,6 @@ void RetroArchDevice::onUdpReadyRead()
 void RetroArchDevice::read_core_ram(unsigned int addr, unsigned int size)
 {
     QByteArray data = "READ_CORE_RAM " + QByteArray::number(addr, 16) + " " + QByteArray::number(size);
-    sDebug() << ">>" << data;
     lastRCRSize = size;
     m_sock->write(data);
 }
@@ -197,25 +196,31 @@ bool RetroArchDevice::hasControlCommands()
 
 void RetroArchDevice::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
 {
-
+    Q_UNUSED(op);
+    Q_UNUSED(args);
 }
 
 void RetroArchDevice::fileCommand(SD2Snes::opcode op, QByteArray args)
 {
+    Q_UNUSED(op);
+    Q_UNUSED(args);
 
 }
 
 void RetroArchDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
 {
+    Q_UNUSED(op);
+    Q_UNUSED(args);
 
 }
 
 void RetroArchDevice::putFile(QByteArray name, unsigned int size)
 {
-
+    Q_UNUSED(name);
+    Q_UNUSED(size);
 }
 
-int RetroArchDevice::addr_to_addr(int addr)
+int RetroArchDevice::addr_to_addr(unsigned int addr)
 {
     if(!hasSnesMemoryMap)
     {
@@ -251,7 +256,7 @@ int RetroArchDevice::addr_to_addr(int addr)
             }
         }
     }
-    return addr;
+    return static_cast<int>(addr);
 }
 
 void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
@@ -260,71 +265,83 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
     m_state = BUSY;
     if (space != SD2Snes::SNES)
         return;
-    addr = addr_to_addr(addr);
-    if (addr == -1)
+    auto newAddr = addr_to_addr(addr);
+    if (newAddr == -1)
     {
-        emit getDataReceived(QByteArray(size, 0));
+        emit getDataReceived(QByteArray(static_cast<int>(size), 0));
         m_timer->start();
         return ;
     }
 
-    if (size > 78)
+    if (size > blockSize)
     {
         bigGet = true;
         sizeBigGet = size;
-        sizeRequested = 78;
-        size = 78;
-        sizePrevBigGet = 78;
-        addrBigGet = addr;
+        sizeRequested = blockSize;
+        size = blockSize;
+        sizePrevBigGet = blockSize;
+        addrBigGet = static_cast<unsigned int>(newAddr);
     }
 
-    if (hasSnesLoromMap && (addr < 0x700000 || addr >= 0x800000))
+    if (hasSnesLoromMap && (newAddr < 0x700000 || newAddr >= 0x800000))
     {
-        if(((addr+size)&0xFFFF) < 0x8000)
+        if(((static_cast<unsigned int>(newAddr)+size)&0xFFFF) < 0x8000)
         {
             bigGet = true;
             sizeBigGet = size;
-            sizeRequested = 0x10000 - (addr&0xFFFF);
+            sizeRequested = 0x10000 - (newAddr&0xFFFF);
             size = sizeRequested;
             sizePrevBigGet = size;
-            addrBigGet = addr;
+            addrBigGet = static_cast<unsigned int>(newAddr);
         }
     }
 
-    read_core_ram(addr, size);
+    read_core_ram(static_cast<unsigned int>(newAddr), size);
 }
 
 void RetroArchDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
 {
-
+    Q_UNUSED(space);
+    Q_UNUSED(args);
 }
 
 void RetroArchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, unsigned int size)
 {
-    int addr = addr0;
+    Q_UNUSED(size);
+    unsigned int addr = addr0;
     m_state = BUSY;
+
     if (space != SD2Snes::space::SNES)
         return;
-    addr = addr_to_addr(addr);
-    if (addr == -1)
-        return ;
-    sDebug() << "WRITING TO RAM/SRAM" << addr;
-    dataToWrite = "WRITE_CORE_RAM " + QByteArray::number(addr, 16) + " ";
+
+    int newAddr = addr_to_addr(addr);
+
+    if (newAddr == -1)
+        return;
+
+    sDebug() << "WRITING TO RAM/SRAM" << newAddr;
+    dataToWrite = "WRITE_CORE_RAM " + QByteArray::number(newAddr, 16) + " ";
 }
 
 void RetroArchDevice::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
 {
-
+    Q_UNUSED(space);
+    Q_UNUSED(args);
 }
 
 void RetroArchDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
 {
+    Q_UNUSED(flags);
     putAddrCommand(space, addr, size);
 }
 
 void RetroArchDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray &arg, const QByteArray arg2)
 {
-
+    Q_UNUSED(opcode);
+    Q_UNUSED(space);
+    Q_UNUSED(flags);
+    Q_UNUSED(arg);
+    Q_UNUSED(arg2);
 }
 
 void RetroArchDevice::infoCommand()
@@ -338,7 +355,7 @@ void RetroArchDevice::infoCommand()
 void RetroArchDevice::writeData(QByteArray data)
 {
     dataToWrite.append(data.toHex(' '));
-    sDebug() << "<<" << dataToWrite;
+    //sDebug() << "<<" << dataToWrite;
     m_sock->write(dataToWrite);
     m_timer->start();
 }

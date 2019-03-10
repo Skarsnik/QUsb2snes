@@ -12,7 +12,7 @@ class RetroArchDevice : public ADevice
 {
     Q_OBJECT
 public:
-    RetroArchDevice(QUdpSocket* sock, QString raVersion, QString gameName, bool snesMemoryMap, bool snesLoromMap);
+    RetroArchDevice(QUdpSocket* sock, QString raVersion, QString gameName, int bSize, bool snesMemoryMap, bool snesLoromMap);
 
     // ADevice interface
 public:
@@ -62,7 +62,9 @@ private:
     bool         hasSnesLoromMap;
     QByteArray   checkReturnedValue;
     void         read_core_ram(unsigned int addr, unsigned int size);
-    int          addr_to_addr(int addr);
+    int          addr_to_addr(unsigned int addr);
+    unsigned int blockSize;
+    QString      m_uuid;
 
 signals:
     void    checkReturned();
