@@ -41,6 +41,12 @@ HEADERS = adevice.h \
           usb2snes.h \
           wsserver.h
 
+macx: {
+	SOURCES += osx/appnap.mm
+	HEADERS += osx/appnap.h
+	LIBS += -framework Foundation
+}
+
 RESOURCES = ressources.qrc
 
 ICONS = cheer128x128.icns
