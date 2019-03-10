@@ -263,13 +263,18 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
 {
     sDebug() << "GetAddress " << space << addr << size;
     m_state = BUSY;
+
     if (space != SD2Snes::SNES)
         return;
+
     auto newAddr = addr_to_addr(addr);
     if (newAddr == -1)
     {
         emit getDataReceived(QByteArray(static_cast<int>(size), 0));
-        m_timer->start();
+        //m_timer->start();
+        sDebug() << "GetAddress finished";
+        m_state = READY;
+        emit commandFinished();
         return ;
     }
 
@@ -281,9 +286,13 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
         size = blockSize;
         sizePrevBigGet = blockSize;
         addrBigGet = static_cast<unsigned int>(newAddr);
+    } else {
+        bigGet = false;
+        sizeBigGet = 0;
+        addrBigGet = 0;
     }
 
-    if (hasSnesLoromMap && (newAddr < 0x700000 || newAddr >= 0x800000))
+    if (hasSnesLoromMap && (newAddr < 0x700000 || newAddr >= 0x800000) && ((newAddr&0xFFFF) >= 0x8000))
     {
         if(((static_cast<unsigned int>(newAddr)+size)&0xFFFF) < 0x8000)
         {
@@ -307,7 +316,8 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned 
 
 void RetroArchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, unsigned int size)
 {
-    Q_UNUSED(size);
+    sizePut = size;
+    sizeWritten = 0;
     unsigned int addr = addr0;
     m_state = BUSY;
 
@@ -354,8 +364,13 @@ void RetroArchDevice::infoCommand()
 
 void RetroArchDevice::writeData(QByteArray data)
 {
+    sizeWritten += static_cast<unsigned int>(data.size());
     dataToWrite.append(data.toHex(' '));
-    //sDebug() << "<<" << dataToWrite;
-    m_sock->write(dataToWrite);
-    m_timer->start();
+    if(sizeWritten >= sizePut)
+    {
+        m_sock->write(dataToWrite);
+        sDebug() << "Write finished";
+        m_state = READY;
+        emit commandFinished();
+    }
 }
