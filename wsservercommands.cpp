@@ -201,7 +201,7 @@ void    WSServer::executeRequest(MRequest *req)
                 }
                 device->putAddrCommand(req->space, flags, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
             }
-            if (req->wasPending)
+            if (req->wasPending && !wsInfos[ws].pendingPutDatas.isEmpty())
             {
                 device->writeData(wsInfos[ws].pendingPutDatas.takeFirst());
             }

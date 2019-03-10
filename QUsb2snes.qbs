@@ -44,6 +44,15 @@ Project {
             "wsservercommands.cpp",
         ]
 
+        Group {
+            name: "OSX"
+            condition: qbs.targetOS.contains("macos")
+            files: [
+                "osx/appnap.h",
+                "osx/appnap.mm"
+            ]
+        }
+
         Group {     // Properties for the produced executable
             fileTagsFilter: "application"
             qbs.install: true
@@ -52,26 +61,13 @@ Project {
             name : "Qt";
             submodules : ["gui", "core", "widgets", "network", "serialport", "websockets"]
         }
-    }
-
-    QtApplication {
-        name : "TestQUsb2Snes"
-        cpp.cxxLanguageVersion: "c++11"
-        files: [
-            "testmain.cpp",
-            "client/usb2snes.h",
-            "client/usb2snes.cpp",
-        ]
-
-        Group {     // Properties for the produced executable
-            fileTagsFilter: "application"
-            qbs.install: true
-        }
-        Depends {
-            name : "Qt";
-            submodules : ["core", "network", "websockets"]
+        Properties {
+            condition: qbs.targetOS.contains("macos")
+            cpp.dynamicsLibraries: ["/System/Library/Frameworks/Foundation.framework/Versions/Current/Resources/BridgeSupport/Foundation.dylib"]
+            cpp.frameworks: ["Foundation"]
         }
     }
+
     /*
     Product {
         name : "deploy"

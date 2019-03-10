@@ -1,5 +1,6 @@
 #include <QDebug>
 #include <QLoggingCategory>
+#include <QThread>
 #include "sd2snesdevice.h"
 
 Q_LOGGING_CATEGORY(log_sd2snes, "SD2SNES")
@@ -276,9 +277,12 @@ void SD2SnesDevice::writeData(QByteArray data)
         data.resize((data.size() / blockSize) * blockSize + blockSize);
     }
 
+#ifdef Q_OS_MACOS
+    QThread::msleep(10);
+#endif
+
     auto written = m_port.write(data);
     sDebug() << "Written : " << written << " bytes";
-    m_port.flush();
     if (m_currentCommand == SD2Snes::VPUT)
     {
         sDebug() << "Putsize: " << m_putSize << " sendSize:" << sendSize;
