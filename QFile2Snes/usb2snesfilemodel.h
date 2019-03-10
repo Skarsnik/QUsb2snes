@@ -9,7 +9,7 @@ class Usb2SnesFileModel : public QAbstractListModel
     Q_OBJECT
 
 public:
-    explicit Usb2SnesFileModel(USB2snes *usb, QObject *parent = nullptr);
+    explicit Usb2SnesFileModel(Usb2Snes *usb, QObject *parent = nullptr);
 
     // Basic functionality:
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
@@ -22,9 +22,9 @@ public:
     void    setDirOnly(bool);
 
 private:
-    USB2snes*   usb2snes;
+    Usb2Snes*   usb2snes;
     QString     m_currentDir;
-    QList<USB2snes::FileInfo>   fileInfos;
+    QList<Usb2Snes::FileInfo>   fileInfos;
     bool        dirOnly;
 
     // QAbstractItemModel interface

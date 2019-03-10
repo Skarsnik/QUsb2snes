@@ -2,6 +2,8 @@
 #include <QDesktopServices>
 #include <QDir>
 #include <QFileInfo>
+#include <QJsonObject>
+#include <QJsonDocument>
 #include <QLoggingCategory>
 #include <QMessageBox>
 #include <QProcess>
@@ -14,7 +16,7 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #include "devices/snesclassic.h"
 #include "wsserver.h"
 
-
+const  QString             applicationJsonFileName = "qusb2snesapp.json";
 
 extern WSServer            wsServer;
 extern QSettings*          globalSettings;
@@ -111,6 +113,169 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
 
 }
 
+
+void AppUi::onMenuAboutToshow()
+{
+    deviceMenu->clear();
+    deviceMenu->addAction("Devices state");
+    deviceMenu->addSeparator();
+    if (sd2snesFactory != nullptr)
+        addDevicesInfo(sd2snesFactory);
+    if (luaBridge != nullptr)
+        addDevicesInfo(luaBridge);
+    if (snesClassic != nullptr)
+        addDevicesInfo(snesClassic);
+    if (retroarchFactory != nullptr)
+        addDevicesInfo(retroarchFactory);
+    deviceMenu->addSeparator();
+    deviceMenu->addAction(retroarchAction);
+    deviceMenu->addAction(luaBridgeAction);
+    deviceMenu->addAction(snesClassicAction);
+}
+
+void AppUi::onAppsMenuTriggered(QAction *action)
+{
+    if (action->text() == "Multitroid")
+    {
+        QDesktopServices::openUrl(QUrl("http://multitroid.com/"));
+        /*QWebEngineView *view = new QWebEngineView(parent);
+        view->load(QUrl("http://qt-project.org/"));
+        view->show();*/
+    }
+    if (action->data().isNull())
+        return ;
+    const ApplicationInfo& appInfo = regularApps[action->data().toString()];
+    QProcess proc(this);
+    //proc.setWorkingDirectory(fi.path());
+    QString exec;
+    QString wDir = appInfo.folder;
+    if (appInfo.isQtApp)
+        wDir = qApp->applicationDirPath();
+#ifdef Q_OS_WIN
+    exec = appInfo.folder + "/" + appInfo.executable + ".exe";
+#else
+    exec = appInfo.folder + "/" + appInfo.executable;
+#endif
+    bool ok = proc.startDetached(exec, QStringList(), wDir);
+    sDebug() << "Running " << exec << " in " << wDir << ok;
+    if (!ok)
+        sDebug() << "Error running " << exec << proc.errorString();
+}
+
+AppUi::ApplicationInfo AppUi::parseJsonAppInfo(QString fileName)
+{
+    ApplicationInfo info;
+    QFile file(fileName);
+    file.open(QIODevice::ReadOnly);
+    QJsonDocument   jdoc = QJsonDocument::fromJson(file.readAll());
+    QJsonObject job = jdoc.object();
+    if (job.contains("QtApp"))
+        info.isQtApp = job["QtApp"].toBool();
+    info.name = job["name"].toString();
+    info.folder = QFileInfo(fileName).absolutePath();
+    info.description = job["description"].toString();
+    info.executable = job["executable"].toString();
+    info.icon = job["icon"].toString();
+    return info;
+}
+
+void AppUi::checkForApplications()
+{
+    QDir    appsDir(qApp->applicationDirPath() + "/apps");
+    if (!appsDir.exists())
+        return ;
+    foreach (QFileInfo fi, appsDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
+    {
+        sDebug() << "Scanning " << fi.absoluteFilePath();
+        ApplicationInfo appInfo;
+        sDebug() << "Searching for " << fi.absoluteFilePath() + "/" + applicationJsonFileName;
+        if (QFile::exists(fi.absoluteFilePath() + "/" + applicationJsonFileName))
+        {
+            qDebug() << "Found a json file "  + applicationJsonFileName;
+            appInfo = parseJsonAppInfo(fi.absoluteFilePath() + "/" + applicationJsonFileName);
+        } else {
+            QDir dir(fi.absoluteFilePath());
+            QFileInfoList fil = dir.entryInfoList(QDir::Files | QDir::Executable);
+            if (!fil.isEmpty())
+            {
+                appInfo.name = fi.baseName();
+                appInfo.executable = fil.first().baseName();
+                appInfo.folder = fi.absoluteFilePath();
+                if (QFile::exists(fi.absoluteFilePath() + "/icone.png"))
+                    appInfo.icon = "icone.png";
+            }
+        }
+        if (!appInfo.name.isEmpty())
+            regularApps[appInfo.folder] = appInfo;
+    }
+    if (regularApps.isEmpty())
+        return ;
+    appsMenu->clear();
+    appsMenu->addAction("Local Applications");
+    appsMenu->addSeparator();
+    appsMenu->setToolTipsVisible(true);
+    connect(appsMenu, SIGNAL(triggered(QAction*)), this, SLOT(onAppsMenuTriggered(QAction*)));
+    QMapIterator<QString, ApplicationInfo> it(regularApps);
+    while (it.hasNext())
+    {
+        it.next();
+        ApplicationInfo info = it.value();
+        sDebug() << "Adding " << it.key() << " - " << info.name;
+        sDebug() << info;
+        QAction *act;
+        if (!it.value().icon.isEmpty())
+            act = appsMenu->addAction(QIcon(info.folder + "/" + info.icon), info.name);
+        else
+            act = appsMenu->addAction(info.name);
+        act->setData(it.key());
+        if (!info.description.isEmpty())
+            act->setToolTip(info.description);
+    }
+}
+
+
+void AppUi::addWindowsSendToEntry()
+{
+    QDir appData(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+    appData.cdUp();
+    appData.cd("Microsoft");
+    appData.cd("Windows");
+    appData.cd("SendTo");
+    bool ok = QFile::link(qApp->applicationDirPath() + "/apps/QFile2Snes/QFile2Snes.exe", appData.path() + "/SD2Snes.lnk");
+    QMessageBox msg;
+    if (ok)
+        msg.setText(tr("Entry in the Send To menu has been added successfully"));
+    else
+        msg.setText(QString(tr("Error while creating the Send To entry.<br>Check in %1 if it does not already exist")).arg(appData.path()));
+    msg.exec();
+}
+
+void AppUi::onUntrustedConnection(QString origin)
+{
+    QMessageBox msg;
+    msg.setText(QString(tr("Received a connection from an untrusted origin %1. Do you want to add this source to the trusted origin list")).arg(origin));
+    msg.setWindowTitle(tr("Untrusted origin"));
+    msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msg.setDefaultButton(QMessageBox::No);
+    int but = msg.exec();
+    sDebug() << but;
+    if (but == QMessageBox::Yes)
+    {
+        wsServer.addTrusted(origin);
+        QStringList tList = globalSettings->value("trustedOrigin").toString().split(";");
+        tList.append(origin);
+        globalSettings->setValue("trustedOrigin", tList.join(";"));
+    }
+}
+
+QDebug operator<<(QDebug debug, const AppUi::ApplicationInfo &req)
+{
+    debug << req.name << " Description : " <<req.description << req.folder << req.icon << req.executable << req.isQtApp << "\n";
+    return debug;
+}
+
+
+
 void AppUi::onRetroarchTriggered(bool checked)
 {
     if (checked == true)
@@ -170,116 +335,6 @@ void    AppUi::addDevicesInfo(DeviceFactory* devFact)
         }
     }
     deviceMenu->addAction(statusString);
-}
-
-void AppUi::onMenuAboutToshow()
-{
-    deviceMenu->clear();
-    deviceMenu->addAction("Devices state");
-    deviceMenu->addSeparator();
-    if (sd2snesFactory != nullptr)
-        addDevicesInfo(sd2snesFactory);
-    if (luaBridge != nullptr)
-        addDevicesInfo(luaBridge);
-    if (snesClassic != nullptr)
-        addDevicesInfo(snesClassic);
-    if (retroarchFactory != nullptr)
-        addDevicesInfo(retroarchFactory);
-    deviceMenu->addSeparator();
-    deviceMenu->addAction(retroarchAction);
-    deviceMenu->addAction(luaBridgeAction);
-    deviceMenu->addAction(snesClassicAction);
-}
-
-void AppUi::onAppsMenuTriggered(QAction *action)
-{
-    if (action->text() == "Multitroid")
-    {
-        QDesktopServices::openUrl(QUrl("http://multitroid2.lurern.com/"));
-        /*QWebEngineView *view = new QWebEngineView(parent);
-        view->load(QUrl("http://qt-project.org/"));
-        view->show();*/
-    }
-    if (action->data().isNull())
-        return ;
-    QFileInfo fi(action->data().toString());
-    QProcess proc(this);
-    //proc.setWorkingDirectory(fi.path());
-    bool ok = proc.startDetached(fi.absoluteFilePath(), QStringList(), fi.path());
-    sDebug() << "Running " << fi.absoluteFilePath() << " in " << fi.path() << ok;
-    if (!ok)
-        sDebug() << "Error running " << fi.absoluteFilePath() << proc.errorString();
-}
-
-void AppUi::checkForApplications()
-{
-    QDir    appsDir(qApp->applicationDirPath() + "/apps");
-    if (!appsDir.exists())
-        return ;
-    foreach (QFileInfo fi, appsDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
-    {
-        sDebug() << "Scanning " << fi.absoluteFilePath();
-        if (QFile::exists(fi.absoluteFilePath() + "/" + fi.baseName() + ".exe"))
-        {
-            regularApps[fi.baseName()] = fi.absoluteFilePath() + "/" + fi.baseName() + ".exe";
-        } else {
-            QDir dir(fi.absoluteFilePath());
-            QFileInfoList fil = dir.entryInfoList(QDir::Files | QDir::Executable);
-            if (!fil.isEmpty())
-                regularApps[fi.baseName()] = fil.first().absoluteFilePath();
-        }
-    }
-    if (regularApps.isEmpty())
-        return ;
-    appsMenu->clear();
-    appsMenu->addAction("Local Applications");
-    appsMenu->addSeparator();
-    connect(appsMenu, SIGNAL(triggered(QAction*)), this, SLOT(onAppsMenuTriggered(QAction*)));
-    QMapIterator<QString, QString> it(regularApps);
-    while (it.hasNext())
-    {
-        it.next();
-        sDebug() << "Adding " << it.key() << " - " << it.value();
-        if (QFile::exists(QFileInfo(it.value()).absolutePath() + "/icone.png"))
-            appsMenu->addAction(QIcon(QFileInfo(it.value()).absolutePath() + "/icone.png"), it.key())->setData(it.value());
-        else
-            appsMenu->addAction(it.key())->setData(it.value());
-    }
-}
-
-
-void AppUi::addWindowsSendToEntry()
-{
-    QDir appData(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
-    appData.cdUp();
-    appData.cd("Microsoft");
-    appData.cd("Windows");
-    appData.cd("SendTo");
-    bool ok = QFile::link(qApp->applicationDirPath() + "/apps/QFile2Snes/QFile2Snes.exe", appData.path() + "/SD2Snes.lnk");
-    QMessageBox msg;
-    if (ok)
-        msg.setText(tr("Entry in the Send To menu has been added successfully"));
-    else
-        msg.setText(QString(tr("Error while creating the Send To entry.<br>Check in %1 if it does not already exist")).arg(appData.path()));
-    msg.exec();
-}
-
-void AppUi::onUntrustedConnection(QString origin)
-{
-    QMessageBox msg;
-    msg.setText(QString(tr("Received a connection from an untrusted origin %1. Do you want to add this source to the trusted origin list")).arg(origin));
-    msg.setWindowTitle(tr("Untrusted origin"));
-    msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-    msg.setDefaultButton(QMessageBox::No);
-    int but = msg.exec();
-    sDebug() << but;
-    if (but == QMessageBox::Yes)
-    {
-        wsServer.addTrusted(origin);
-        QStringList tList = globalSettings->value("trustedOrigin").toString().split(";");
-        tList.append(origin);
-        globalSettings->setValue("trustedOrigin", tList.join(";"));
-    }
 }
 
 

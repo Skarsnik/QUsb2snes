@@ -85,7 +85,7 @@ int main(int ac, char *ag[])
     if (mlog.open(QIODevice::WriteOnly | QIODevice::Text))
         qInstallMessageHandler(myMessageOutput);
     QApplication::setApplicationName("QUsb2Snes");
-    QApplication::setApplicationVersion("0.6");
+    QApplication::setApplicationVersion("0.8");
 
 #ifdef Q_OS_MACOS
     auto appNap = new AppNapSuspender();

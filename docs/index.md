@@ -48,7 +48,7 @@ QUsb2Snes currently support:
 * SD2Snes with the [usb2snes](https://github.com/RedGuyyyy/sd2snes/releases) firmware.
 * [Snes9x multitroid](https://drive.google.com/open?id=1_ej-pwWtCAHYXIrvs5Hro16A1s9Hi3Jz) with Lua support
 * SNES classic moded with [Hakchi2 CE](https://github.com/TeamShinkansen/hakchi2/releases)
-* RetroArch support is removed in latest version since it depends on old snes9x core.
+* RetroArch support with Snes9x and bsnes-mercury cores
 
 # Application
 
@@ -73,7 +73,7 @@ Mac os X release comming soon (tm)
 
 ## Linux
 
-For now you will have to compile the source yourself, see the Compiling.txt file to how to do it.
+For now you will have to compile the source yourself, see the `LinuxREADME.md` file to how to do it.
 
 # Usage
 
@@ -87,22 +87,20 @@ You need to install the last Usb2Snes firmware by redguy (https://github.com/Red
 
 Multitroid provide a patched version of snes9x with a lua script that allow for external software to communicate with it. Get the emulator on http://multitroid.com/. Activate the snes9x bridge on the device menu of QUsb2Snes then run the multibridge.lua scripts on snes9x.
 
-## RetroArch with Snes9x 2010 core
+## RetroArch
 
-USE AN OLD VERSION OF QUSB2SNES TO HAVE THIS SUPPORT
+You need to use etheir `Snex9x` core or one of the `bsnes-mercury` and edit your retroarch.cfg file (can be found in %appData%\RetroArch) to set `network_cmd_enable = "true"` to true (default is false). Then you need to activate the RetroArch virtual device on the devices menu.
 
-You need to use snes9x 2010 core and edit your retroarch.cfg file (can be found in %appData%\RetroArch) to set network_cmd_enable = "true" to true (default is false). Then you need to activate the RetroArch virtual device on the devices menu.
+Snex9x core :  needing to the patch the ROM (multitroid for example) you etheir need to patch the rom manually with the IPS file or put the IPS file along side the rom with the same name for retroarch to auto patch it.
 
-For software needing to the patch the ROM (multitroid for example) you etheir need to patch the rom manually with the IPS file or put the IPS file along side the rom with the same name for retroarch to auto patch it.
-
-RetroArch with other core
-I need to patch RetroArch to be able to use any snes core x).
+You can connect to a remote RetroArch by adding a RetroArchHost=YourOwnHost in the config.ini file
 
 ## SNES classic (called also SNES mini)
-Only tested with Super Metroid.
+
+Mainly tested with Super Metroid.
 
 Enable the SNES classic support on the device menu.
 
-You need to 'hack' your SNES classic with the Hakchi2 CE version (https://github.com/TeamShinkansen/hakchi2/releases/) then remove the covershell mod (as explained in https://github.com/TeamShinkansen/hakchi2/releases/tag/v3.4.0). Install the serverstuff mod provided by QUsb2snes: copy the serverstuff.mod to the user_mods directory on Hakchi2, then install the mod with Hakchi2 Start the game and check if the SNES classic appear on the Devices menu, it should display SNES classic : no client connected. If not, try restarting the game.
+You need to 'hack' your SNES classic with the Hakchi2 CE version (https://github.com/TeamShinkansen/hakchi2/releases/) then remove the covershell mod (as explained in https://github.com/TeamShinkansen/hakchi2/releases/tag/v3.4.0). Install the `serverstuff` mod provided by QUsb2snes: copy the `serverstuff.hmod` to the user_mods directory on Hakchi2CE, then install the mod with Hakchi2 Start the game and check if the SNES classic appear on the Devices menu, it should display SNES classic : no client connected. If not, try restarting the game.
 
 It will not work with the 'normal' hakchi2 version as the Hakchi2 CE provide a more stable way to access the SNES Classic.

@@ -3,7 +3,7 @@
 #include "client/usb2snes.h"
 
 
-USB2snes*   usb;
+Usb2Snes*   usb;
 
 
 void    runThing()
@@ -17,7 +17,7 @@ void    runThing()
 void    stateChanged()
 {
     qDebug() << "State Changed";
-    if (usb->state() == USB2snes::Ready)
+    if (usb->state() == Usb2Snes::Ready)
         runThing();
 }
 
@@ -25,9 +25,9 @@ int main(int ac, char* ag[])
 {
     QCoreApplication app(ac, ag);
 
-    usb = new USB2snes(true);
+    usb = new Usb2Snes(true);
     usb->connect();
-    QObject::connect(usb, &USB2snes::stateChanged, stateChanged);
+    QObject::connect(usb, &Usb2Snes::stateChanged, stateChanged);
     //usb->getAddress()
     app.exec();
 }
