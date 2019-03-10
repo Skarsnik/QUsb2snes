@@ -14,7 +14,7 @@ class DirChangeDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit DirChangeDialog(USB2snes* usb, QWidget *parent = nullptr);
+    explicit DirChangeDialog(Usb2Snes* usb, QWidget *parent = nullptr);
     ~DirChangeDialog();
     QString getDir();
 
@@ -23,7 +23,7 @@ private slots:
 
 private:
     Ui::DirChangeDialog *ui;
-    USB2snes*   usb2snes;
+    Usb2Snes*   usb2snes;
     Usb2SnesFileModel*  uModel;
 };
 

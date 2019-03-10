@@ -7,9 +7,14 @@ init:
 build_script:
   - qmake QUsb2snes.pro -spec win32-msvc "CONFIG+=release"
   - nmake
+  - cd QFile2Snes
+  - qmake QFile2Snes.pro -spec win32-msvc "CONFIG+=release"
+  - nmake
+  - cd ..
 
 after_build:
   - mkdir QUsb2Snes
+  - mkdir QUsb2Snes\apps
   - xcopy release\QUsb2Snes.exe QUsb2Snes\
   - cd QUsb2Snes
   - windeployqt.exe --no-translations --no-system-d3d-compiler --no-opengl-sw --no-opengl --no-webkit --no-patchqt --no-webkit2 --release  QUsb2Snes.exe
@@ -19,11 +24,19 @@ after_build:
   - copy /y ..\LICENSE LICENCE-GPLV3.txt
   - copy /y ..\README.md Readme.txt
   - cd ..
-  - 7z a QUsb2Snes%APPVEYOR_REPO_TAG_NAME%.7z QUsb2Snes
+  # QFile2Snes deployment
+  - mkdir QUsb2Snes\apps\QFile2Snes
+  - xcopy QFile2Snes\release\QFile2Snes.exe QUsb2Snes\apps\QFile2Snes\
+  - copy QFile2Snes\icon50x50.png QUsb2Snes\apps\QFile2Snes\icone.png
+  - xcopy QFile2Snes\qusb2snesapp.json QUsb2Snes\apps\QFile2Snes\
+  - appveyor DownloadFile https://github.com/Skarsnik/snesclassicstuff/releases/download/serverstuffmod_v1/serverstuff.hmod -FileName serverstuff.hmod
+  - copy serverstuff.hmod QUsb2Snes\
+
+  - 7z a QUsb2Snes-%APPVEYOR_REPO_TAG_NAME%.7z QUsb2Snes
 
 
 artifacts:
-  - path: QUsb2Snes$(APPVEYOR_REPO_TAG_NAME).7z
+  - path: QUsb2Snes-$(APPVEYOR_REPO_TAG_NAME).7z
     name: package
   - path: release\QUsb2Snes.exe
     name: executable
@@ -33,7 +46,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: JF5Ki0Bz+mvMrqw5k0u7273c8GsUAqMwe/P7ts5PKLR+G7InkGqkvTqlAZb6GDGv
-  artifact: release\QUsb2Snes.exe, QUsb2Snes$(APPVEYOR_REPO_TAG_NAME).7z
+  artifact: release\QUsb2Snes.exe, QUsb2Snes-$(APPVEYOR_REPO_TAG_NAME).7z
   draft: true
   prerelease: false
   on:

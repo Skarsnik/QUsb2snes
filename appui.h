@@ -35,6 +35,20 @@ private slots:
     void    onUntrustedConnection(QString origin);
 
 private:
+    struct ApplicationInfo {
+        bool    isQtApp;
+        QString name;
+        QString description;
+        QString icon;
+        QString folder;
+        QString executable;
+        ApplicationInfo() {
+            isQtApp = false;
+        }
+        friend QDebug              operator<<(QDebug debug, const ApplicationInfo& req);
+    };
+
+    friend QDebug              operator<<(QDebug debug, const AppUi::ApplicationInfo& req);
     QMenu*              menu;
     QMenu*              deviceMenu;
     QMenu*              appsMenu;
@@ -44,17 +58,18 @@ private:
     QAction*            retroarchAction;
     QAction*            snesClassicAction;
     QAction*            luaBridgeAction;
-    LuaBridge*          luaBridge;
-    SD2SnesFactory*     sd2snesFactory;
-    RetroArchFactory*   retroarchFactory;
-    SNESClassicFactory* snesClassic;
-    QMap<QString, QString>  regularApps;
+    LuaBridge*                      luaBridge;
+    SD2SnesFactory*                 sd2snesFactory;
+    RetroArchFactory*               retroarchFactory;
+    SNESClassicFactory*             snesClassic;
+    QMap<QString, ApplicationInfo>  regularApps;
 
     void                checkForApplications();
     void                handleMagic2Snes(QString path);
 
     void                addMagic2SnesFolder(QString path);
-    void addDevicesInfo(DeviceFactory *devFact);
+    void                addDevicesInfo(DeviceFactory *devFact);
+    ApplicationInfo     parseJsonAppInfo(QString fileName);
 };
 
 #endif // APPUI_H

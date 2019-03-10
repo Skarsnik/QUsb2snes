@@ -2,7 +2,7 @@
 #include "ui_dirchangedialog.h"
 
 
-DirChangeDialog::DirChangeDialog(USB2snes *usb, QWidget *parent) :
+DirChangeDialog::DirChangeDialog(Usb2Snes *usb, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::DirChangeDialog)
 {
