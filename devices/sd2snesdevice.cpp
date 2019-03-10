@@ -1,5 +1,6 @@
 #include <QDebug>
 #include <QLoggingCategory>
+#include <QThread>
 #include "sd2snesdevice.h"
 
 Q_LOGGING_CATEGORY(log_sd2snes, "SD2SNES")
@@ -9,7 +10,6 @@ Q_LOGGING_CATEGORY(log_sd2snes, "SD2SNES")
 SD2SnesDevice::SD2SnesDevice(QString portName)
 {
     m_port.setPortName(portName);
-    //m_port.baudRate();
     connect(&m_port, SIGNAL(readyRead()), this, SLOT(spReadyRead()));
     connect(&m_port, SIGNAL(aboutToClose()), this, SIGNAL(closed()));
     connect(&m_port, SIGNAL(errorOccurred(QSerialPort::SerialPortError)), this, SLOT(spErrorOccurred(QSerialPort::SerialPortError)));
@@ -51,30 +51,25 @@ void SD2SnesDevice::spReadyRead()
 {
     static QByteArray   responseBlock = QByteArray();
     static bool         firstBlock = true;
+    static int          dataSent = 0;
 
-    bytesReceived += m_port.bytesAvailable();
+    qint64 bytesToRead = m_port.bytesAvailable();
+    bytesReceived += bytesToRead;
     dataRead = m_port.readAll();
-    if (dataRead.size() <= 2056)
+    dataReceived.append(dataRead);
+
+    sDebug() << "SP Received: " << bytesToRead << " (" << bytesReceived << ")";
+
+    /* If we've received over 512 bytes and NORESP is not set, parse response header */
+    if(responseBlock.isEmpty() && dataReceived.size() >= 512 && (m_currentCommand & SD2Snes::server_flags::NORESP) == 0)
     {
-        sDebug() << "<<" << dataRead.size() << " bytes - total received : " << bytesReceived;
-        /*for (unsigned int i = 0; i < dataRead.size(); i += 512)
+        responseBlock = dataReceived.left(512);
+        if(responseBlock.left(5) != (QByteArray("USBA").append(SD2Snes::opcode::RESPONSE)) || responseBlock.at(5) == 1)
         {
-            sDebug() << dataRead.mid(i, 512);
-            sDebug() << "---------";
-        }*/
-    }
-    else
-        sDebug() << "<<" << dataRead.size() << " bytes - total received : " << bytesReceived;
-    if (responseBlock.isEmpty() && (m_commandFlags & SD2Snes::server_flags::NORESP) == 0)
-    {
-        responseBlock = dataRead.left(512);
-        if (responseBlock.left(5) != (QByteArray("USBA") + (char) SD2Snes::opcode::RESPONSE)
-            || responseBlock.at(5) == 1)
-        {
-            sDebug() << "Protocol Error, invalid response block";
+            sDebug() << "Protocol error:" << responseBlock.left(6);
             m_state = READY;
-            if (fileGetCmd)
-                fileData = dataRead.mid(512, m_getSize);
+            if(fileGetCmd)
+                fileData = dataReceived.mid(512, m_getSize);
             dataReceived.clear();
             bytesReceived = 0;
             fileGetCmd = false;
@@ -86,68 +81,56 @@ void SD2SnesDevice::spReadyRead()
         }
     }
 
-    dataReceived.append(dataRead);
-    // FIXME maybe for 64B mode get?
-    // We ignore the user size and only care for what the firmware
-    // reply to us for Get Ccommand
-    if ((m_currentCommand == SD2Snes::opcode::GET)
-         && m_getSize <= 0)
+    if(m_getSize <= 0 && (m_currentCommand == SD2Snes::opcode::GET) && responseBlock.size() > 0)
     {
-        m_getSize = 0;
-        sDebug() << responseBlock.mid(252, 4).toHex();
-        m_getSize = ((quint32 ((quint8)(responseBlock.at(252))) << 24)) |
-                    (quint32 ((quint8) responseBlock.at(253)) << 16) |
-                    (quint32 ((quint8) responseBlock.at(254)) << 8)  |
-                    ((quint8)(responseBlock.at(255)));
-        sDebug() << "Size for data : " << m_getSize;
-        if (fileGetCmd)
-            emit sizeGet(m_getSize);
-    }
-    sDebug() << m_currentCommand;
-    // Some command has a fixed size response, like Infos
-    if (responseSizeExpected != -1)
-    {
-        if (bytesReceived == responseSizeExpected)
+        dataSent = 512;
+        m_getSize =  ((responseBlock.at(252)&0xFF) << 24);
+        m_getSize += ((responseBlock.at(253)&0xFF) << 16);
+        m_getSize += ((responseBlock.at(254)&0xFF) << 8);
+        m_getSize += ((responseBlock.at(255)&0xFF));
+        sDebug() << "Received block size:" << m_getSize;
+        if(fileGetCmd)
         {
-            goto LcmdFinished;
+            emit sizeGet(static_cast<unsigned int>(m_getSize));
+        }
+    }
+
+    if(responseSizeExpected == -1)
+    {
+        if((this->*checkCommandEnd)() == false)
+        {
+            if((m_getSize >= 0 && m_getSize > bytesReceived && bytesReceived > 512) || m_getSize < 0)
+            {
+                auto dSend = dataReceived.mid(dataSent);
+                emit getDataReceived(dSend);
+                dataSent += dSend.size();
+            }
+            sDebug() << "Waiting for more data to arrive";
+            return;
         }
     } else {
-        // command can end differently, LS is special while Get is pretty generic
-        sDebug() << "Unsized command" << m_currentCommand;
-        if ((this->*checkCommandEnd)()) {
-            if (m_currentCommand == SD2Snes::opcode::GET)
-            {
-                if (dataRead.size() == dataReceived.size())
-                    emit getDataReceived(dataRead.mid(512, m_getSize));
-                else
-                    // Need to remove the padding
-                    emit getDataReceived(dataRead.left(dataRead.size() - (bytesReceived - m_getSize - blockSize)));
-            }
-            if (m_currentCommand == SD2Snes::opcode::VGET)
-            {
-                if (dataRead.size() == dataReceived.size())
-                    emit getDataReceived(dataRead);
-                else
-                    emit getDataReceived(dataRead.left(m_getSize % 64));
-            }
-            goto LcmdFinished;
-        } else {
-            if ((m_currentCommand == SD2Snes::opcode::GET || m_currentCommand == SD2Snes::opcode::VGET))
-            {
-                if (firstBlock && (m_commandFlags & SD2Snes::server_flags::NORESP) == 0)
-                    emit getDataReceived(dataRead.mid(512));
-                else
-                    emit getDataReceived(dataRead);
-            }
+        if(bytesReceived != responseSizeExpected)
+        {
+            dataSent = 0;
+            return;
         }
     }
-    firstBlock = false;
-    return;
-LcmdFinished :
+
+    sDebug() << m_currentCommand;
+
+    if(m_getSize >= 0)
+    {
+        emit getDataReceived(dataReceived.mid(dataSent, (m_getSize + 512) - dataSent));
+    } else {
+        emit getDataReceived(dataReceived.mid(dataSent));
+    }
+
     m_state = READY;
     dataRead = dataReceived;
     if (fileGetCmd)
+    {
         fileData = dataRead.mid(512, m_getSize);
+    }
     dataReceived.clear();
     bytesReceived = 0;
     fileGetCmd = false;
@@ -156,6 +139,7 @@ LcmdFinished :
     responseBlock.clear();
     sDebug() << "Command finished";
     emit commandFinished();
+
 }
 
 void SD2SnesDevice::spErrorOccurred(QSerialPort::SerialPortError err)
@@ -185,11 +169,11 @@ bool SD2SnesDevice::checkEndForLs()
     if (dataReceived.size() == 512)
         return false;
     QByteArray data = dataReceived.mid(512);
-    unsigned int cpt = 0;
+    int cpt = 0;
     unsigned char type;
     while (cpt < data.size())
     {
-        type = data.at(cpt);
+        type = static_cast<unsigned char>(data.at(cpt));
         if (type == 0xFF)
             break;
         cpt++;
@@ -204,7 +188,7 @@ bool SD2SnesDevice::checkEndForLs()
 
 bool    SD2SnesDevice::checkEndForGet()
 {
-    quint64 cmp_size = m_getSize;
+    int cmp_size = m_getSize;
     if (m_getSize % blockSize != 0)
         cmp_size = (m_getSize / blockSize) * blockSize + blockSize;
     //sDebug() << cmp_size;
@@ -216,14 +200,14 @@ bool    SD2SnesDevice::checkEndForGet()
 
 void    SD2SnesDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray& arg, const QByteArray arg2 = QByteArray())
 {
-    unsigned int filer_size = 512 - 7;
+    int filer_size = 512 - 7;
     blockSize = 512;
     m_commandFlags = flags;
     sDebug() << "CMD : " << opcode << space << flags << arg;
     QByteArray data("USBA");
-    data.append((char) opcode);
-    data.append((char) space);
-    data.append((char) flags);
+    data.append(static_cast<char>(opcode));
+    data.append(static_cast<char>(space));
+    data.append(static_cast<char>(flags));
     data.append(QByteArray().fill(0, filer_size));
     data.replace(256, arg.size(), arg);
     if (!arg2.isEmpty() && opcode != SD2Snes::opcode::MV)
@@ -239,24 +223,24 @@ void    SD2SnesDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space,
 void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags,
                                     const QList<QPair<unsigned int, quint8> >& args)
 {
-    unsigned int filer_size = 64 - 7;
+    int filer_size = 64 - 7;
     // SD2Snes expect this flags for vget and vput
     flags |= SD2Snes::server_flags::DATA64B | SD2Snes::server_flags::NORESP;
     blockSize = 64;
     m_commandFlags = flags;
     sDebug() << "CMD : " << opcode << space << flags << args;
     QByteArray data("USBA");
-    data.append((char) opcode);
-    data.append((char) space);
-    data.append((char) flags);
+    data.append(static_cast<char>(opcode));
+    data.append(static_cast<char>(space));
+    data.append(static_cast<char>(flags));
     data.append(QByteArray().fill(0, filer_size));
-    unsigned int i = 0;
-    unsigned int tsize = 0;
+    int i = 0;
+    int tsize = 0;
     foreach (auto infos, args) {
-        data[32 + i * 4] = infos.second;
-        data[33 + i * 4] = (infos.first >> 16) & 0xFF;
-        data[34 + i * 4] = (infos.first >> 8) & 0xFF;
-        data[35 + i * 4] = infos.first & 0xFF;
+        data[32 + i * 4] = static_cast<char>(infos.second);
+        data[33 + i * 4] = static_cast<char>((infos.first >> 16) & 0xFF);
+        data[34 + i * 4] = static_cast<char>((infos.first >> 8) & 0xFF);
+        data[35 + i * 4] = static_cast<char>(infos.first & 0xFF);
         i++;
         tsize += infos.second;
     }
@@ -292,7 +276,12 @@ void SD2SnesDevice::writeData(QByteArray data)
     {
         data.resize((data.size() / blockSize) * blockSize + blockSize);
     }
-    quint64 written = m_port.write(data);
+
+#ifdef Q_OS_MACOS
+    QThread::msleep(10);
+#endif
+
+    auto written = m_port.write(data);
     sDebug() << "Written : " << written << " bytes";
     m_port.flush();
     if (m_currentCommand == SD2Snes::VPUT)
@@ -366,10 +355,10 @@ void SD2SnesDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
 static QByteArray   int24ToData(quint32 number)
 {
     QByteArray data;
-    data.append((char) (number >> 24) & 0xFF);
-    data.append((char) (number >> 16) & 0xFF);
-    data.append((char)(number >> 8) & 0xFF);
-    data.append((char) number & 0xFF);
+    data.append(static_cast<char>((number >> 24) & 0xFF));
+    data.append(static_cast<char>((number >> 16) & 0xFF));
+    data.append(static_cast<char>((number >> 8) & 0xFF));
+    data.append(static_cast<char>(number & 0xFF));
     sDebug() << "convertir numnber" << number << "to bitarray : " << data.toHex();
     return data;
 
@@ -388,7 +377,9 @@ void SD2SnesDevice::putFile(QByteArray name, unsigned int size)
 
 void SD2SnesDevice::getSetAddrCommand(SD2Snes::opcode op, unsigned int addr, unsigned int size)
 {
-
+    Q_UNUSED(op);
+    Q_UNUSED(addr);
+    Q_UNUSED(size);
 }
 
 void SD2SnesDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
@@ -432,15 +423,15 @@ void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, un
     sendCommand(SD2Snes::opcode::PUT, space, flags, data1, data2);
 }
 
-QList<ADevice::FileInfos>    SD2SnesDevice::parseLSCommand(QByteArray& dataI)
+QList<ADevice::FileInfos> SD2SnesDevice::parseLSCommand(QByteArray& dataI)
 {
     QList<FileInfos>  infos;
     QByteArray data = dataI.mid(512);
-    unsigned int cpt = 0;
+    int cpt = 0;
     unsigned char type;
     while (true)
     {
-        type = data.at(cpt);
+        type = static_cast<unsigned char>(data.at(cpt));
         if (type == 0xFF)
             break;
         if (type == 0x02)
@@ -457,7 +448,7 @@ QList<ADevice::FileInfos>    SD2SnesDevice::parseLSCommand(QByteArray& dataI)
         }
         cpt++;
         FileInfos fi;
-        fi.type = (SD2Snes::file_type) type;
+        fi.type = static_cast<SD2Snes::file_type>(type);
         fi.name = name;
         infos.append(fi);
     }
@@ -472,14 +463,14 @@ USB2SnesInfo SD2SnesDevice::parseInfo(const QByteArray& data)
     info.romPlaying = data.mid(16, 100);
     info.version = data.mid(260);
     sDebug() << QString::number(((data.at(256) << 24) | (data.at(257) << 16) | (data.at(258) << 8) | data.at(259)), 16);
-    unsigned char flag = data.at(6);
-    if ((flag & (char) SD2Snes::info_flags::FEAT_DSPX) != 0) info.flags.append("FEAT_DSPX");
-    if ((flag & (char) SD2Snes::info_flags::FEAT_ST0010) != 0) info.flags.append("FEAT_ST0010");
-    if ((flag & (char) SD2Snes::info_flags::FEAT_SRTC) != 0) info.flags.append("FEAT_SRTC");
-    if ((flag & (char) SD2Snes::info_flags::FEAT_MSU1) != 0) info.flags.append("FEAT_MSU1");
-    if ((flag & (char) SD2Snes::info_flags::FEAT_213F) != 0) info.flags.append("FEAT_213F");
-    if ((flag & (char) SD2Snes::info_flags::FEAT_CMD_UNLOCK) != 0) info.flags.append("FEAT_CMD_UNLOCK");
-    if ((flag & (char) SD2Snes::info_flags::FEAT_USB1) != 0) info.flags.append("FEAT_USB1");
-    if ((flag & (char) SD2Snes::info_flags::FEAT_DMA1) != 0) info.flags.append("FEAT_DMA1");
+    unsigned char flag = static_cast<unsigned char>(data.at(6));
+    if ((flag & static_cast<unsigned char>(SD2Snes::info_flags::FEAT_DSPX)) != 0) info.flags.append("FEAT_DSPX");
+    if ((flag & static_cast<unsigned char>(SD2Snes::info_flags::FEAT_ST0010)) != 0) info.flags.append("FEAT_ST0010");
+    if ((flag & static_cast<unsigned char>(SD2Snes::info_flags::FEAT_SRTC)) != 0) info.flags.append("FEAT_SRTC");
+    if ((flag & static_cast<unsigned char>(SD2Snes::info_flags::FEAT_MSU1)) != 0) info.flags.append("FEAT_MSU1");
+    if ((flag & static_cast<unsigned char>(SD2Snes::info_flags::FEAT_213F)) != 0) info.flags.append("FEAT_213F");
+    if ((flag & static_cast<unsigned char>(SD2Snes::info_flags::FEAT_CMD_UNLOCK)) != 0) info.flags.append("FEAT_CMD_UNLOCK");
+    if ((flag & static_cast<unsigned char>(SD2Snes::info_flags::FEAT_USB1)) != 0) info.flags.append("FEAT_USB1");
+    if ((flag & static_cast<unsigned char>(SD2Snes::info_flags::FEAT_DMA1)) != 0) info.flags.append("FEAT_DMA1");
     return info;
 }

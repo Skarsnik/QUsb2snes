@@ -69,8 +69,8 @@ private:
 
     SD2Snes::opcode m_currentCommand;
     unsigned char   m_commandFlags;
-    qint64          m_getSize;
-    qint64          m_putSize;
+    int             m_getSize;
+    int             m_putSize;
 
 
     bool    (SD2SnesDevice::*checkCommandEnd)();

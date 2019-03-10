@@ -2,6 +2,10 @@
 //#include "sd2snesdevice.h"
 #include "wsserver.h"
 
+#ifdef Q_OS_MACOS
+#include "osx/appnap.h"
+#endif
+
 #include <QSerialPortInfo>
 #include <QDebug>
 #include <QApplication>
@@ -82,6 +86,12 @@ int main(int ac, char *ag[])
         qInstallMessageHandler(myMessageOutput);
     QApplication::setApplicationName("QUsb2Snes");
     QApplication::setApplicationVersion("0.8");
+
+#ifdef Q_OS_MACOS
+    auto appNap = new AppNapSuspender();
+    appNap->suspend();
+#endif
+
     if (app.arguments().size() == 2 && app.arguments().at(1) == "-nogui")
     {
             QTimer::singleShot(100, &startServer);

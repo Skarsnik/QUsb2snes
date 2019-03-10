@@ -43,31 +43,25 @@ QStringList RetroArchFactory::listDevices()
         sDebug() << "Connected";
     }
     m_sock->write("VERSION");
-    QEventLoop loop;
-    QTimer tt;
-    tt.setSingleShot(true);
-    tt.start(100);
-    connect(&tt, SIGNAL(timeout()), &loop, SLOT(quit()));
-    connect(m_sock, &QUdpSocket::readyRead, &loop, &QEventLoop::quit);
-    loop.exec();
-    if (tt.isActive())
+    m_sock->waitForReadyRead(100);
+    if(m_sock->hasPendingDatagrams())
     {
-        tt.stop();
         raVersion = m_sock->readAll().trimmed();
+        sDebug() << raVersion;
+    } else {
+        m_attachError = "RetroArch - Did not get a VERSION response.";
+        return toret;
     }
     m_sock->write("READ_CORE_RAM FFC0 32");
-    tt.start(100);
-    loop.exec();
-    if (tt.isActive())
+    m_sock->waitForReadyRead(100);
+    if (m_sock->hasPendingDatagrams())
     {
-        tt.stop();
         QByteArray data = m_sock->readAll();
-        sDebug() << "In check for RA received" << data;
         if (data != "-1" && data != "")
         {
+            sDebug() << data;
             /* Detect retroarch core capabilities, and SNES header info if possible */
             QList<QByteArray> tList = data.trimmed().split(' ');
-            sDebug() << tList;
 
             bool hasSnesMemoryMap = false;
             bool hasSnesLoromMap = false;
@@ -77,16 +71,12 @@ QStringList RetroArchFactory::listDevices()
             {
                 hasSnesMemoryMap = false;
             } else {
-                unsigned char romType = (unsigned char)QByteArray::fromHex(tList.at(23))[0];
-                sDebug() << romType;
-                unsigned char romSize = (unsigned char)QByteArray::fromHex(tList.at(24))[0];
-                sDebug() << romSize;
+                unsigned char romType = static_cast<unsigned char>(QByteArray::fromHex(tList.at(23))[0]);
+                unsigned char romSize = static_cast<unsigned char>(QByteArray::fromHex(tList.at(24))[0]);
                 if(romType > 0 && romSize > 0)
                 {
                     bool loRom = (romType & 1) == 0;
                     auto romSpeed = (romType & 0x30);
-                    sDebug() << romSpeed;
-                    sDebug() << "Checking rom name";
                     if(romSpeed != 0 && tList.at(2) != "00")
                     {
                         auto romName = QByteArray::fromHex(tList.mid(2, 21).join()).toStdString();
@@ -97,17 +87,27 @@ QStringList RetroArchFactory::listDevices()
                 }
             }
 
-            retroDev = new RetroArchDevice(m_sock, raVersion, gameName, hasSnesLoromMap, hasSnesMemoryMap);
+            if(!globalSettings->contains("RetroArchBlockSize"))
+            {
+                globalSettings->setValue("RetroArchBlockSize", "78");
+            }
+
+            auto retroBlockSize = globalSettings->value("RetroArchBlockSize").toInt();
+
+            retroDev = new RetroArchDevice(m_sock, raVersion, gameName, retroBlockSize, hasSnesLoromMap, hasSnesMemoryMap);
             m_devices.append(retroDev);
             toret << retroDev->name();
         }
         m_attachError = QString("RetroArch %1 - Current core does not support memory read").arg(raVersion);
+    } else {
+        m_attachError = "RetroArch - Did not get a response to READ_CORE_RAM.";
     }
     return toret;
 }
 
 bool RetroArchFactory::deleteDevice(ADevice *dev)
 {
+    Q_UNUSED(dev);
     if (retroDev == nullptr)
         return false;
     retroDev->deleteLater();
