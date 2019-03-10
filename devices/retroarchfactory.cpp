@@ -59,6 +59,7 @@ QStringList RetroArchFactory::listDevices()
         QByteArray data = m_sock->readAll();
         if (data != "-1" && data != "")
         {
+            sDebug() << data;
             /* Detect retroarch core capabilities, and SNES header info if possible */
             QList<QByteArray> tList = data.trimmed().split(' ');
 

@@ -46,7 +46,7 @@ Project {
 
         Group {
             name: "OSX"
-            condition: qbs.targetOS.contains("macos")
+            condition: qbs.targetPlatform.contains("macos")
             files: [
                 "osx/appnap.h",
                 "osx/appnap.mm"
@@ -62,14 +62,14 @@ Project {
             submodules : ["gui", "core", "widgets", "network", "serialport", "websockets"]
         }
         Properties {
-            condition: qbs.targetOS.contains("macos")
+            condition: qbs.targetPlatform.contains("macos")
             cpp.dynamicsLibraries: ["/System/Library/Frameworks/Foundation.framework/Versions/Current/Resources/BridgeSupport/Foundation.dylib"]
             cpp.frameworks: ["Foundation"]
         }
     }
 
     QtApplication {
-        condition: qbs.targetOS.contains("win")
+        condition: qbs.targetPlatform.contains("windows")
         name : "TestQUsb2Snes"
         cpp.cxxLanguageVersion: "c++11"
         files: [
