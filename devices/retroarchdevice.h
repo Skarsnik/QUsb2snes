@@ -56,6 +56,8 @@ private:
     unsigned int sizePrevBigGet;
     unsigned int addrBigGet;
     unsigned int lastRCRSize;
+    unsigned int sizePut;
+    unsigned int sizeWritten;
     bool         checkingRetroarch;
     bool         checkingInfo;
     bool         hasSnesMemoryMap;
