@@ -10,6 +10,8 @@ build_script:
   - cd QFile2Snes
   - qmake QFile2Snes.pro -spec win32-msvc "CONFIG+=release"
   - nmake
+  - qmake SendToSd2Snes.pro -spec win32-msvc "CONFIG+=release"
+  - nmake
   - cd ..
 
 after_build:
@@ -25,6 +27,7 @@ after_build:
   - copy /y ..\README.md Readme.txt
   - cd ..
   # QFile2Snes deployment
+  - copy QFile2Snes\release\SendToSd2Snes.exe QUsb2Snes\
   - mkdir QUsb2Snes\apps\QFile2Snes
   - xcopy QFile2Snes\release\QFile2Snes.exe QUsb2Snes\apps\QFile2Snes\
   - copy QFile2Snes\icon50x50.png QUsb2Snes\apps\QFile2Snes\icone.png
