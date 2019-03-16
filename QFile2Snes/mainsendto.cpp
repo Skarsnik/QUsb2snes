@@ -19,8 +19,8 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    //SendToDialog diag(a.arguments().at(1));
-    SendToDialog diag("F:/Emulation/Super Mario World/Super Mario World.smc");
+    SendToDialog diag(a.arguments().at(1));
+    //SendToDialog diag("F:/Emulation/Super Mario World/Super Mario World.smc");
     //qInstallMessageHandler(myMessageOutput);
     if (!diag.init())
         exit(1);
