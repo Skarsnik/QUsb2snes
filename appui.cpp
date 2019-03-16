@@ -241,7 +241,7 @@ void AppUi::addWindowsSendToEntry()
     appData.cd("Microsoft");
     appData.cd("Windows");
     appData.cd("SendTo");
-    bool ok = QFile::link(qApp->applicationDirPath() + "/apps/QFile2Snes/QFile2Snes.exe", appData.path() + "/SD2Snes.lnk");
+    bool ok = QFile::link(qApp->applicationDirPath() + "/SendToSd2Snes.exe", appData.path() + "/SD2Snes.lnk");
     QMessageBox msg;
     if (ok)
         msg.setText(tr("Entry in the Send To menu has been added successfully"));

@@ -4,8 +4,9 @@
 #include <QDebug>
 #include <QMessageBox>
 
-#define UPDIRKEY    "UploadDir"
-#define SECONDBEFORESTART 3
+static const QString UPDIRKEY = "UploadDir";
+static const int SECONDBEFORESTART = 3;
+static const QString EXECAFTERUP = "ExecAfterUpload";
 
 
 SendToDialog::SendToDialog(QString filePath, QWidget *parent) :
@@ -16,6 +17,8 @@ SendToDialog::SendToDialog(QString filePath, QWidget *parent) :
     fileInfos.setFile(filePath);
     ui->filenameLabel->setText(fileInfos.fileName());
     qDebug() << fileInfos.filePath();
+    if (fileInfos.suffix() == "sfc" || fileInfos.suffix() == "smc")
+        ui->romStartCheckBox->setEnabled(true);
     usb2snes = nullptr;
     setWindowTitle(QString(tr("Send %1 to SD2SNES").arg(fileInfos.fileName())));
 
@@ -25,6 +28,8 @@ SendToDialog::SendToDialog(QString filePath, QWidget *parent) :
         settings->setValue(UPDIRKEY, "/");
     }
     ui->dirLineEdit->setText(settings->value(UPDIRKEY).toString());
+    if (settings->contains(EXECAFTERUP))
+        ui->romStartCheckBox->setChecked(settings->value(EXECAFTERUP).toBool());
 
     connect(&progressTimer, SIGNAL(timeout()), this, SLOT(onTimerTimeout()));
     connect(&recoTimer, SIGNAL(timeout()), this, SLOT(onRecoTimerTimeout()));
@@ -67,7 +72,7 @@ void SendToDialog::onUsb2SnesStateChanged()
             usb2snes->ls("/");
             setStatusLabel(tr("File transfered"));
             ui->progressBar->setValue(100);
-            if (ui->romStartCheckBox->isChecked())
+            if (ui->romStartCheckBox->isChecked() && (fileInfos.suffix() == "sfc" || fileInfos.suffix() == "smc"))
                 usb2snes->boot(ui->dirLineEdit->text() + "/" + fileInfos.fileName());
             goto endState;
         }
@@ -130,7 +135,6 @@ bool SendToDialog::checkForUsb2SnesServer()
         return true;
     } else {
         QDir appDir(qApp->applicationDirPath());
-        appDir.cdUp();
         wsServer.start(appDir.path() + "/" + "QUsb2Snes.exe", QStringList() << "-nogui");
         return wsServer.waitForStarted(100);
     }
@@ -145,16 +149,17 @@ void SendToDialog::setStatusLabel(QString message)
 void SendToDialog::transfertFile()
 {
     QFile fi(fileInfos.absoluteFilePath());
-    fi.open(QIODevice::ReadOnly);
+    qDebug() << "Opening file" << fi.open(QIODevice::ReadOnly);
     QByteArray data = fi.readAll();
     sendingFile = true;
     // 6 mb take 60 sec
-    int sizeInMb = (data.size() / (1024 * 1024)) + 0.5;
+    int sizeInMb = 1;
+    if (data.size() > 1024 * 1024)
+        sizeInMb = (data.size() / (1024 * 1024)) + 0.5;
     setStatusLabel(tr("Transfering file - Estimated time is %1 seconds").arg(sizeInMb * 10));
     progressStep = 80 / (sizeInMb * 10);
 
     usb2snes->sendFile(ui->dirLineEdit->text() + "/" + fileInfos.fileName(), data);
-
 }
 
 void SendToDialog::attachToSD2Snes()
@@ -183,4 +188,9 @@ void SendToDialog::on_pushButton_clicked()
         }
     }
     progressTimer.start(1000);
+}
+
+void SendToDialog::on_romStartCheckBox_toggled(bool checked)
+{
+    settings->setValue(EXECAFTERUP, checked);
 }

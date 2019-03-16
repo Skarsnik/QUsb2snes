@@ -29,22 +29,16 @@ SOURCES += \
         qfile2snesw.cpp \
     usb2snesfilemodel.cpp \
     ../client/usb2snes.cpp \
-    sendtodialog.cpp \
-    dirchangedialog.cpp \
-    myfilesystemmodel.cpp
+    myfilesystemmodel.cpp \
 
 HEADERS += \
         qfile2snesw.h \
     usb2snesfilemodel.h \
     ../client/usb2snes.h \
-    sendtodialog.h \
-    dirchangedialog.h \
     myfilesystemmodel.h
 
 FORMS += \
         qfile2snesw.ui \
-    sendtodialog.ui \
-    dirchangedialog.ui
 
 RC_FILE = qfile2snes.rc
 

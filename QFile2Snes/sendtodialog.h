@@ -27,6 +27,8 @@ private slots:
 
     void on_pushButton_clicked();
 
+    void on_romStartCheckBox_toggled(bool checked);
+
 private:
     Ui::SendToDialog *ui;
     QFileInfo   fileInfos;

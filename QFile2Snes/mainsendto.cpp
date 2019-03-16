@@ -1,4 +1,5 @@
-#include "qfile2snesw.h"
+#include "sendtodialog.h"
+
 #include <QApplication>
 
 static QTextStream cout(stdout);
@@ -18,8 +19,11 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    //SendToDialog diag(a.arguments().at(1));
+    SendToDialog diag("F:/Emulation/Super Mario World/Super Mario World.smc");
     //qInstallMessageHandler(myMessageOutput);
-    QFile2SnesW w;
-    w.show();
+    if (!diag.init())
+        exit(1);
+    diag.show();
     return a.exec();
 }
