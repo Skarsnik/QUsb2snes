@@ -9,6 +9,7 @@
 
 class SD2SnesFactory : public DeviceFactory
 {
+    Q_OBJECT
 public:
     SD2SnesFactory();
 

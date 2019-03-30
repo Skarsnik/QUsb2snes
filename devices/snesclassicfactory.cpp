@@ -79,7 +79,7 @@ bool    SNESClassicFactory::checkStuff()
         QByteArray canoeArgs = readCommandReturns(socket);
         if (canoeArgs.indexOf("-resume") != -1)
         {
-            m_attachError = "SNES Classic emulator is running in demo mode";
+            m_attachError = tr("SNES Classic emulator is running in demo mode.");
             return false;
         }
         findMemoryLocations();
@@ -87,11 +87,11 @@ bool    SNESClassicFactory::checkStuff()
         {
             return true;
         } else {
-            m_attachError = "Can't find memory locations, try restarting the game";
+            m_attachError = tr("Can't find memory locations, try restarting the game.");
             return false;
         }
     } else {
-        m_attachError = "The SNES Classic emulator is not running";
+        m_attachError = tr("The SNES Classic emulator is not running.");
     }
     return false;
 }
@@ -126,7 +126,7 @@ QStringList SNESClassicFactory::listDevices()
         }
 
     } else {
-        m_attachError = "Can't connect to the SNES Classic";
+        m_attachError = tr("Can't connect to the SNES Classic.");
     }
     sDebug() << "Not ready";
     return toret;
@@ -156,7 +156,7 @@ QString SNESClassicFactory::status()
     if (device == nullptr || device->state() == ADevice::CLOSED)
         return m_attachError;
     else
-        return "SNES Classic ready";
+        return tr("SNES Classic ready.");
 }
 
 QString SNESClassicFactory::name() const

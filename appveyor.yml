@@ -7,6 +7,7 @@ init:
 build_script:
   - qmake QUsb2snes.pro -spec win32-msvc "CONFIG+=release"
   - nmake
+  - lrelease QUsb2Snes.pro
   - cd QFile2Snes
   - qmake QFile2Snes.pro -spec win32-msvc "CONFIG+=release"
   - nmake
@@ -17,6 +18,7 @@ build_script:
 after_build:
   - mkdir QUsb2Snes
   - mkdir QUsb2Snes\apps
+  - mkdir i18n
   - xcopy release\QUsb2Snes.exe QUsb2Snes\
   - cd QUsb2Snes
   - windeployqt.exe --no-translations --no-system-d3d-compiler --no-opengl-sw --no-opengl --no-webkit --no-patchqt --no-webkit2 --release  QUsb2Snes.exe
@@ -25,6 +27,7 @@ after_build:
   - del vc_redist.x64.exe
   - copy /y ..\LICENSE LICENCE-GPLV3.txt
   - copy /y ..\README.md Readme.txt
+  - xcopy /y ..\Translations\qusb2snes_fr.qm i18n\
   - cd ..
   # QFile2Snes deployment
   - copy QFile2Snes\release\SendToSd2Snes.exe QUsb2Snes\

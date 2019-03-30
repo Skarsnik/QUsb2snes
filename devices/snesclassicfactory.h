@@ -10,6 +10,7 @@
 
 class SNESClassicFactory : public DeviceFactory
 {
+    Q_OBJECT
 public:
     SNESClassicFactory();
 

@@ -54,9 +54,9 @@ QString SD2SnesFactory::status()
     {
         sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
         if (usbinfo.serialNumber() == "DEMO00000000")
-                return "SD2SNES detected on " + usbinfo.portName();
+                return QString(tr("SD2SNES detected on %1", "Arg is port name")).arg(usbinfo.portName());
     }
-    return "No SD2Snes device detected";
+    return tr("No SD2Snes device detected.");
 }
 
 QString SD2SnesFactory::name() const

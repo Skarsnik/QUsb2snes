@@ -37,7 +37,7 @@ QStringList RetroArchFactory::listDevices()
         m_sock->connectToHost(retroarchHost, 55355);
         if (!m_sock->waitForConnected(50))
         {
-            m_attachError = "Can't connect to RetroArch";
+            m_attachError = tr("Can't connect to RetroArch.");
             return toret;
         }
         sDebug() << "Connected";
@@ -49,7 +49,7 @@ QStringList RetroArchFactory::listDevices()
         raVersion = m_sock->readAll().trimmed();
         sDebug() << raVersion;
     } else {
-        m_attachError = "RetroArch - Did not get a VERSION response.";
+        m_attachError = tr("RetroArch - Did not get a VERSION response.");
         return toret;
     }
     m_sock->write("READ_CORE_RAM FFC0 32");
@@ -98,9 +98,9 @@ QStringList RetroArchFactory::listDevices()
             m_devices.append(retroDev);
             toret << retroDev->name();
         }
-        m_attachError = QString("RetroArch %1 - Current core does not support memory read").arg(raVersion);
+        m_attachError = QString(tr("RetroArch %1 - Current core does not support memory read.")).arg(raVersion);
     } else {
-        m_attachError = "RetroArch - Did not get a response to READ_CORE_RAM.";
+        m_attachError = tr("RetroArch - Did not get a response to READ_CORE_RAM.");
     }
     return toret;
 }
@@ -119,7 +119,7 @@ QString RetroArchFactory::status()
 {
     listDevices();
     if (retroDev != nullptr)
-        return QString("RetroArch %1 device ready").arg(raVersion);
+        return QString(tr("RetroArch %1 device ready.")).arg(raVersion);
     else
         return m_attachError;
 }

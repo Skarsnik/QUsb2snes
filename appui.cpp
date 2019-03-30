@@ -8,6 +8,7 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QStyle>
+#include <QTranslator>
 
 Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #define sDebug() qCDebug(log_appUi)
@@ -34,24 +35,29 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     luaBridge = nullptr;
     snesClassic = nullptr;
 
-    deviceMenu = menu->addMenu(QIcon(":/img/deviceicon.svg"), "Devices");
+    QTranslator translator;
+    QString locale = QLocale::system().name().split('_').first();
+    translator.load(qApp->applicationDirPath() + "/i18n/qusb2snes_" + locale + ".qm");
+    qApp->installTranslator(&translator);
+
+    deviceMenu = menu->addMenu(QIcon(":/img/deviceicon.svg"), tr("Devices", "Menu entry"));
     connect(&wsServer, &WSServer::untrustedConnection, this, &AppUi::onUntrustedConnection);
     connect(deviceMenu, SIGNAL(aboutToShow()), this, SLOT(onMenuAboutToshow()));
 
 
-    retroarchAction = new QAction(QIcon(":/img/retroarch.png"), "Enable RetroArch virtual device (use bsnes-mercury if possible)");
+    retroarchAction = new QAction(QIcon(":/img/retroarch.png"), tr("Enable RetroArch virtual device (use bsnes-mercury if possible)"));
     retroarchAction->setCheckable(true);
     connect(retroarchAction, SIGNAL(triggered(bool)), this, SLOT(onRetroarchTriggered(bool)));
 
-    luaBridgeAction = new QAction(QIcon(":/img/icone-snes9x.gif"), "Enable Lua bridge (snes9x-rr)");
+    luaBridgeAction = new QAction(QIcon(":/img/icone-snes9x.gif"), tr("Enable Lua bridge (snes9x-rr)"));
     luaBridgeAction->setCheckable(true);
     connect(luaBridgeAction, SIGNAL(triggered(bool)), this, SLOT(onLuaBridgeTriggered(bool)));
 
-    snesClassicAction = new QAction(QIcon(":/img/chrysalis.png"), "Enable SNES Classic support (experimental)");
+    snesClassicAction = new QAction(QIcon(":/img/chrysalis.png"), tr("Enable SNES Classic support (experimental)"));
     snesClassicAction->setCheckable(true);
     connect(snesClassicAction, SIGNAL(triggered(bool)), this, SLOT(onSNESClassicTriggered(bool)));
 
-    appsMenu = menu->addMenu(QIcon(":/img/appicon.svg"), "Applications");
+    appsMenu = menu->addMenu(QIcon(":/img/appicon.svg"), tr("Applications", "Menu entry"));
     appsMenu->addAction("No applications");
 
     sysTray->setContextMenu(menu);
@@ -86,15 +92,15 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     handleMagic2Snes(qApp->applicationDirPath() + "/Magic2Snes");
     menu->addSeparator();
 
-    miscMenu = menu->addMenu("Misc");
+    miscMenu = menu->addMenu(tr("Misc", "Meny entry"));
 #ifdef Q_OS_WIN
-    QObject::connect(miscMenu->addAction("Add a Send To entry in the Windows menu"),
+    QObject::connect(miscMenu->addAction(tr("Add a 'Send To' entry in the Windows menu")),
                      &QAction::triggered, this, &AppUi::addWindowsSendToEntry);
     if (!globalSettings->contains("SendToSet"))
     {
         QMessageBox msg;
-        msg.setText(tr("Do you want to create a entry in the Send To menu of Windows to upload file to the sd2snes?"));
-        msg.setInformativeText("This will only be asked once, if you want to add it later go into the Misc menu.");
+        msg.setText(tr("Do you want to create a entry in the 'Send To' menu of Windows to upload file to the sd2snes?"));
+        msg.setInformativeText(tr("This will only be asked once, if you want to add it later go into the Misc menu."));
         msg.setWindowTitle("QUsb2Snes");
         msg.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
         msg.setDefaultButton(QMessageBox::Ok);
@@ -105,9 +111,9 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     }
 #endif
 
-    QObject::connect(menu->addAction("Exit"), &QAction::triggered, qApp, &QApplication::exit);
+    QObject::connect(menu->addAction(tr("Exit")), &QAction::triggered, qApp, &QApplication::exit);
     appsMenu->addSeparator();
-    appsMenu->addAction("Remote Applications");
+    appsMenu->addAction(tr("Remote Applications"));
     appsMenu->addSeparator();
     appsMenu->addAction(QIcon(":/img/multitroid.png"), "Multitroid");
 
@@ -211,7 +217,7 @@ void AppUi::checkForApplications()
     if (regularApps.isEmpty())
         return ;
     appsMenu->clear();
-    appsMenu->addAction("Local Applications");
+    appsMenu->addAction(tr("Local Applications"));
     appsMenu->addSeparator();
     appsMenu->setToolTipsVisible(true);
     connect(appsMenu, SIGNAL(triggered(QAction*)), this, SLOT(onAppsMenuTriggered(QAction*)));
@@ -244,16 +250,16 @@ void AppUi::addWindowsSendToEntry()
     bool ok = QFile::link(qApp->applicationDirPath() + "/SendToSd2Snes.exe", appData.path() + "/SD2Snes.lnk");
     QMessageBox msg;
     if (ok)
-        msg.setText(tr("Entry in the Send To menu has been added successfully"));
+        msg.setText(tr("Entry in the Send To menu has been added successfully."));
     else
-        msg.setText(QString(tr("Error while creating the Send To entry.<br>Check in %1 if it does not already exist")).arg(appData.path()));
+        msg.setText(QString(tr("Error while creating the Send To entry.<br>Check in %1 if it does not already exist.")).arg(appData.path()));
     msg.exec();
 }
 
 void AppUi::onUntrustedConnection(QString origin)
 {
     QMessageBox msg;
-    msg.setText(QString(tr("Received a connection from an untrusted origin %1. Do you want to add this source to the trusted origin list")).arg(origin));
+    msg.setText(QString(tr("Received a connection from an untrusted origin %1. Do you want to add this source to the trusted origin list?")).arg(origin));
     msg.setWindowTitle(tr("Untrusted origin"));
     msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msg.setDefaultButton(QMessageBox::No);
@@ -329,7 +335,7 @@ void    AppUi::addDevicesInfo(DeviceFactory* devFact)
             statusString = dev->name();
             QStringList clients = wsServer.getClientsName(dev);
             if (clients.isEmpty())
-                statusString += " - No client connected";
+                statusString += tr(" - No client connected");
             else
                 statusString += " : " + clients.join(" - ");
         }
@@ -436,7 +442,7 @@ void AppUi::handleMagic2Snes(QString path)
 {
     magic2SnesMenu = menu->addMenu(QIcon(":/img/magic2snesicon.png"), "Magic2Snes");
     magic2SnesExe = path + "/Magic2Snes";
-    magic2SnesMenu->addAction(QIcon(":/img/magic2snesicon.png"), "Run Magic2Snes");
+    magic2SnesMenu->addAction(QIcon(":/img/magic2snesicon.png"), tr("Run Magic2Snes"));
     magic2SnesMenu->addSeparator();
     connect(magic2SnesMenu, SIGNAL(triggered(QAction*)), this, SLOT(onMagic2SnesMenuTriggered(QAction*)));
     QFileInfo fi(path);

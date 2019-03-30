@@ -9,6 +9,7 @@
 
 class RetroArchFactory : public DeviceFactory
 {
+    Q_OBJECT
 public:
     RetroArchFactory();
 
