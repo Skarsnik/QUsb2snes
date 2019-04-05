@@ -23,6 +23,7 @@ QSettings*  globalSettings;
 
 
 static QTextStream logfile;
+static QTextStream debugLogFile;
 //static QTextStream lowlogfile;
 static QTextStream cout(stdout);
 //bool    dontLogNext = false;
@@ -31,14 +32,15 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 {
     QByteArray localMsg = msg.toLocal8Bit();
     QTextStream*    log = &logfile;
-    /*if (QString(context.category) == "LowLevelTelnet")
-        return ;*/
     //cout << msg;
+#ifdef QT_NO_DEBUG
+    QString logString = QString("%6 %5 - %7: %1").arg(localMsg.constData()).arg(context.category, 20).arg(QDateTime::currentDateTime().toString(Qt::ISODate));
+#else
     QString logString = QString("%6 %5 - %7: %1 \t(%2:%3, %4)").arg(localMsg.constData()).arg(context.file).arg(context.line).arg(context.function).arg(context.category, 20).arg(QDateTime::currentDateTime().toString(Qt::ISODate));
+#endif
     switch (type)
     {
         case QtDebugMsg:
-            *log << logString.arg("Debug");
             break;
         case QtCriticalMsg:
             *log << logString.arg("Critical");
@@ -56,8 +58,16 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
             *log << logString.arg("Info");
             break;
     }
-    *log << "\n";
-    log->flush();
+    if (debugLogFile.device() != nullptr)
+    {
+        debugLogFile << logString.arg("Debug");
+        debugLogFile.flush();
+    }
+    if (type != QtDebugMsg)
+    {
+        *log << "\n";
+        log->flush();
+    }
     cout << QString("%1 : %2").arg(context.category, 20).arg(msg) << "\n";
     cout.flush();
 }
@@ -80,8 +90,14 @@ int main(int ac, char *ag[])
 {
     QApplication app(ac, ag);
     QFile   mlog(qApp->applicationDirPath() + "/log.txt");
+    QFile   mDebugLog(qApp->applicationDirPath() + "/log-debug.txt");
     logfile.setDevice(&mlog);
     globalSettings = new QSettings("config.ini", QSettings::IniFormat);
+    if (globalSettings->contains("debugLog") && globalSettings->value("debugLog").toBool())
+    {
+        mDebugLog.open(QIODevice::WriteOnly | QIODevice::Text);
+        debugLogFile.setDevice(&mDebugLog);
+    }
     if (mlog.open(QIODevice::WriteOnly | QIODevice::Text))
         qInstallMessageHandler(myMessageOutput);
     QApplication::setApplicationName("QUsb2Snes");

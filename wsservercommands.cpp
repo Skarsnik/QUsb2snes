@@ -16,6 +16,7 @@ bool    WSServer::isControlCommand(USB2SnesWS::opcode opcode)
 }
 
 #define sDebug() qCDebug(log_wsserver)
+#define sInfo() qCInfo(log_wsserver)
 
 #define CMD_TAKE_ONE_ARG(cmd) if (req->arguments.size() != 1) \
 { \
@@ -28,7 +29,7 @@ void    WSServer::executeRequest(MRequest *req)
 {
     ADevice*  device = nullptr;
     QWebSocket*     ws = req->owner;
-    sDebug() << "Executing request : " << *req << "for" << wsInfos.value(ws).name;
+    sInfo() << "Executing request : " << *req << "for" << wsInfos.value(ws).name;
     if (wsInfos.value(ws).attached)
         device = wsInfos.value(ws).attachedTo;
     switch (req->opcode)
@@ -36,21 +37,21 @@ void    WSServer::executeRequest(MRequest *req)
     case USB2SnesWS::DeviceList : {
         QStringList l = getDevicesList();
         sendReply(ws, l);
-        break;
+        goto endServerRequest;
     }
     case USB2SnesWS::Attach : {
         CMD_TAKE_ONE_ARG("Attach")
         cmdAttach(req);
-        break;
+        goto endServerRequest;
     }
     case USB2SnesWS::AppVersion : {
         sendReply(ws, "7.42.0");
-        break;
+        goto endServerRequest;
     }
     case USB2SnesWS::Name : {
         CMD_TAKE_ONE_ARG("Name")
         wsInfos[ws].name = req->arguments.at(0);
-        break;
+        goto endServerRequest;
     }
     case USB2SnesWS::Info : {
         device->infoCommand();
@@ -241,6 +242,10 @@ void    WSServer::executeRequest(MRequest *req)
     }
     }
     sDebug() << "Request executed";
+    return ;
+endServerRequest:
+    sInfo() << "Server request finished - " << *req << "processed in " << req->timeCreated.msecsTo(QTime::currentTime()) << " ms";
+    delete req;
 }
 
 #undef CMD_TAKE_ONE_ARG
@@ -304,7 +309,7 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
     }
     }
     currentRequests[device]->state = RequestState::DONE;
-    sDebug() << "Request " << *(currentRequests.value(device)) << "processed in " << currentRequests.value(device)->timeCreated.msecsTo(QTime::currentTime()) << " ms";
+    sInfo() << "Device request finished - " << *(currentRequests.value(device)) << "processed in " << currentRequests.value(device)->timeCreated.msecsTo(QTime::currentTime()) << " ms";
     delete currentRequests[device];
     currentRequests[device] = nullptr;
 }

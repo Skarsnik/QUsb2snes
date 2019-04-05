@@ -7,6 +7,7 @@
 
 Q_LOGGING_CATEGORY(log_wsserver, "WSServer")
 #define sDebug() qCDebug(log_wsserver)
+#define sInfo() qCInfo(log_wsserver)
 
 extern QSettings*          globalSettings;
 
@@ -31,7 +32,7 @@ bool WSServer::start(QHostAddress lAddress, quint16 port)
 {
     if (wsServer->listen(lAddress, port))
     {
-        sDebug() << "WebSocket server started : listenning " << lAddress << "port : " << port;
+        sInfo() << "WebSocket server started : listenning " << lAddress << "port : " << port;
         connect(wsServer, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
         connect(wsServer, SIGNAL(closed()), this, SLOT(onWSClosed()));
         connect(wsServer, SIGNAL(serverError(QWebSocketProtocol::CloseCode)), this, SLOT(onWSError(QWebSocketProtocol::CloseCode)));
@@ -43,12 +44,12 @@ bool WSServer::start(QHostAddress lAddress, quint16 port)
 void WSServer::onNewConnection()
 {
     QWebSocket* newSocket = wsServer->nextPendingConnection();
-    sDebug() << "New connection " << newSocket->origin();
+    sInfo() << "New connection from " << newSocket->origin();
     if (!trustedOrigin.contains(newSocket->origin()))
     {
-        sDebug() << "Connection from untrusted origin";
+        sInfo() << "Connection from untrusted origin";
         emit untrustedConnection(newSocket->origin());
-        sDebug() << "Closing Connection";
+        sInfo() << "Closing Connection";
         newSocket->close(QWebSocketProtocol::CloseCodePolicyViolated, "Not in trusted origin");
         return ;
     }
@@ -68,7 +69,7 @@ void WSServer::onNewConnection()
     wi.recvData.clear();
     wi.ipsSize = 0;
     wsInfos[newSocket] = wi;
-    sDebug() << "New connection accepted " << wi.name << newSocket->origin() << newSocket->peerAddress();
+    sInfo() << "New connection accepted " << wi.name << newSocket->origin() << newSocket->peerAddress();
 }
 
 void WSServer::onWSError(QWebSocketProtocol::CloseCode code)
@@ -291,14 +292,14 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
 void WSServer::onClientDisconnected()
 {
     QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
-    sDebug() << "Websocket disconnected" << wsInfos.value(ws).name;
+    sInfo() << "Websocket disconnected" << wsInfos.value(ws).name;
     cleanUpSocket(ws);
 }
 
 void WSServer::onClientError(QAbstractSocket::SocketError)
 {
     QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
-    sDebug() << "Client error : " << wsInfos.value(ws).name << ws->errorString();
+    sInfo() << "Client error : " << wsInfos.value(ws).name << ws->errorString();
 }
 
 void WSServer::onDeviceCommandFinished()
@@ -316,7 +317,7 @@ void WSServer::onDeviceCommandFinished()
 void WSServer::onDeviceProtocolError()
 {
     ADevice*  device = qobject_cast<ADevice*>(sender());
-    sDebug() << "Device Error";
+    sInfo() << "Device Error" << device->name();
     setError(ProtocolError, "Error in device protocol");
     disconnect(device, &ADevice::closed, this, &WSServer::onDeviceClosed);
     cleanUpDevice(device);
@@ -325,7 +326,7 @@ void WSServer::onDeviceProtocolError()
 void WSServer::onDeviceClosed()
 {
     ADevice* dev = qobject_cast<ADevice*>(sender());
-    sDebug() << "Device closed" << dev->name();
+    sInfo() << "Device closed" << dev->name();
     disconnect(dev, &ADevice::closed, this, &WSServer::onDeviceClosed);
     cleanUpDevice(dev);
 }
@@ -419,7 +420,7 @@ WSServer::MRequest* WSServer::requestFromJSON(const QString &str)
 
 void WSServer::clientError(QWebSocket *ws)
 {
-    sDebug() << "Error with a ws client " << wsInfos[ws].name << m_errorType << m_errorString;
+    sInfo() << "Error with a ws client " << wsInfos[ws].name << m_errorType << m_errorString;
     ws->close();
     emit error();
 }

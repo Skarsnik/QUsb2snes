@@ -12,6 +12,7 @@
 
 Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #define sDebug() qCDebug(log_appUi)
+#define sInfo() qCInfo(log_appUi)
 
 #include "appui.h"
 #include "devices/snesclassic.h"
@@ -92,7 +93,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     handleMagic2Snes(qApp->applicationDirPath() + "/Magic2Snes");
     menu->addSeparator();
 
-    miscMenu = menu->addMenu(tr("Misc", "Meny entry"));
+    miscMenu = menu->addMenu(tr("Misc", "Menu entry"));
 #ifdef Q_OS_WIN
     QObject::connect(miscMenu->addAction(tr("Add a 'Send To' entry in the Windows menu")),
                      &QAction::triggered, this, &AppUi::addWindowsSendToEntry);
@@ -110,7 +111,8 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
         globalSettings->setValue("SendToSet", true);
     }
 #endif
-
+    /*QAction* debugLogAction = miscMenu->addAction(tr("Enable debug logs"));
+    debugLogAction->set*/
     QObject::connect(menu->addAction(tr("Exit")), &QAction::triggered, qApp, &QApplication::exit);
     appsMenu->addSeparator();
     appsMenu->addAction(tr("Remote Applications"));
@@ -192,12 +194,12 @@ void AppUi::checkForApplications()
         return ;
     foreach (QFileInfo fi, appsDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
     {
-        sDebug() << "Scanning " << fi.absoluteFilePath();
+        sInfo() << "Scanning " << fi.absoluteFilePath();
         ApplicationInfo appInfo;
         sDebug() << "Searching for " << fi.absoluteFilePath() + "/" + applicationJsonFileName;
         if (QFile::exists(fi.absoluteFilePath() + "/" + applicationJsonFileName))
         {
-            qDebug() << "Found a json file "  + applicationJsonFileName;
+            qDebug() << "Found a json description file "  + applicationJsonFileName;
             appInfo = parseJsonAppInfo(fi.absoluteFilePath() + "/" + applicationJsonFileName);
         } else {
             QDir dir(fi.absoluteFilePath());
@@ -212,7 +214,10 @@ void AppUi::checkForApplications()
             }
         }
         if (!appInfo.name.isEmpty())
+        {
             regularApps[appInfo.folder] = appInfo;
+            sInfo() << "Found an application" << appInfo;
+        }
     }
     if (regularApps.isEmpty())
         return ;
@@ -276,7 +281,9 @@ void AppUi::onUntrustedConnection(QString origin)
 
 QDebug operator<<(QDebug debug, const AppUi::ApplicationInfo &req)
 {
-    debug << req.name << " Description : " <<req.description << req.folder << req.icon << req.executable << req.isQtApp << "\n";
+    debug << "Name : " << req.name << " Description : " << req.description
+          << "Folder : " << req.folder << "Icon : " <<req.icon << "Exe :" << req.executable
+          << "QtApp :" << req.isQtApp;
     return debug;
 }
 
