@@ -111,8 +111,34 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
         globalSettings->setValue("SendToSet", true);
     }
 #endif
-    /*QAction* debugLogAction = miscMenu->addAction(tr("Enable debug logs"));
-    debugLogAction->set*/
+    miscMenu->setToolTipsVisible(true);
+    QAction* debugLogAction = miscMenu->addAction(tr("Enable debug logs"));
+    debugLogAction->setCheckable(true);
+    debugLogAction->setChecked(globalSettings->value("debugLog").toBool());
+    debugLogAction->setToolTip(tr("Enable the creation of a log file with lot of debug informations"));
+    QObject::connect(debugLogAction, &QAction::changed, [=]() {
+        if (debugLogAction->isChecked())
+        {
+            QMessageBox msg;
+            msg.setText(tr("Are you sure you want to enable debug log? The file generated could easily go over hundred of MBytes"));
+            msg.setInformativeText(tr("You will need to restart QUsb2Snes for this setting to take effect"));
+            msg.setWindowTitle("QUsb2Snes");
+            msg.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+            msg.setDefaultButton(QMessageBox::Ok);
+            int ret = msg.exec();
+            if (ret == QMessageBox::Ok)
+            {
+                sInfo() << "Debug log enabled";
+                globalSettings->setValue("debugLog", true);
+            }
+            else {
+                debugLogAction->setChecked(false);
+            }
+        } else {
+            sInfo() << "Debug log disabled";
+            globalSettings->setValue("debugLog", false);
+        }
+    });
     QObject::connect(menu->addAction(tr("Exit")), &QAction::triggered, qApp, &QApplication::exit);
     appsMenu->addSeparator();
     appsMenu->addAction(tr("Remote Applications"));
@@ -269,7 +295,6 @@ void AppUi::onUntrustedConnection(QString origin)
     msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msg.setDefaultButton(QMessageBox::No);
     int but = msg.exec();
-    sDebug() << but;
     if (but == QMessageBox::Yes)
     {
         wsServer.addTrusted(origin);
