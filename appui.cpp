@@ -281,9 +281,12 @@ void AppUi::addWindowsSendToEntry()
     bool ok = QFile::link(qApp->applicationDirPath() + "/SendToSd2Snes.exe", appData.path() + "/SD2Snes.lnk");
     QMessageBox msg;
     if (ok)
+    {
         msg.setText(tr("Entry in the Send To menu has been added successfully."));
-    else
+        sInfo() << "Entry in the Send to menu added";
+    } else {
         msg.setText(QString(tr("Error while creating the Send To entry.<br>Check in %1 if it does not already exist.")).arg(appData.path()));
+    }
     msg.exec();
 }
 
@@ -297,8 +300,8 @@ void AppUi::onUntrustedConnection(QString origin)
     int but = msg.exec();
     if (but == QMessageBox::Yes)
     {
-        wsServer.addTrusted(origin);
         QStringList tList = globalSettings->value("trustedOrigin").toString().split(";");
+        wsServer.addTrusted(origin);
         tList.append(origin);
         globalSettings->setValue("trustedOrigin", tList.join(";"));
     }
