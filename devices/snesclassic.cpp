@@ -6,6 +6,7 @@
 
 Q_LOGGING_CATEGORY(log_snesclassic, "SNESClassic")
 #define sDebug() qCDebug(log_snesclassic)
+#define sInfo() qCInfo(log_snesclassic)
 
 #define SNES_CLASSIC_IP "169.254.13.37"
 //#define MEMSTUFF_PATH "/var/lib/hakchi/rootfs/memstuff"
@@ -16,14 +17,16 @@ SNESClassic::SNESClassic()
     m_timer.setInterval(3);
     alive_timer.setInterval(2000);
     socket = new QTcpSocket();
-    socket->connectToHost(SNES_CLASSIC_IP, 1042);
-    //socket = sock;
-    connect(&alive_timer, SIGNAL(timeout()), this, SLOT(onAliveTimeout()));
-    connect(&m_timer, SIGNAL(timeout()), this, SLOT(onTimerOut()));
-    connect(socket, SIGNAL(readyRead()), this, SLOT(onSocketReadReady()));
-    connect(socket, SIGNAL(disconnected()), this, SLOT(onSocketDisconnected()));
+    connect(&alive_timer, &QTimer::timeout, this, &SNESClassic::onAliveTimeout);
+    connect(&m_timer, &QTimer::timeout, this, &SNESClassic::onTimerOut);
+    connect(socket, &QIODevice::readyRead, this, &SNESClassic::onSocketReadReady);
+    connect(socket, &QTcpSocket::disconnected, this, &SNESClassic::onSocketDisconnected);
+    connect(socket, &QTcpSocket::connected, [=] {
+        sDebug() << "Connected to serverstuff";
+        m_state = READY;
+    });
     sDebug() << "Creating SNES Classic device";
-    m_state = READY;
+    m_state = CLOSED;
     sramLocation = 0;
     romLocation = 0;
     ramLocation = 0;
@@ -40,12 +43,13 @@ void SNESClassic::onSocketReadReady()
         return;
     QByteArray data = socket->readAll();
     sDebug() << "Read stuff on socket " << cmdWasGet << " : " << data.size();
-    sDebug() << "<<" << data;
+    sDebug() << "<<" << data << data.toHex();
     if (cmdWasGet)
     {
         getData += data;
-        if (getData.left(9) == "\0\0ERROR\0\0" || (getSize == 9 && getData.left(10) == "\0\0ERROR\0\0\0"))
+        if (getData.left(9) == QByteArray::fromHex("00004552524f520000") || (getSize == 9 && getData.left(10) == QByteArray::fromHex("00004552524f52000000")))
         {
+            sDebug() << "Error doing a get memory";
             socket->disconnectFromHost();
             return ;
         }
@@ -192,6 +196,9 @@ bool SNESClassic::open()
 
 void SNESClassic::close()
 {
+    sDebug() << "Closing";
+    m_state = CLOSED;
+    socket->disconnectFromHost();
 }
 
 void SNESClassic::onTimerOut()
@@ -216,8 +223,8 @@ void    SNESClassic::onAliveTimeout()
 
 void SNESClassic::onSocketDisconnected()
 {
+    sInfo() << "disconnected from serverstuff";
     m_state = CLOSED;
-    alive_timer.stop();
     emit closed();
 }
 
@@ -248,12 +255,11 @@ void SNESClassic::putFile(QByteArray name, unsigned int size)
 //TODO need to check for canoe still running the right rom I guess?
 bool SNESClassic::canAttach()
 {
-    if (m_state == READY || m_state == BUSY)
-        return true;
-
+    return m_state == READY || m_state == BUSY;
 }
 
 void SNESClassic::sockConnect()
 {
+    sDebug() << "Connecting to serverstuff";
     socket->connectToHost(SNES_CLASSIC_IP, 1042);
 }

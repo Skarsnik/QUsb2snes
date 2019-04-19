@@ -25,6 +25,7 @@ private:
     QTcpSocket*         socket;
     QByteArray          canoePid;
     SNESClassic*        device;
+    QTimer              checkAliveTimer;
     unsigned int        romLocation;
     unsigned int        sramLocation;
     unsigned int        ramLocation;
@@ -34,6 +35,7 @@ private:
     QByteArray readCommandReturns(QTcpSocket *msocket);
     void findMemoryLocations();
     bool checkStuff();
+    void aliveCheck();
 };
 
 #endif // SNESCLASSICFACTORY_H

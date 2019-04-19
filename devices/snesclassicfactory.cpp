@@ -12,6 +12,8 @@ SNESClassicFactory::SNESClassicFactory()
 {
     socket = new QTcpSocket();
     device = nullptr;
+    checkAliveTimer.setInterval(1000);
+    connect(&checkAliveTimer, &QTimer::timeout, this, &SNESClassicFactory::aliveCheck);
 }
 
 void SNESClassicFactory::executeCommand(QByteArray toExec)
@@ -96,6 +98,36 @@ bool    SNESClassicFactory::checkStuff()
     return false;
 }
 
+void SNESClassicFactory::aliveCheck()
+{
+    QByteArray oldPid = canoePid;
+    executeCommand("pidof canoe-shvc");
+    QByteArray data = readCommandReturns(socket);
+    data = data.trimmed();
+    // Canoe not running anymore
+    if (data.isEmpty())
+    {
+        sDebug() << "Closing the device, Canoe not running anymore";
+        device->close();
+        //checkAliveTimer.setInterval(1500);
+        //canoePid = data.trimmed();
+        checkAliveTimer.stop();
+        return ;
+    }
+    canoePid = data.trimmed();
+    if (canoePid == oldPid)
+        return ;
+    if (checkStuff())
+    {
+        sDebug() << "Updating device infos";
+        device->canoePid = canoePid;
+        device->setMemoryLocation(ramLocation, sramLocation, romLocation);
+    } else {
+        sDebug() << "Closing the device, can't find location";
+        device->close();
+    }
+}
+
 QStringList SNESClassicFactory::listDevices()
 {
     QStringList toret;
@@ -114,12 +146,14 @@ QStringList SNESClassicFactory::listDevices()
             {
                 sDebug() << "Creating SNES Classic device";
                 device = new SNESClassic();
-                device->canoePid = canoePid;
-                //device->sockConnect();
                 m_devices.append(device);
+                checkAliveTimer.start();
             }
+            if (device->state() == ADevice::CLOSED)
+                device->sockConnect();
+            device->canoePid = canoePid;
             device->setMemoryLocation(ramLocation, sramLocation, romLocation);
-            device->setState(ADevice::READY);
+            //device->setState(ADevice::READY);
             return toret << "SNES Classic";
         } else {
             return toret;

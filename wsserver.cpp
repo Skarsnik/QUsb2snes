@@ -87,9 +87,9 @@ void WSServer::addDevice(ADevice *device)
     sDebug() << "Adding device" << device->name();
     devices.append(device);
     devicesInfos[device] = DeviceInfos();
-    connect(device, SIGNAL(commandFinished()), this, SLOT(onDeviceCommandFinished()));
-    connect(device, SIGNAL(protocolError()), this, SLOT(onDeviceProtocolError()));
-    connect(device, SIGNAL(closed()), this, SLOT(onDeviceClosed()));
+    connect(device, &ADevice::commandFinished, this, &WSServer::onDeviceCommandFinished);
+    connect(device, &ADevice::protocolError, this, &WSServer::onDeviceProtocolError);
+    connect(device, &ADevice::closed, this, &WSServer::onDeviceClosed);
     sDebug() << "Added device : " << device->name();
 }
 
