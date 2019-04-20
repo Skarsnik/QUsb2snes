@@ -19,6 +19,11 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     //qInstallMessageHandler(myMessageOutput);
+    QTranslator translator;
+    QString locale = QLocale::system().name().split('_').first();
+    translator.load(qApp->applicationDirPath() + "/i18n/qfile2snes_" + locale + ".qm");
+    qApp->installTranslator(&translator);
+
     QFile2SnesW w;
     w.show();
     return a.exec();

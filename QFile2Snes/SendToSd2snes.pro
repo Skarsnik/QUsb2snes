@@ -29,3 +29,5 @@ RC_FILE = qfile2snes.rc
 
 DISTFILES += \
     qfile2snes.rc
+
+TRANSLATIONS = Translations\sendtodialog_fr.ts

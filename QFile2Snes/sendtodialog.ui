@@ -13,6 +13,9 @@
   <property name="windowTitle">
    <string>Send to usb2snes</string>
   </property>
+  <property name="locale">
+   <locale language="English" country="UnitedStates"/>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QLabel" name="label">

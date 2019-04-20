@@ -11,14 +11,15 @@ build_script:
   - cd QFile2Snes
   - qmake QFile2Snes.pro -spec win32-msvc "CONFIG+=release"
   - nmake
+  - lrelease QFile2Snes.pro
   - qmake SendToSd2Snes.pro -spec win32-msvc "CONFIG+=release"
+  - lrelease SendToSd2Snes.pro
   - nmake
   - cd ..
 
 after_build:
   - mkdir QUsb2Snes
   - mkdir QUsb2Snes\apps
-  - mkdir i18n
   - xcopy release\QUsb2Snes.exe QUsb2Snes\
   - cd QUsb2Snes
   - windeployqt.exe --no-translations --no-system-d3d-compiler --no-opengl-sw --no-opengl --no-webkit --no-patchqt --no-webkit2 --release  QUsb2Snes.exe
@@ -27,6 +28,8 @@ after_build:
   - del vc_redist.x64.exe
   - copy /y ..\LICENSE LICENCE-GPLV3.txt
   - copy /y ..\README.md Readme.txt
+  # Translations
+  - mkdir i18n
   - xcopy /y ..\Translations\qusb2snes_fr.qm i18n\
   - cd ..
   # QFile2Snes deployment
@@ -35,6 +38,10 @@ after_build:
   - xcopy QFile2Snes\release\QFile2Snes.exe QUsb2Snes\apps\QFile2Snes\
   - copy QFile2Snes\icon50x50.png QUsb2Snes\apps\QFile2Snes\icone.png
   - xcopy QFile2Snes\qusb2snesapp.json QUsb2Snes\apps\QFile2Snes\
+  # Translations
+  - mkdir QUsb2Snes\apps\QFile2Snes\i18n
+  - xcopy QFile2Snes\Translations\qfile2snes_fr.qm QUsb2Snes\apps\QFile2Snes\i18n\
+  - xcopy QFile2Snes\Translations\sendtodialog_fr.qm QUsb2Snes\i18n\
   - appveyor DownloadFile https://github.com/Skarsnik/snesclassicstuff/releases/download/serverstuffmod_v1/serverstuff.hmod -FileName serverstuff.hmod
   - copy serverstuff.hmod QUsb2Snes\
 

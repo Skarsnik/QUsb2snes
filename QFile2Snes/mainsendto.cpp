@@ -20,6 +20,11 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     SendToDialog diag(a.arguments().at(1));
+
+    QTranslator translator;
+    QString locale = QLocale::system().name().split('_').first();
+    translator.load(qApp->applicationDirPath() + "/i18n/sendtodialog_" + locale + ".qm");
+    qApp->installTranslator(&translator);
     //SendToDialog diag("F:/Emulation/Super Mario World/Super Mario World.smc");
     //qInstallMessageHandler(myMessageOutput);
     if (!diag.init())

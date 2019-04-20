@@ -51,3 +51,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 DISTFILES += \
     qfile2snes.rc \
     Readme.md
+
+TRANSLATIONS = Translations/qfile2snes_fr.ts
