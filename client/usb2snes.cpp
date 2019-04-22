@@ -22,7 +22,7 @@
 Q_LOGGING_CATEGORY(log_Usb2snes, "USB2SNES")
 #define sDebug() qCDebug(log_Usb2snes)
 
-Usb2Snes::Usb2Snes(bool autoAttach = true) : QObject()
+Usb2Snes::Usb2Snes(bool autoAttach) : QObject()
 {
     m_state = None;
     m_istate = INone;

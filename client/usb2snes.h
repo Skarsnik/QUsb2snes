@@ -73,7 +73,7 @@ public:
     };
     Q_ENUM(InternalState)
 
-    Usb2Snes(bool autoAttach);
+    Usb2Snes(bool autoAttach = true);
     void                    usePort(QString port);
     QString                 port();
     QString                 getRomName();

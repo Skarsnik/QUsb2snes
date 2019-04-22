@@ -45,11 +45,12 @@ macx: {
 	SOURCES += osx/appnap.mm
 	HEADERS += osx/appnap.h
 	LIBS += -framework Foundation
+	QMAKE_INFO_PLIST = osx/Info.plist
+	ICON = cheer128x128.icns
 }
 
 RESOURCES = ressources.qrc
 
-ICONS = cheer128x128.icns
 
 RC_FILE = qusb2snes.rc
 
