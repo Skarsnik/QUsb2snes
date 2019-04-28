@@ -17,6 +17,7 @@ class AppUi : public QObject
     Q_OBJECT
 public:
     explicit AppUi(QObject *parent = nullptr);
+    void     init();
     QSystemTrayIcon*    sysTray;
 
 signals:

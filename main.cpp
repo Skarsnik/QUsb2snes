@@ -110,8 +110,23 @@ int main(int ac, char *ag[])
 
     if (app.arguments().size() == 2 && app.arguments().at(1) == "-nogui")
     {
-            QTimer::singleShot(100, &startServer);
-            return app.exec();
+        if (globalSettings->value("retroarchdevice").toBool())
+        {
+            RetroArchFactory* retroarchFactory = new RetroArchFactory();
+            wsServer.addDeviceFactory(retroarchFactory);
+        }
+        if (globalSettings->value("luabridge").toBool())
+        {
+            LuaBridge* luaBridge = new LuaBridge();
+            wsServer.addDeviceFactory(luaBridge);
+        }
+        if (globalSettings->value("snesclassic").toBool())
+        {
+            SNESClassicFactory* snesClassic = new SNESClassicFactory();
+            wsServer.addDeviceFactory(snesClassic);
+        }
+        QTimer::singleShot(100, &startServer);
+       return app.exec();
     }
     AppUi*  appUi = new AppUi();
     appUi->sysTray->show();

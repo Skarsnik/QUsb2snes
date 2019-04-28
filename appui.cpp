@@ -27,9 +27,6 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
 {
     sysTray = new QSystemTrayIcon(QIcon(":/img/icon64x64.ico"));
     qApp->setQuitOnLastWindowClosed(false);
-    menu = new QMenu();
-    menu->addAction(QIcon(":/img/icon64x64.ico"), "QUsb2Snes v" + QApplication::applicationVersion());
-    menu->addSeparator();
     retroarchFactory = nullptr;
     sd2snesFactory = new SD2SnesFactory();
     wsServer.addDeviceFactory(sd2snesFactory);
@@ -41,11 +38,24 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     translator.load(qApp->applicationDirPath() + "/i18n/qusb2snes_" + locale + ".qm");
     qApp->installTranslator(&translator);
 
+    // Main menu creation is here
+    menu = new QMenu();
+    menu->addAction(QIcon(":/img/icon64x64.ico"), "QUsb2Snes v" + QApplication::applicationVersion());
+    menu->addSeparator();
+
     deviceMenu = menu->addMenu(QIcon(":/img/deviceicon.svg"), tr("Devices", "Menu entry"));
     connect(&wsServer, &WSServer::untrustedConnection, this, &AppUi::onUntrustedConnection);
     connect(deviceMenu, SIGNAL(aboutToShow()), this, SLOT(onMenuAboutToshow()));
 
+    appsMenu = menu->addMenu(QIcon(":/img/appicon.svg"), tr("Applications", "Menu entry"));
+    appsMenu->addAction("No applications");
 
+    sysTray->setContextMenu(menu);
+    QTimer::singleShot(50, this, &AppUi::init);
+}
+
+void AppUi::init()
+{
     retroarchAction = new QAction(QIcon(":/img/retroarch.png"), tr("Enable RetroArch virtual device (use bsnes-mercury if possible)"));
     retroarchAction->setCheckable(true);
     connect(retroarchAction, SIGNAL(triggered(bool)), this, SLOT(onRetroarchTriggered(bool)));
@@ -57,11 +67,6 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     snesClassicAction = new QAction(QIcon(":/img/chrysalis.png"), tr("Enable SNES Classic support (experimental)"));
     snesClassicAction->setCheckable(true);
     connect(snesClassicAction, SIGNAL(triggered(bool)), this, SLOT(onSNESClassicTriggered(bool)));
-
-    appsMenu = menu->addMenu(QIcon(":/img/appicon.svg"), tr("Applications", "Menu entry"));
-    appsMenu->addAction("No applications");
-
-    sysTray->setContextMenu(menu);
     if (globalSettings->value("retroarchdevice").toBool())
     {
         retroarchFactory = new RetroArchFactory();
@@ -90,7 +95,12 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     }
     checkForApplications();
     menu->addSeparator();
-    handleMagic2Snes(qApp->applicationDirPath() + "/Magic2Snes");
+    if (QFile::exists(qApp->applicationDirPath() + "/Magic2Snes") && globalSettings->value("Magic2SnesLocation").toString().isEmpty())
+        handleMagic2Snes(qApp->applicationDirPath() + "/Magic2Snes");
+    if (!QFile::exists(qApp->applicationDirPath() + "/Magic2Snes") && globalSettings->value("Magic2SnesLocation").toString().isEmpty())
+        handleMagic2Snes("");
+    if (!globalSettings->value("Magic2SnesLocation").toString().isEmpty())
+        handleMagic2Snes(globalSettings->value("Magic2SnesLocation").toString());
     menu->addSeparator();
 
     miscMenu = menu->addMenu(tr("Misc", "Menu entry"));
@@ -144,7 +154,6 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     appsMenu->addAction(tr("Remote Applications"));
     appsMenu->addSeparator();
     appsMenu->addAction(QIcon(":/img/multitroid.png"), "Multitroid");
-
 }
 
 
@@ -356,6 +365,9 @@ void AppUi::onSNESClassicTriggered(bool checked)
     globalSettings->setValue("snesclassic", checked);
 }
 
+
+// TODO, probably need to rework the whole device status thing again
+
 void    AppUi::addDevicesInfo(DeviceFactory* devFact)
 {
     QString statusString;
@@ -363,16 +375,21 @@ void    AppUi::addDevicesInfo(DeviceFactory* devFact)
     QList<ADevice*> devs = devFact->getDevices();
     if (devs.isEmpty())
     {
-        statusString = devFact->status();
+        statusString = QString("%1 : %2").arg(devFact->name(), -20).arg(devFact->status());
     } else {
         foreach (ADevice* dev, devs)
         {
             statusString = dev->name();
             QStringList clients = wsServer.getClientsName(dev);
             if (clients.isEmpty())
-                statusString += tr(" - No client connected");
-            else
+            {
+                if (dev->state() == ADevice::READY)
+                    statusString += tr(" - No client connected");
+                if (dev->state() == ADevice::CLOSED)
+                    statusString += tr("Device not ready : ") + devFact->status();
+            } else {
                 statusString += " : " + clients.join(" - ");
+            }
         }
     }
     deviceMenu->addAction(statusString);
