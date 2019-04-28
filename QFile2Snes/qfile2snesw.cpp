@@ -1,5 +1,6 @@
 #include <QDebug>
 
+#include <QFileDialog>
 #include <QMessageBox>
 #include <QStorageInfo>
 
@@ -256,4 +257,18 @@ void QFile2SnesW::closeEvent(QCloseEvent *event)
     m_settings->setValue("windowGeometry", saveGeometry());
     const QFileSystemModel* mod = static_cast<const QFileSystemModel*>(ui->localFilesListView->model());
     m_settings->setValue("lastLocalDir", mod->fileInfo(ui->localFilesListView->rootIndex()).absoluteFilePath());
+}
+
+void QFile2SnesW::on_patchButton_clicked()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Choose an IPS File"),
+                                                      "",
+                                                      tr("IPS File (*.ips)"));
+    if (fileName.isEmpty())
+        return ;
+    if (usb2snes->patchROM(fileName))
+        ui->statusBar->showMessage(tr("Patch applied succesfully"));
+    else {
+        ui->statusBar->showMessage(tr("Error when applying a patch"));
+    }
 }

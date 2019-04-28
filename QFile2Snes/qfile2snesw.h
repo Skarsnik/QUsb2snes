@@ -52,6 +52,8 @@ private slots:
 
     void on_driveComboBox_activated(const QString &arg1);
 
+    void on_patchButton_clicked();
+
 private:
     State               m_state;
     Ui::QFile2SnesW     *ui;
