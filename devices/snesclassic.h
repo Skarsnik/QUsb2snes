@@ -32,7 +32,7 @@ public:
     bool hasFileCommands();
     bool hasControlCommands();
     bool canAttach();
-    void sockConnect();
+    void sockConnect(QString ip);
     USB2SnesInfo parseInfo(const QByteArray &data);
     QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI);
     void    setMemoryLocation(unsigned int ramLoc, unsigned int sramLoc, unsigned int romLoc);

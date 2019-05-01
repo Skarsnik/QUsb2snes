@@ -1,8 +1,10 @@
 #include <QLoggingCategory>
+#include <QSettings>
 
 Q_LOGGING_CATEGORY(log_snesclassicfact, "SNESClassic Factory")
 #define sDebug() qCDebug(log_snesclassicfact)
 
+extern QSettings* globalSettings;
 #define SNES_CLASSIC_IP "169.254.13.37"
 
 #include "snesclassic.h"
@@ -14,11 +16,16 @@ SNESClassicFactory::SNESClassicFactory()
     device = nullptr;
     checkAliveTimer.setInterval(1000);
     connect(&checkAliveTimer, &QTimer::timeout, this, &SNESClassicFactory::aliveCheck);
+    if (globalSettings->contains("SNESClassicIP"))
+        snesclassicIP = globalSettings->value("SNESClassicIP").toString();
+    else
+        snesclassicIP = SNES_CLASSIC_IP;
+    sDebug() << "SNES Classic IP is " << snesclassicIP;
 }
 
 void SNESClassicFactory::executeCommand(QByteArray toExec)
 {
-    sDebug() << "Executing : " << toExec;
+    //sDebug() << "Executing : " << toExec;
     writeSocket("CMD " + toExec + "\n");
 }
 
@@ -34,7 +41,7 @@ QByteArray SNESClassicFactory::readCommandReturns(QTcpSocket* msocket)
     msocket->waitForReadyRead(50);
     forever {
         QByteArray data = msocket->readAll();
-        sDebug() << "Reading" << data;
+        //sDebug() << "Reading" << data;
         if (data.isEmpty())
             break;
         toret += data;
@@ -134,7 +141,7 @@ QStringList SNESClassicFactory::listDevices()
     if (socket->state() == QAbstractSocket::UnconnectedState)
     {
         sDebug() << "Trying to connect to serverstuff";
-        socket->connectToHost(SNES_CLASSIC_IP, 1042);
+        socket->connectToHost(snesclassicIP, 1042);
         socket->waitForConnected(100);
     }
     sDebug() << socket->state();
@@ -150,7 +157,7 @@ QStringList SNESClassicFactory::listDevices()
                 checkAliveTimer.start();
             }
             if (device->state() == ADevice::CLOSED)
-                device->sockConnect();
+                device->sockConnect(snesclassicIP);
             device->canoePid = canoePid;
             device->setMemoryLocation(ramLocation, sramLocation, romLocation);
             //device->setState(ADevice::READY);

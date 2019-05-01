@@ -8,8 +8,6 @@ Q_LOGGING_CATEGORY(log_snesclassic, "SNESClassic")
 #define sDebug() qCDebug(log_snesclassic)
 #define sInfo() qCInfo(log_snesclassic)
 
-#define SNES_CLASSIC_IP "169.254.13.37"
-//#define MEMSTUFF_PATH "/var/lib/hakchi/rootfs/memstuff"
 
 SNESClassic::SNESClassic()
 {
@@ -78,21 +76,22 @@ cmdFinished:
 
 void SNESClassic::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
+    Q_UNUSED(space)
     m_state = BUSY;
-    quint64 memAddr;
+    quint64 memAddr = 0;
     if (addr >= 0xF50000 && addr < 0xF70000)
     {
         memAddr = addr - 0xF50000 + ramLocation;
-        sDebug() << "RAM read";
+        //sDebug() << "RAM read";
     }
     if (addr >= 0xE00000 && addr < 0xF50000)
     {
-        sDebug() << "SRAM read";
+        //sDebug() << "SRAM read";
         memAddr = addr - 0xE00000 + sramLocation;
     }
     if (addr < 0xE00000)
     {
-        sDebug() << "ROM read";
+        //sDebug() << "ROM read";
         memAddr = addr + romLocation;
     }
     sDebug() << "Get Addr" << memAddr;
@@ -104,14 +103,16 @@ void SNESClassic::getAddrCommand(SD2Snes::space space, unsigned int addr, unsign
 
 void SNESClassic::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
 {
-
+    Q_UNUSED(space)
+    Q_UNUSED(args)
 }
 
 void SNESClassic::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
+    Q_UNUSED(space)
     sDebug() << "Put address" << addr;
     m_state = BUSY;
-    quint64 memAddr;
+    quint64 memAddr = 0;
     if (addr >= 0xF50000 && addr < 0xF70000)
         memAddr = addr - 0xF50000 + ramLocation;
     if (addr >= 0xE00000 && addr < 0xF50000)
@@ -125,15 +126,23 @@ void SNESClassic::putAddrCommand(SD2Snes::space space, unsigned int addr, unsign
 
 void SNESClassic::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
 {
+    Q_UNUSED(space)
+    Q_UNUSED(args)
 }
 
 void SNESClassic::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
 {
+    Q_UNUSED(flags)
     putAddrCommand(space, addr, size);
 }
 
 void SNESClassic::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray &arg, const QByteArray arg2)
 {
+    Q_UNUSED(opcode)
+    Q_UNUSED(space)
+    Q_UNUSED(flags)
+    Q_UNUSED(arg)
+    Q_UNUSED(arg2)
 }
 
 void SNESClassic::infoCommand()
@@ -171,6 +180,7 @@ bool SNESClassic::hasControlCommands()
 
 USB2SnesInfo SNESClassic::parseInfo(const QByteArray &data)
 {
+    Q_UNUSED(data)
     USB2SnesInfo info;
     info.romPlaying = "No Info";
     info.version = "1.0.0";
@@ -179,6 +189,7 @@ USB2SnesInfo SNESClassic::parseInfo(const QByteArray &data)
 
 QList<ADevice::FileInfos> SNESClassic::parseLSCommand(QByteArray &dataI)
 {
+    Q_UNUSED(dataI)
     return QList<ADevice::FileInfos>();
 }
 
@@ -238,18 +249,26 @@ void SNESClassic::writeSocket(QByteArray toWrite)
 
 void SNESClassic::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
 {
+    Q_UNUSED(op)
+    Q_UNUSED(args)
 }
 
 void SNESClassic::fileCommand(SD2Snes::opcode op, QByteArray args)
 {
+    Q_UNUSED(op)
+    Q_UNUSED(args)
 }
 
 void SNESClassic::controlCommand(SD2Snes::opcode op, QByteArray args)
 {
+    Q_UNUSED(op)
+    Q_UNUSED(args)
 }
 
 void SNESClassic::putFile(QByteArray name, unsigned int size)
 {
+    Q_UNUSED(name)
+    Q_UNUSED(size)
 }
 
 //TODO need to check for canoe still running the right rom I guess?
@@ -258,8 +277,8 @@ bool SNESClassic::canAttach()
     return m_state == READY || m_state == BUSY;
 }
 
-void SNESClassic::sockConnect()
+void SNESClassic::sockConnect(QString ip)
 {
-    sDebug() << "Connecting to serverstuff";
-    socket->connectToHost(SNES_CLASSIC_IP, 1042);
+    sDebug() << "Connecting to serverstuff " << ip;
+    socket->connectToHost(ip, 1042);
 }
