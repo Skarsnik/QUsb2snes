@@ -29,6 +29,7 @@ private:
     unsigned int        romLocation;
     unsigned int        sramLocation;
     unsigned int        ramLocation;
+    QString             snesclassicIP;
 
     void executeCommand(QByteArray toExec);
     void writeSocket(QByteArray toWrite);

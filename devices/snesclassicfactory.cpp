@@ -3,8 +3,11 @@
 
 Q_LOGGING_CATEGORY(log_snesclassicfact, "SNESClassic Factory")
 #define sDebug() qCDebug(log_snesclassicfact)
+#define sInfo() qCInfo(log_snesclassicfact)
 
 extern QSettings* globalSettings;
+extern bool    dontLogNext;
+
 #define SNES_CLASSIC_IP "169.254.13.37"
 
 #include "snesclassic.h"
@@ -20,12 +23,12 @@ SNESClassicFactory::SNESClassicFactory()
         snesclassicIP = globalSettings->value("SNESClassicIP").toString();
     else
         snesclassicIP = SNES_CLASSIC_IP;
-    sDebug() << "SNES Classic IP is " << snesclassicIP;
+    sInfo() << "SNES Classic device will try to connect to " << snesclassicIP;
 }
 
 void SNESClassicFactory::executeCommand(QByteArray toExec)
 {
-    //sDebug() << "Executing : " << toExec;
+    sDebug() << "Executing : " << toExec;
     writeSocket("CMD " + toExec + "\n");
 }
 
@@ -41,7 +44,7 @@ QByteArray SNESClassicFactory::readCommandReturns(QTcpSocket* msocket)
     msocket->waitForReadyRead(50);
     forever {
         QByteArray data = msocket->readAll();
-        //sDebug() << "Reading" << data;
+        sDebug() << "Reading" << data;
         if (data.isEmpty())
             break;
         toret += data;
@@ -108,8 +111,10 @@ bool    SNESClassicFactory::checkStuff()
 void SNESClassicFactory::aliveCheck()
 {
     QByteArray oldPid = canoePid;
+    dontLogNext = true;
     executeCommand("pidof canoe-shvc");
     QByteArray data = readCommandReturns(socket);
+    dontLogNext = false;
     data = data.trimmed();
     // Canoe not running anymore
     if (data.isEmpty())

@@ -28,11 +28,15 @@ static QTextStream debugLogFile;
 static QTextStream cout(stdout);
 //bool    dontLogNext = false;
 
+bool    dontLogNext = false;
+
 void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     QByteArray localMsg = msg.toLocal8Bit();
     QTextStream*    log = &logfile;
     //cout << msg;
+    if (dontLogNext)
+        return ;
 #ifdef QT_NO_DEBUG
     QString logString = QString("%6 %5 - %7: %1").arg(localMsg.constData()).arg(context.category, 20).arg(QDateTime::currentDateTime().toString(Qt::ISODate));
 #else
