@@ -29,10 +29,10 @@ script:
 before_deploy:
 - mkdir QUsb2Snes.app/Contents/MacOs/apps
 - mkdir QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/
-- cp QFile2Snes/QFile2Snes.app/Contents/MacOs/QFile2Snes QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/
+- cp QFile2Snes/QFile2Snes.app/Contents/MacOs/QFile2Snes QUsb2Snes.app/Contents/MacOs/
 - cp QFile2Snes/icon50x50.png QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/icone.png
-- cp QFile2Snes/qusb2snesapp.json QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/
-- macdeployqt QUsb2Snes.app -dmg -executable=QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/QFile2Snes
+- cp QFile2Snes/qusb2snesapposx.json QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/qusb2snesapp.json
+- macdeployqt QUsb2Snes.app -dmg -executable=QUsb2Snes.app/Contents/MacOs/QFile2Snes
 
 deploy:
   provider: releases
