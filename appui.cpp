@@ -493,6 +493,13 @@ void AppUi::addMagic2SnesFolder(QString path)
 void AppUi::handleMagic2Snes(QString path)
 {
     magic2SnesMenu = menu->addMenu(QIcon(":/img/magic2snesicon.png"), "Magic2Snes");
+    if (path.isEmpty())
+    {
+        magic2SnesExe = "";
+        magic2SnesMenu->addAction(tr("Could not find Magic2Snes"));
+        magic2SnesMenu->addAction(tr("Click here to set the path to it"));
+        return ;
+    }
     magic2SnesExe = path + "/Magic2Snes";
     magic2SnesMenu->addAction(QIcon(":/img/magic2snesicon.png"), tr("Run Magic2Snes"));
     magic2SnesMenu->addSeparator();

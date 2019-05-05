@@ -54,9 +54,9 @@ void    LuaBridgeDevice::getRomMapping()
         }
         sDebug() << data;
         if (data.at(21) & 0x01)
-            romMapping = LoROM;
-        else
             romMapping = HiROM;
+        else
+            romMapping = LoROM;
     }
     sDebug() << "ROM is " << ((romMapping == LoROM) ? "LoROM" : "HiROM");
 }
@@ -248,7 +248,7 @@ void LuaBridgeDevice::onClientReadyRead()
         {
             data.append(static_cast<char>(v.toInt()));
         }
-        sDebug() << data;
+        //sDebug() << data;
         m_state = READY;
         emit getDataReceived(data);
         emit commandFinished();
