@@ -7,6 +7,8 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTimer>
+#include "../rommapping/rommapping.h"
+
 
 class LuaBridgeDevice : public ADevice
 {
@@ -47,11 +49,17 @@ private slots:
     void    onTimerOut();
 
 private:
-    QTcpSocket*  m_socket;
-    QTimer       timer;
-    QString      m_name;
-    unsigned int putAddr;
-    unsigned int putSize;
+    QTcpSocket*     m_socket;
+    QTimer          timer;
+    QString         m_name;
+    unsigned int    putAddr;
+    unsigned int    putSize;
+    bool            bizhawk;
+    enum rom_type   romMapping;
+
+    void getRomMapping();
+    QPair<QByteArray, unsigned int> getBizHawkAddress(unsigned int usbAddr);
+    unsigned int getSnes9xAddress(unsigned int addr);
 };
 
 #endif // LUABRIDGEDEVICE_H
