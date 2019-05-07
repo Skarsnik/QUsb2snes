@@ -56,7 +56,9 @@ USB2SnesInfo RetroArchDevice::parseInfo(const QByteArray &data)
             info.flags << "SNES_HIROM";
         }
     }
-
+    info.deviceName = "RetroArch";
+    info.flags << getFlagString(USB2SnesWS::NO_CONTROL_CMD);
+    info.flags << getFlagString(USB2SnesWS::NO_FILE_CMD);
     return info;
 }
 

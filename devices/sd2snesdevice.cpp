@@ -460,6 +460,7 @@ USB2SnesInfo SD2SnesDevice::parseInfo(const QByteArray& data)
     sDebug() << "Parse infos";
     USB2SnesInfo info;
 
+    info.deviceName = "SD2SNES";
     info.romPlaying = data.mid(16, 100);
     info.version = data.mid(260);
     sDebug() << QString::number(((data.at(256) << 24) | (data.at(257) << 16) | (data.at(258) << 8) | data.at(259)), 16);

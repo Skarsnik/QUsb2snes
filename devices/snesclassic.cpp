@@ -184,6 +184,9 @@ USB2SnesInfo SNESClassic::parseInfo(const QByteArray &data)
     USB2SnesInfo info;
     info.romPlaying = "No Info";
     info.version = "1.0.0";
+    info.deviceName = "SNES Classic";
+    info.flags << getFlagString(USB2SnesWS::NO_CONTROL_CMD);
+    info.flags << getFlagString(USB2SnesWS::NO_FILE_CMD);
     return info;
 }
 

@@ -61,6 +61,8 @@ public slots:
 protected:
     State   m_state;
     QString m_attachError;
+
+    QString getFlagString(USB2SnesWS::extra_info_flags flag);
 };
 
 #endif // ADEVICE_H

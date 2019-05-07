@@ -196,6 +196,12 @@ USB2SnesInfo LuaBridgeDevice::parseInfo(const QByteArray &data)
     USB2SnesInfo info;
     info.romPlaying = "No Info";
     info.version = "1.0.0";
+    if (bizhawk)
+        info.deviceName = "BizHawk";
+    else
+        info.deviceName = "Snes9x";
+    info.flags << getFlagString(USB2SnesWS::NO_CONTROL_CMD);
+    info.flags << getFlagString(USB2SnesWS::NO_FILE_CMD);
     return info;
 }
 

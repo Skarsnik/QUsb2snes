@@ -81,7 +81,7 @@ Q_ENUM_NS(file_type)
 
 namespace USB2SnesWS {
 Q_NAMESPACE
-enum opcode {
+    enum opcode {
     // Format is [argument to send]->what is returned, {} mean a result json reply
     // Size are in hexformat
 
@@ -111,13 +111,22 @@ enum opcode {
     Remove, // remove a file [filepath]
     Rename, // rename a file [filepath, newfilename]
     MakeDir // create a directory [dirpath]
-};
-Q_ENUM_NS(opcode)
+    };
+    Q_ENUM_NS(opcode)
+
+    enum extra_info_flags {
+        NO_FILE_CMD,
+        NO_CONTROL_CMD,
+        NO_ROM_WRITE,
+        NO_ROM_READ
+    };
+    Q_ENUM_NS(extra_info_flags)
 }
 
 struct USB2SnesInfo {
     QString version;
     QString romPlaying;
+    QString deviceName;
     QStringList flags;
 };
 

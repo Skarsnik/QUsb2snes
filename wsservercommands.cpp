@@ -107,7 +107,7 @@ void    WSServer::executeRequest(MRequest *req)
             return ;
         }
         bool ok;
-        device->putFile(req->arguments.at(0).toLatin1(), req->arguments.at(1).toInt(&ok, 16));
+        device->putFile(req->arguments.at(0).toLatin1(), req->arguments.at(1).toUInt(&ok, 16));
         req->state = RequestState::WAITINGREPLY;
         wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
         break;
@@ -152,18 +152,18 @@ void    WSServer::executeRequest(MRequest *req)
         bool    ok;
         if (req->arguments.size() == 2)
         {
-            device->getAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+            device->getAddrCommand(req->space, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
         } else {
 
             QList<QPair<unsigned int, unsigned int> > pairs;
-            for (unsigned int i = 0; i < req->arguments.size(); i += 2)
+            for (int i = 0; i < req->arguments.size(); i += 2)
             {
                 pairs.append(QPair<unsigned int, unsigned int>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUInt(&ok, 16)));
             }
             //device->getAddrCommand(req->space, pairs);*/
             // FIXME this is a meh workaround, but it works I guess?
-            device->getAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
-            for (unsigned int i = 1; i < pairs.size(); i++)
+            device->getAddrCommand(req->space, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
+            for (int i = 1; i < pairs.size(); i++)
             {
                     MRequest* newReq = new MRequest();
                     newReq->owner = ws;
@@ -193,14 +193,14 @@ void    WSServer::executeRequest(MRequest *req)
         if (req->arguments.size() == 2)
         {
             if (req->flags.isEmpty())
-                device->putAddrCommand(req->space, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+                device->putAddrCommand(req->space, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
             else {
                 unsigned char flags = 0;
                 foreach(QString flag, req->flags)
                 {
-                    flags |= (SD2Snes::server_flags) flagsMetaEnum.keyToValue(qPrintable(flag));
+                    flags |= static_cast<SD2Snes::server_flags>(flagsMetaEnum.keyToValue(qPrintable(flag)));
                 }
-                device->putAddrCommand(req->space, flags, req->arguments.at(0).toInt(&ok, 16), req->arguments.at(1).toInt(&ok, 16));
+                device->putAddrCommand(req->space, flags, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
             }
             if (req->wasPending && !wsInfos[ws].pendingPutDatas.isEmpty())
             {
@@ -208,7 +208,7 @@ void    WSServer::executeRequest(MRequest *req)
             }
         } else {
            QList<QPair<unsigned int, quint8> > pairs;
-           for (unsigned int i = 0; i < req->arguments.size(); i += 2)
+           for (int i = 0; i < req->arguments.size(); i += 2)
            {
                pairs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUShort(&ok, 16)));
            }
@@ -262,7 +262,7 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
     case USB2SnesWS::Info :
     {
         USB2SnesInfo    ifo = device->parseInfo(device->dataRead);
-        sendReply(info.currentWS, QStringList() << ifo.version << "foo" << ifo.romPlaying << ifo.flags);
+        sendReply(info.currentWS, QStringList() << ifo.version << ifo.deviceName << ifo.romPlaying << ifo.flags);
         break;
     }
 
@@ -273,7 +273,7 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
         QStringList rep;
         foreach(ADevice::FileInfos fi, lfi)
         {
-            rep << QString::number((quint32) fi.type);
+            rep << QString::number(static_cast<quint32>(fi.type));
             rep << fi.name;
         }
         sendReply(info.currentWS, rep);
@@ -387,7 +387,7 @@ void    WSServer::processIpsData(QWebSocket* ws)
     QList<IPSReccord>  ipsReccords = parseIPSData(infos.ipsData);
 
     // Creating new PutAddress requests
-    unsigned int cpt = 0;
+    int cpt = 0;
     sDebug() << "Creating " << ipsReccords.size() << "PutRequests";
     foreach(IPSReccord ipsr, ipsReccords)
     {
