@@ -30,6 +30,12 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     retroarchFactory = nullptr;
     sd2snesFactory = new SD2SnesFactory();
     wsServer.addDeviceFactory(sd2snesFactory);
+    QObject::connect(&wsServer, &WSServer::listenFailed, [=](const QString& err) {
+        QMessageBox::critical(nullptr, tr("Error starting the websocket server"),
+                              QString(tr("There was an error starting the core of the application : %1.\n"
+                                         "Make sure you don't have another software running that use the same port (8080). This can be the old Usb2Snes application or Crowd Control for example.")).arg(err));
+        qApp->exit(1);
+    });
     luaBridge = nullptr;
     snesClassic = nullptr;
 

@@ -106,6 +106,7 @@ public:
 signals:
     void    error();
     void    untrustedConnection(QString origin);
+    void    listenFailed(QString err);
 
 public slots:
 

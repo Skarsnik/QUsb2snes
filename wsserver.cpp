@@ -38,6 +38,7 @@ bool WSServer::start(QHostAddress lAddress, quint16 port)
         connect(wsServer, SIGNAL(serverError(QWebSocketProtocol::CloseCode)), this, SLOT(onWSError(QWebSocketProtocol::CloseCode)));
         return true;
     }
+    emit listenFailed(wsServer->errorString());
     return false;
 }
 

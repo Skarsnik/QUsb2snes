@@ -86,8 +86,7 @@ void    startServer()
         addr = QHostInfo::fromName(globalSettings->value("listen").toString()).addresses().first();
     if (globalSettings->contains("port"))
         port = globalSettings->value("port").toUInt();
-    if (!wsServer.start(addr, port))
-        qApp->exit(1);
+    wsServer.start(addr, port);
 }
 
 int main(int ac, char *ag[])
@@ -114,6 +113,8 @@ int main(int ac, char *ag[])
 
     if (app.arguments().size() == 2 && app.arguments().at(1) == "-nogui")
     {
+        SD2SnesFactory* sd2snesFactory = new SD2SnesFactory();
+        wsServer.addDeviceFactory(sd2snesFactory);
         if (globalSettings->value("retroarchdevice").toBool())
         {
             RetroArchFactory* retroarchFactory = new RetroArchFactory();
@@ -129,8 +130,12 @@ int main(int ac, char *ag[])
             SNESClassicFactory* snesClassic = new SNESClassicFactory();
             wsServer.addDeviceFactory(snesClassic);
         }
+        QObject::connect(&wsServer, &WSServer::listenFailed, [=](const QString& err) {
+            fprintf(stderr, "Can't listen on localhost:8080 or the host set in the config file: %s\n", err.toLatin1().data());
+            qApp->exit(1);
+        });
         QTimer::singleShot(100, &startServer);
-       return app.exec();
+        return app.exec();
     }
     AppUi*  appUi = new AppUi();
     appUi->sysTray->show();
