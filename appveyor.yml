@@ -28,9 +28,9 @@ after_build:
   - del vc_redist.x64.exe
   - copy /y ..\LICENSE LICENCE-GPLV3.txt
   - copy /y ..\README.md Readme.txt
-  - mkdir Bizhawk\
-  - xcopy ..\BizHawk\ BizHawk\
-  - cd Bizhawk\
+  - mkdir BizHawk\
+  - copy ..\BizHawk\multibridge.lua BizHawk\
+  - cd BizHawk\
   - appveyor DownloadFile http://www.nyo.fr/~skarsnik/socket.dll -FileName socket.dll
   - cd ..
   # Translations
