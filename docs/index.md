@@ -87,6 +87,15 @@ You need to install the last Usb2Snes firmware by redguy (https://github.com/Red
 
 Multitroid provide a patched version of snes9x with a lua script that allow for external software to communicate with it. Get the emulator on http://multitroid.com/. Activate the snes9x bridge on the device menu of QUsb2Snes then run the multibridge.lua scripts on snes9x.
 
+## BizHawk 2.3.1 (bsnes core recommanded)
+
+In the device menu of QUsb2Snes activate the `lua bridge`
+
+You will need to change the Lua support on the emulator. Go into the `Config -> Customize` menu then goes into the Advanced tab and select `Lua+LuaInterface` at the bottom in the Lua core part. Restart the emulator.
+In the Lua directory of BizHawk create a `lua_bridge` directory (or a similar name) then copy the content of the BizHawk directory from QUsb2Snes (the lua file and the dll file).
+Run your game and then in the `Tools` menu start the `Lua console` click on the folder icon to load the `multibridge.lua` file. You need to close the Lua console if you want to disconnect properly.
+
+
 ## RetroArch
 
 You need to use etheir `Snex9x` core or one of the `bsnes-mercury` and edit your retroarch.cfg file (can be found in %appData%\RetroArch) to set `network_cmd_enable = "true"` to true (default is false). Then you need to activate the RetroArch virtual device on the devices menu.
