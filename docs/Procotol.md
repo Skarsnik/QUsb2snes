@@ -62,6 +62,7 @@ usb2snes
 }
 ```
 QUsb2snes
+
 ```json
 {
     "Results" : ["SD2SNES COM3", "SNES Classic", "EMU SNES9x"]
@@ -80,7 +81,7 @@ Next command is `Attach` to associate yourself with the device you want.
 }
 ```
 
-You will get no reply if the command succeeded, a failure will be the server closing the connection
+You will get no reply if the command succeeded, a failure will be the server closing the connection. It's recommanded to do a `Info` command to be certain you are attached to the device.
 
 ## Command list
 
@@ -88,14 +89,32 @@ The full command list can be found here in https://github.com/Skarsnik/QUsb2snes
 
 ### Name [ApplicationName]
 
-It's better to use a Name since both usb2snes and QUsb2snes can display the client connected. 
+It's better to use a Name since both usb2snes and QUsb2snes can display the name of clients connected. 
 
 ### Info
 
 This give you information on what the device is running.
-Returns you the firmware version string, the version, the current running rom, and a flags list.
+USB2Snes returns you the firmware version string, the version, the current running rom, and a flags list.
+QUsb2Snes replace the second version with the device type name.
+
 The current running rom is interesting since for usb2snes device `/sd2snes/menu.bin` tell you the device is not running a ROM.
-For QUsb2snes non usb2snes devices you will mostly get garbage informations
+For QUsb2snes most no sd2snes devices you will mostly get garbage informations
+
+A SD2Snes device
+
+```json
+{
+    "Results" : [ "1.9.0-usb-v9", "SD2SNES", "/sd2snes/menu.bin", "FEAT_SRTC", "FEAT_CMD_UNLOCK", "FEAT_DMA1" ]
+}
+```
+
+A SNES Classic
+
+```json 
+{   
+    "Results" : [ "1.0.0", "SNES Classic", "No Info", "NO_CONTROL_CMD", "NO_FILE_CMD"]
+}
+```
 
 ### GetAddress [offset, size]
 
@@ -123,5 +142,23 @@ This work like GetAddress for argument. After sending the json request, send you
 * WRAM start at `0xF50000`
 * SRAM start at `0xE00000`
 
+## Flags
 
+This are the flags you will get from a sd2snes device.
+
+* FEAT_DSPX 
+* FEAT_ST0010
+* FEAT_SRTC
+* FEAT_MSU1
+* FEAT_213F
+* FEAT_CMD_UNLOCK
+* FEAT_USB1
+* FEAT_DMA1
+
+QUsb2Snes add flags to other device since they don't have all the capability of a sd2snes.
+
+* NO_FILE_CMD : The device can't perform file operation
+* NO_CONTROL_CMD : The device can't perform control operation (reset/boot...)
+* NO_ROM_WRITE : The device can't write to ROM
+* NO_ROM_READ : The device can't read to ROM
 
