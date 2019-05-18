@@ -20,6 +20,7 @@ SOURCES = adevice.cpp \
           rommapping/mapping_hirom.c \
           rommapping/mapping_lorom.c \
           rommapping/rommapping.c \
+          rommapping/rominfo.c \
           devices/sd2snesdevice.cpp \
           devices/snesclassic.cpp \
           wsserver.cpp \
@@ -36,6 +37,7 @@ HEADERS = adevice.h \
           devices/luabridgedevice.h \
           devices/retroarchdevice.h \
           rommapping/rommapping.h \
+          rommapping/rominfo.h \
           devices/sd2snesdevice.h \
           devices/snesclassic.h \
           usb2snes.h \

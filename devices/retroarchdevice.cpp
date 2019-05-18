@@ -3,6 +3,7 @@
 #include <QUuid>
 
 #include "retroarchdevice.h"
+#include "../rommapping/rominfo.h"
 
 Q_LOGGING_CATEGORY(log_retroarch, "RETROARCH")
 #define sDebug() qCDebug(log_retroarch)
@@ -45,7 +46,7 @@ USB2SnesInfo RetroArchDevice::parseInfo(const QByteArray &data)
 
     if(!hasSnesMemoryMap)
     {
-        info.flags << "NO_ROM_ACCESS";
+        info.flags << getFlagString(USB2SnesWS::NO_ROM_READ);
     } else {
         info.flags << "SNES_MEMORY_MAP";
 
@@ -98,20 +99,10 @@ void RetroArchDevice::onUdpReadyRead()
         {
             hasSnesMemoryMap = false;
         } else {
-            unsigned char romType = static_cast<unsigned char>(QByteArray::fromHex(tList.at(23))[0]);
-            unsigned char romSize = static_cast<unsigned char>(QByteArray::fromHex(tList.at(24))[0]);
-            if(romType > 0 && romSize > 0)
-            {
-                bool loRom = (romType & 1) == 0;
-                auto romSpeed = (romType & 0x30);
-                if(romSpeed != 0 && tList.at(2) != "00")
-                {
-                    auto romName = QByteArray::fromHex(tList.mid(2, 21).join()).toStdString();
-                    hasSnesMemoryMap = true;
-                    hasSnesLoromMap = loRom;
-                    m_gameName = QString::fromStdString(romName);
-                }
-            }
+            struct rom_infos* rInfos = get_rom_info(QByteArray::fromHex(tList.join()).data());
+            m_gameName = QString(rInfos->title);
+            hasSnesLoromMap = rInfos->type == LoROM;
+            hasSnesMemoryMap = true;
         }
 
         m_state = READY;

@@ -56,6 +56,8 @@ private:
     unsigned int    putSize;
     bool            bizhawk;
     enum rom_type   romMapping;
+    QString         gameName;
+    bool            infoReq;
 
     void getRomMapping();
     QPair<QByteArray, unsigned int> getBizHawkAddress(unsigned int usbAddr);

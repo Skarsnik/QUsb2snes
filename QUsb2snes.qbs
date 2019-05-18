@@ -34,6 +34,7 @@ Project {
             "rommapping/mapping_hirom.c",
             "rommapping/mapping_lorom.c",
             "rommapping/rommapping.c",
+            "rommapping/rominfo.c",
             "devices/sd2snesdevice.cpp",
             "devices/sd2snesdevice.h",
             "devices/snesclassic.cpp",

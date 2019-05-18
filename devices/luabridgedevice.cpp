@@ -6,6 +6,7 @@
 #include <QLoggingCategory>
 
 #include "../rommapping/rommapping.h"
+#include "../rommapping/rominfo.h"
 
 Q_LOGGING_CATEGORY(log_luaBridgeDevice, "LUABridgeDevice")
 #define sDebug() qCDebug(log_luaBridgeDevice)
@@ -17,6 +18,7 @@ LuaBridgeDevice::LuaBridgeDevice(QTcpSocket* sock, QString name)
     m_state = CLOSED;
     m_socket = sock;
     m_name = name;
+    infoReq = false;
     romMapping = LoROM;
     sDebug() << "LUA bridge device created";
     sock->write("Version\n");
@@ -37,9 +39,9 @@ void    LuaBridgeDevice::getRomMapping()
 {
     sDebug() << "Trying to get ROM mapping";
     if (bizhawk)
-        m_socket->write("Read|" + QByteArray::number(0x7FC0) + "|22|CARTROM\n");
+        m_socket->write("Read|" + QByteArray::number(0x7FC0) + "|32|CARTROM\n");
     else
-        m_socket->write("Read|" +  QByteArray::number(0x00FFC0) + "|22\n");
+        m_socket->write("Read|" +  QByteArray::number(0x00FFC0) + "|32\n");
     if (m_socket->waitForReadyRead(100))
     {
         QByteArray data;
@@ -53,10 +55,9 @@ void    LuaBridgeDevice::getRomMapping()
             data.append(static_cast<char>(v.toInt()));
         }
         sDebug() << data;
-        if (data.at(21) & 0x01)
-            romMapping = HiROM;
-        else
-            romMapping = LoROM;
+        struct rom_infos* rInfos = get_rom_info(data.data());
+        gameName = rInfos->title;
+        romMapping = ((rInfos->type == LoROM) ? LoROM : HiROM); // Screw ExHiROM
     }
     sDebug() << "ROM is " << ((romMapping == LoROM) ? "LoROM" : "HiROM");
 }
@@ -194,7 +195,7 @@ USB2SnesInfo LuaBridgeDevice::parseInfo(const QByteArray &data)
 {
     Q_UNUSED(data)
     USB2SnesInfo info;
-    info.romPlaying = "No Info";
+    info.romPlaying = gameName;
     info.version = "1.0.0";
     if (bizhawk)
         info.deviceName = "BizHawk";

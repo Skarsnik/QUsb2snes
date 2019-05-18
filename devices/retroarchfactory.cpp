@@ -2,7 +2,9 @@
 #include <QLoggingCategory>
 #include <QTimer>
 #include <QSettings>
+#include <QVersionNumber>
 #include "retroarchfactory.h"
+#include "../rommapping/rominfo.h"
 
 Q_LOGGING_CATEGORY(log_retroarchfact, "RA Factory")
 #define sDebug() qCDebug(log_retroarchfact)
@@ -47,7 +49,7 @@ QStringList RetroArchFactory::listDevices()
     if(m_sock->hasPendingDatagrams())
     {
         raVersion = m_sock->readAll().trimmed();
-        sDebug() << raVersion;
+        sDebug() << "Received RA version : " << raVersion;
     } else {
         m_attachError = tr("RetroArch - Did not get a VERSION response.");
         return toret;
@@ -59,44 +61,35 @@ QStringList RetroArchFactory::listDevices()
         QByteArray data = m_sock->readAll();
         if (data != "-1" && data != "")
         {
+
             sDebug() << data;
             /* Detect retroarch core capabilities, and SNES header info if possible */
             QList<QByteArray> tList = data.trimmed().split(' ');
-
             bool hasSnesMemoryMap = false;
             bool hasSnesLoromMap = false;
-            QString gameName = "Not Available";
+            QString gameName;
 
             if(tList.at(2) == "-1")
             {
                 hasSnesMemoryMap = false;
             } else {
-                unsigned char romType = static_cast<unsigned char>(QByteArray::fromHex(tList.at(23))[0]);
-                unsigned char romSize = static_cast<unsigned char>(QByteArray::fromHex(tList.at(24))[0]);
-                if(romType > 0 && romSize > 0)
-                {
-                    bool loRom = (romType & 1) == 0;
-                    auto romSpeed = (romType & 0x30);
-                    if(romSpeed != 0 && tList.at(2) != "00")
-                    {
-                        auto romName = QByteArray::fromHex(tList.mid(2, 21).join()).toStdString();
-                        hasSnesMemoryMap = true;
-                        hasSnesLoromMap = loRom;
-                        gameName = QString::fromStdString(romName);
-                    }
-                }
+                struct rom_infos* rInfos = get_rom_info(QByteArray::fromHex(tList.join()).data());
+                gameName = QString(rInfos->title);
+                hasSnesLoromMap = rInfos->type == LoROM;
+                hasSnesMemoryMap = true;
             }
 
             if(!globalSettings->contains("RetroArchBlockSize"))
             {
-                globalSettings->setValue("RetroArchBlockSize", "78");
+                globalSettings->setValue("RetroArchBlockSize", 78);
             }
 
             auto retroBlockSize = globalSettings->value("RetroArchBlockSize").toInt();
-
+            if (retroBlockSize == 78 && QVersionNumber::fromString(raVersion) >= QVersionNumber::fromString("1.7.7"))
+                retroBlockSize = 2000;
             retroDev = new RetroArchDevice(m_sock, raVersion, gameName, retroBlockSize, hasSnesLoromMap, hasSnesMemoryMap);
             m_devices.append(retroDev);
-            toret << retroDev->name();
+            return toret << retroDev->name();
         }
         m_attachError = QString(tr("RetroArch %1 - Current core does not support memory read.")).arg(raVersion);
     } else {
