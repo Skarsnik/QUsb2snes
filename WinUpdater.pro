@@ -4,12 +4,11 @@
 #
 #-------------------------------------------------
 
-QT       += core gui widgets websockets
+QT       += core gui network
 
-TARGET = QFile2Snes
+TARGET = WinUpdater
 TEMPLATE = app
 
-INCLUDEPATH += ../client
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings
@@ -24,33 +23,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 CONFIG += c++11
 
-SOURCES += \
-        main.cpp \
-        qfile2snesw.cpp \
-    usb2snesfilemodel.cpp \
-    ../client/usb2snes.cpp \
-    myfilesystemmodel.cpp
+SOURCES += winupdatermain.cpp
 
-HEADERS += \
-        qfile2snesw.h \
-    usb2snesfilemodel.h \
-    ../client/usb2snes.h \
-    myfilesystemmodel.h
-
-FORMS += \
-        qfile2snesw.ui \
-
-RC_FILE = qfile2snes.rc
+RC_FILE = qusb2snes.rc
 
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-DISTFILES += \
-    qfile2snes.rc \
-    Readme.md
-
-TRANSLATIONS = Translations/qfile2snes_fr.ts
-

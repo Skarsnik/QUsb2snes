@@ -71,6 +71,7 @@ private:
     void                addMagic2SnesFolder(QString path);
     void                addDevicesInfo(DeviceFactory *devFact);
     ApplicationInfo     parseJsonAppInfo(QString fileName);
+    void                checkForNewVersion();
 };
 
 #endif // APPUI_H

@@ -49,7 +49,9 @@ after_build:
   - xcopy QFile2Snes\Translations\sendtodialog_fr.qm QUsb2Snes\i18n\
   - appveyor DownloadFile https://github.com/Skarsnik/snesclassicstuff/releases/download/serverstuffmod_v1/serverstuff.hmod -FileName serverstuff.hmod
   - copy serverstuff.hmod QUsb2Snes\
-
+  # Open SSL for the updater
+  - copy C:\OpenSSL-Win64\bin\libeay32.dll libeay32.dll
+  - copy C:\OpenSSL-Win64\bin\ssleay32.dll ssleay32.dll
   - 7z a QUsb2Snes-%APPVEYOR_REPO_TAG_NAME%.7z QUsb2Snes
 
 

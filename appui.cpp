@@ -9,6 +9,8 @@
 #include <QProcess>
 #include <QStyle>
 #include <QTranslator>
+#include <QtNetwork>
+#include <QNetworkAccessManager>
 
 Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #define sDebug() qCDebug(log_appUi)
@@ -111,6 +113,10 @@ void AppUi::init()
 
     miscMenu = menu->addMenu(tr("Misc", "Menu entry"));
 #ifdef Q_OS_WIN
+    QObject::connect(miscMenu->addAction(tr("Check for Update")), &QAction::triggered, [this] {
+        this->checkForNewVersion();
+    });
+    miscMenu->addSeparator();
     QObject::connect(miscMenu->addAction(tr("Add a 'Send To' entry in the Windows menu")),
                      &QAction::triggered, this, &AppUi::addWindowsSendToEntry);
     if (!globalSettings->contains("SendToSet"))
@@ -125,6 +131,13 @@ void AppUi::init()
         if (ret == QMessageBox::Ok)
             addWindowsSendToEntry();
         globalSettings->setValue("SendToSet", true);
+    }
+    if (!globalSettings->contains("checkUpdateCounter") || globalSettings->value("checkUpdateCounter").toInt() == 5)
+    {
+        globalSettings->setValue("checkUpdateCounter", 0);
+        checkForNewVersion();
+    } else {
+        globalSettings->setValue("checkUpdateCounter", globalSettings->value("checkUpdateCounter").toInt());
     }
 #endif
     miscMenu->setToolTipsVisible(true);
@@ -226,6 +239,35 @@ AppUi::ApplicationInfo AppUi::parseJsonAppInfo(QString fileName)
     info.executable = job["executable"].toString();
     info.icon = job["icon"].toString();
     return info;
+}
+
+void AppUi::checkForNewVersion()
+{
+    sInfo() << "Checking for new version - SSL support is : " << QSslSocket::supportsSsl() << QSslSocket::sslLibraryBuildVersionString();
+    if (!QSslSocket::supportsSsl())
+        return;
+    QNetworkAccessManager* manager = new QNetworkAccessManager();
+    QObject::connect(manager, &QNetworkAccessManager::finished, [=](QNetworkReply* reply)
+    {
+        sDebug() << "Finished" << reply->size();
+        QByteArray data = reply->readAll();
+        QJsonDocument doc = QJsonDocument::fromJson(data);
+        QJsonArray jArr = doc.array();
+        QString lastTag = jArr.at(0).toObject().value("tag_name").toString();
+        sInfo() << "Latest release is " << lastTag;
+        if (QVersionNumber::fromString(qApp->applicationVersion()) < QVersionNumber::fromString(lastTag.remove(0, 1)))
+        {
+            int but = QMessageBox::question(nullptr, tr("New version of QUsb2Snes available"),
+                                     QString(tr("A new version of QUsb2Snes is available : QUsb2Snes %1\nDo you want to upgrade to it?")).arg(lastTag));
+            if (but == QMessageBox::Yes)
+            {
+                QProcess::startDetached(qApp->applicationDirPath() + "/WinUpdater.exe");
+                qApp->exit(0);
+            }
+        }
+    });
+    manager->get(QNetworkRequest(QUrl("https://api.github.com/repos/Skarsnik/QUsb2snes/releases")));
+    sDebug() << "Get";
 }
 
 void AppUi::checkForApplications()

@@ -4,7 +4,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = QUsb2Snes
 TEMPLATE = app
-
+DEFINES += GIT_TAG_VERSION=$$system(git describe --always --tags)
 
 SOURCES = adevice.cpp \
           appui.cpp \
