@@ -105,7 +105,8 @@ int main(int ac, char *ag[])
     if (mlog.open(QIODevice::WriteOnly | QIODevice::Text))
         qInstallMessageHandler(myMessageOutput);
     QApplication::setApplicationName("QUsb2Snes");
-#ifdef GIT_TAG_VERSION // This is only defined in the PRO file
+    // This is only defined in the PRO file
+#ifdef GIT_TAG_VERSION
     QString plop(GIT_TAG_VERSION);
     plop.remove(0, 1); // Remove the v
     QApplication::setApplicationVersion(QVersionNumber::fromString(plop).toString());
