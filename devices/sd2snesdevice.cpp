@@ -359,7 +359,7 @@ static QByteArray   int24ToData(quint32 number)
     data.append(static_cast<char>((number >> 16) & 0xFF));
     data.append(static_cast<char>((number >> 8) & 0xFF));
     data.append(static_cast<char>(number & 0xFF));
-    sDebug() << "convertir numnber" << number << "to bitarray : " << data.toHex();
+    //sDebug() << "convertir numnber" << number << "to bitarray : " << data.toHex();
     return data;
 
 }

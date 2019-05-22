@@ -66,6 +66,7 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
     if (debugLogFile.device() != nullptr)
     {
         debugLogFile << logString.arg("Debug");
+        debugLogFile << "\n";
         debugLogFile.flush();
     }
     if (type != QtDebugMsg)

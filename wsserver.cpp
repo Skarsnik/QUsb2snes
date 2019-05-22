@@ -196,7 +196,7 @@ void WSServer::onTextMessageReceived(QString message)
     {
         if (wsInfo.pendingAttach)
         {
-            sDebug() << wsInfo.attachedTo->name() << "Adding request in queue " << *req << "(" << pendingRequests[wsInfo.attachedTo].size() << ")";
+            sDebug() << wsInfo.attachedTo->name() << "Adding request in queue (size:" << pendingRequests[wsInfo.attachedTo].size() << ")" << *req;
             addToPendingRequest(wsInfo.attachedTo, req);
             return ;
         } else {
