@@ -61,7 +61,7 @@ void SD2SnesDevice::spReadyRead()
     sDebug() << "SP Received: " << bytesToRead << " (" << bytesReceived << ")";
 
     /* If we've received over 512 bytes and NORESP is not set, parse response header */
-    if(responseBlock.isEmpty() && dataReceived.size() >= 512 && (m_currentCommand & SD2Snes::server_flags::NORESP) == 0)
+    if(responseBlock.isEmpty() && dataReceived.size() >= 512 && (m_commandFlags & SD2Snes::server_flags::NORESP) == 0)
     {
         responseBlock = dataReceived.left(512);
         if(responseBlock.left(5) != (QByteArray("USBA").append(SD2Snes::opcode::RESPONSE)) || responseBlock.at(5) == 1)
