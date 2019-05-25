@@ -112,6 +112,7 @@ void AppUi::init()
     menu->addSeparator();
 
     miscMenu = menu->addMenu(tr("Misc", "Menu entry"));
+
 #ifdef Q_OS_WIN
     QObject::connect(miscMenu->addAction(QIcon(":/img/updateicon.svg"), tr( "Check for Update")), &QAction::triggered, [this] {
         this->checkForNewVersion(true);
@@ -140,6 +141,7 @@ void AppUi::init()
         globalSettings->setValue("checkUpdateCounter", globalSettings->value("checkUpdateCounter").toInt() + 1);
     }
 #endif
+
     miscMenu->setToolTipsVisible(true);
     QAction* debugLogAction = miscMenu->addAction(tr("Enable debug logs"));
     debugLogAction->setCheckable(true);

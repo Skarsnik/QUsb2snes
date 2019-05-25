@@ -11,6 +11,7 @@
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QTimer>
+#include <QIcon>
 
 
 const QString githubUrl = "https://api.github.com/repos/Skarsnik/QUsb2snes/";
@@ -96,6 +97,7 @@ int main(int ac, char* ag[])
     QVBoxLayout layout;
     QWidget win;
     win.setWindowTitle("QUsb2Snes Windows Updater");
+    win.setWindowIcon(QIcon(":/icon64x64.ico"));
     win.setLayout(&layout);
     layout.addWidget(label);
     layout.addWidget(pb);
