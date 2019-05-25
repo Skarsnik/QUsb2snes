@@ -99,7 +99,7 @@ void SD2SnesDevice::spReadyRead()
     {
         if((this->*checkCommandEnd)() == false)
         {
-            if((m_getSize >= 0 && m_getSize > bytesReceived && bytesReceived > 512) || m_getSize < 0)
+            if((m_getSize >= 0 && m_getSize > bytesReceived && bytesReceived > dataSent) || m_getSize < 0)
             {
                 auto dSend = dataReceived.mid(dataSent);
                 emit getDataReceived(dSend);
@@ -137,6 +137,7 @@ void SD2SnesDevice::spReadyRead()
     firstBlock = true;
     m_getSize = -1;
     responseBlock.clear();
+    dataSent = 0;
     sDebug() << "Command finished";
     emit commandFinished();
 
@@ -386,6 +387,7 @@ void SD2SnesDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsi
 {
     responseSizeExpected = -1;
     m_getSize = 0;
+    m_get_expected_size = static_cast<int>(size);
     checkCommandEnd = &SD2SnesDevice::checkEndForGet;
     QByteArray data1 = int24ToData(addr);
     QByteArray data2 = int24ToData(size);
@@ -397,6 +399,9 @@ void SD2SnesDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned in
 {
     responseSizeExpected = -1;
     m_getSize = 0;
+    m_get_expected_size = 0;
+    foreach (auto p, args)
+        m_get_expected_size += p.second;
     checkCommandEnd = &SD2SnesDevice::checkEndForGet;
     sendVCommand(SD2Snes::opcode::VGET, space, SD2Snes::server_flags::NONE, args);
 }

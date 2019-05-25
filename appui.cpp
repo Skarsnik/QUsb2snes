@@ -113,11 +113,11 @@ void AppUi::init()
 
     miscMenu = menu->addMenu(tr("Misc", "Menu entry"));
 #ifdef Q_OS_WIN
-    QObject::connect(miscMenu->addAction(tr("Check for Update")), &QAction::triggered, [this] {
-        this->checkForNewVersion();
+    QObject::connect(miscMenu->addAction(QIcon(":/img/updateicon.svg"), tr( "Check for Update")), &QAction::triggered, [this] {
+        this->checkForNewVersion(true);
     });
     miscMenu->addSeparator();
-    QObject::connect(miscMenu->addAction(tr("Add a 'Send To' entry in the Windows menu")),
+    QObject::connect(miscMenu->addAction(QIcon(":/img/microsoft-windows-logo.svg"), tr("Add a 'Send To' entry in the Windows menu")),
                      &QAction::triggered, this, &AppUi::addWindowsSendToEntry);
     if (!globalSettings->contains("SendToSet"))
     {
@@ -137,7 +137,7 @@ void AppUi::init()
         globalSettings->setValue("checkUpdateCounter", 0);
         checkForNewVersion();
     } else {
-        globalSettings->setValue("checkUpdateCounter", globalSettings->value("checkUpdateCounter").toInt());
+        globalSettings->setValue("checkUpdateCounter", globalSettings->value("checkUpdateCounter").toInt() + 1);
     }
 #endif
     miscMenu->setToolTipsVisible(true);
@@ -241,7 +241,7 @@ AppUi::ApplicationInfo AppUi::parseJsonAppInfo(QString fileName)
     return info;
 }
 
-void AppUi::checkForNewVersion()
+void AppUi::checkForNewVersion(bool manual)
 {
     sInfo() << "Checking for new version - SSL support is : " << QSslSocket::supportsSsl() << QSslSocket::sslLibraryBuildVersionString();
     if (!QSslSocket::supportsSsl())
@@ -264,6 +264,9 @@ void AppUi::checkForNewVersion()
                 QProcess::startDetached(qApp->applicationDirPath() + "/WinUpdater.exe");
                 qApp->exit(0);
             }
+        } else {
+            if (manual)
+                QMessageBox::information(nullptr, tr("No new version of QUsb2Snes available"), tr("No new version of QUsb2Snes available"));
         }
     });
     manager->get(QNetworkRequest(QUrl("https://api.github.com/repos/Skarsnik/QUsb2snes/releases")));

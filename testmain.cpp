@@ -6,12 +6,22 @@
 Usb2Snes*   usb;
 
 
+void    testSd2Snes()
+{
+    usb->ls("/");
+    usb->getAddress(0xF50500, 2000);
+    QByteArray data = usb->getAddress(0xF50500, 2);
+    usb->setAddress(0xF50500, data);
+    qApp->exit(0);
+}
+
 void    runThing()
 {
     qDebug() << "Runnning thing";
-    usb->getAddress(0xF50500, 2000);
-
-    qApp->exit(0);
+    if (usb->infos().versionString == "SD2SNES")
+    {
+        testSd2Snes();
+    }
 }
 
 void    stateChanged()

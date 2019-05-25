@@ -10,6 +10,8 @@
         <file>icone-snes9x.gif</file>
         <file>chrysalis.png</file>
         <file>multitroid.png</file>
+        <file>updateicon.svg</file>
+        <file>microsoft-windows-logo.svg</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

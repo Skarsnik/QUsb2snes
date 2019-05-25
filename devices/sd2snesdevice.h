@@ -71,6 +71,7 @@ private:
     unsigned char   m_commandFlags;
     int             m_getSize;
     int             m_putSize;
+    int             m_get_expected_size;
 
 
     bool    (SD2SnesDevice::*checkCommandEnd)();

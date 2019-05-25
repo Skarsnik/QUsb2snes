@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network
+QT       += core gui network widgets
 
 TARGET = WinUpdater
 TEMPLATE = app

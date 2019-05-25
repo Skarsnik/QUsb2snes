@@ -61,3 +61,10 @@ If for some reason your SNES classic does not have the expected IP address (conn
 # Licence
 
 QUsb2snes project follow the GPL version 3 licence, you can find the full version of the licence on the LICENCE file.
+
+# Icons
+
+Flat style icons are from google https://material.io/tools/icons/?style=baseline and under Apache Licence 2.0
+Snes9x and RetroArch icon are from their respective project
+Most pony icons are from FrankerFaceZ
+
