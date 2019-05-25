@@ -69,7 +69,7 @@ void    requestFinished(QNetworkReply* reply)
             file.flush();
             file.close();
             label->setText(QObject::tr("Starting QUsb2Snes"));
-            QProcess::startDetached("QUsb2Snes.exe");
+            QProcess::startDetached(qApp->applicationDirPath() + "/QUsb2Snes.exe");
             QTimer::singleShot(500, [=] {qApp->exit(0);});
          } else {
             qApp->exit(1);

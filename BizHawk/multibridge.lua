@@ -95,7 +95,6 @@ memory.usememorydomain("System Bus")
 
 local function onMessage(s)
     local parts = {}
-    print(s)
     for part in string.gmatch(s, '([^|]+)') do
         parts[#parts + 1] = part
     end
