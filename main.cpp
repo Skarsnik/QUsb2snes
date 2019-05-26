@@ -120,6 +120,9 @@ int main(int ac, char *ag[])
     appNap->suspend();
 #endif
 
+    // let set some know trusted domain
+    wsServer.addTrusted("http://www.multitroid.com");
+
     if (app.arguments().size() == 2 && app.arguments().at(1) == "-nogui")
     {
         SD2SnesFactory* sd2snesFactory = new SD2SnesFactory();

@@ -214,7 +214,12 @@ void AppUi::onAppsMenuTriggered(QAction *action)
     QString exec;
     QString wDir = appInfo.folder;
     if (appInfo.isQtApp)
+    {
         wDir = qApp->applicationDirPath();
+        /*QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("QT_PLUGIN_PATH", qApp->applicationDirPath() + "/plateforms/");
+        proc.setProcessEnvironment(env);*/
+    }
 #ifdef Q_OS_WIN
     exec = appInfo.folder + "/" + appInfo.executable + ".exe";
 #else
