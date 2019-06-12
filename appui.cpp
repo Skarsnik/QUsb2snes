@@ -213,19 +213,20 @@ void AppUi::onAppsMenuTriggered(QAction *action)
     //proc.setWorkingDirectory(fi.path());
     QString exec;
     QString wDir = appInfo.folder;
+    QStringList arg;
     if (appInfo.isQtApp)
     {
         wDir = qApp->applicationDirPath();
-        /*QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-        env.insert("QT_PLUGIN_PATH", qApp->applicationDirPath() + "/plateforms/");
-        proc.setProcessEnvironment(env);*/
+#ifdef Q_OS_WIN
+        arg << "-platformpluginpath" << qApp->applicationDirPath() + "/platforms/";
+#endif
     }
 #ifdef Q_OS_WIN
     exec = appInfo.folder + "/" + appInfo.executable + ".exe";
 #else
     exec = appInfo.folder + "/" + appInfo.executable;
 #endif
-    bool ok = proc.startDetached(exec, QStringList(), wDir);
+    bool ok = proc.startDetached(exec, arg, wDir);
     sDebug() << "Running " << exec << " in " << wDir << ok;
     if (!ok)
         sDebug() << "Error running " << exec << proc.errorString();
