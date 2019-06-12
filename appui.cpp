@@ -261,11 +261,24 @@ void AppUi::checkForNewVersion(bool manual)
         QJsonDocument doc = QJsonDocument::fromJson(data);
         QJsonArray jArr = doc.array();
         QString lastTag = jArr.at(0).toObject().value("tag_name").toString();
+        QString body = jArr.at(0).toObject().value("body").toString();
+        QString name = jArr.at(0).toObject().value("name").toString();
         sInfo() << "Latest release is " << lastTag;
+        qDebug() << body;
+        body.replace('\n', "<br/>");
+        body.replace('\r', "");
         if (QVersionNumber::fromString(qApp->applicationVersion()) < QVersionNumber::fromString(lastTag.remove(0, 1)))
         {
-            int but = QMessageBox::question(nullptr, tr("New version of QUsb2Snes available"),
-                                     QString(tr("A new version of QUsb2Snes is available : QUsb2Snes %1\nDo you want to upgrade to it?")).arg(lastTag));
+            QMessageBox msg;
+            msg.setText(QString(tr("A new version of QUsb2Snes is available : QUsb2Snes %1\nDo you want to upgrade to it?")).arg(lastTag));
+            msg.setWindowTitle(tr("New version of QUsb2Snes available"));
+            msg.setInformativeText(QString("<b>%1</b><p>%2</p>").arg(name).arg(body));
+            msg.addButton(QMessageBox::Yes);
+            msg.addButton(QMessageBox::No);
+            msg.setDefaultButton(QMessageBox::No);
+            /*int but = QMessageBox::question(nullptr, tr("New version of QUsb2Snes available"),
+                                     QString(tr("A new version of QUsb2Snes is available : QUsb2Snes %1\nDo you want to upgrade to it?")).arg(lastTag));*/
+            int but = msg.exec();
             if (but == QMessageBox::Yes)
             {
                 QProcess::startDetached(qApp->applicationDirPath() + "/WinUpdater.exe");

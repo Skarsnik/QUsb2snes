@@ -159,10 +159,12 @@ QStringList SNESClassicFactory::listDevices()
                 sDebug() << "Creating SNES Classic device";
                 device = new SNESClassic();
                 m_devices.append(device);
-                checkAliveTimer.start();
             }
             if (device->state() == ADevice::CLOSED)
+            {
                 device->sockConnect(snesclassicIP);
+                checkAliveTimer.start();
+            }
             device->canoePid = canoePid;
             device->setMemoryLocation(ramLocation, sramLocation, romLocation);
             //device->setState(ADevice::READY);
