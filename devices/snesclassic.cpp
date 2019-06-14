@@ -1,8 +1,9 @@
-#include "snesclassic.h"
-
 #include <QEventLoop>
 #include <QLoggingCategory>
 #include <QThread>
+
+#include "../rommapping/rominfo.h"
+#include "snesclassic.h"
 
 Q_LOGGING_CATEGORY(log_snesclassic, "SNESClassic")
 #define sDebug() qCDebug(log_snesclassic)
@@ -28,6 +29,7 @@ SNESClassic::SNESClassic()
     sramLocation = 0;
     romLocation = 0;
     ramLocation = 0;
+    requestInfo = false;
     cmdWasGet = false;
 }
 
@@ -51,9 +53,14 @@ void SNESClassic::onSocketReadReady()
             socket->disconnectFromHost();
             return ;
         }
-        if (getData.size() == getSize)
+        if (getData.size() == static_cast<int>(getSize))
         {
-            emit getDataReceived(getData);
+            if (!requestInfo)
+                emit getDataReceived(getData);
+            else {
+                dataRead = getData;
+                requestInfo = false;
+            }
             getData.clear();
             getSize = 0;
             cmdWasGet = false;
@@ -149,7 +156,8 @@ void SNESClassic::infoCommand()
 {
     m_state = BUSY;
     sDebug() << "Requested Info";
-    m_timer.start();
+    requestInfo = true;
+    getAddrCommand(SD2Snes::space::SNES, 0xFFC0, 32);
 }
 
 void SNESClassic::setState(ADevice::State state)
@@ -180,9 +188,10 @@ bool SNESClassic::hasControlCommands()
 
 USB2SnesInfo SNESClassic::parseInfo(const QByteArray &data)
 {
-    Q_UNUSED(data)
+    struct rom_infos* rInfos = get_rom_info(data.data());
     USB2SnesInfo info;
-    info.romPlaying = "No Info";
+    info.romPlaying = rInfos->title;
+    free(rInfos);
     info.version = "1.0.0";
     info.deviceName = "SNES Classic";
     info.flags << getFlagString(USB2SnesWS::NO_CONTROL_CMD);

@@ -58,6 +58,7 @@ void    LuaBridgeDevice::getRomMapping()
         struct rom_infos* rInfos = get_rom_info(data.data());
         gameName = rInfos->title;
         romMapping = ((rInfos->type == LoROM) ? LoROM : HiROM); // Screw ExHiROM
+        free(rInfos);
     }
     sDebug() << "ROM is " << ((romMapping == LoROM) ? "LoROM" : "HiROM");
 }

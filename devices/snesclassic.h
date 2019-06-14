@@ -60,6 +60,7 @@ private:
     bool                cmdWasGet;
     unsigned int        getSize;
     QByteArray          getData;
+    bool                requestInfo;
 
     void                findMemoryLocations();
     void                executeCommand(QByteArray toExec);
