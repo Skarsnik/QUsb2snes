@@ -47,10 +47,12 @@ private slots:
     void    onSocketDisconnected();
     void    onAliveTimeout();
 
+    void onSocketConnected();
 private:
     QTimer              m_timer;
     QTimer              alive_timer;
     QTcpSocket*         socket;
+    QString             myIp;
 
     unsigned int        putAddr;
     unsigned int        putSize;
@@ -61,6 +63,8 @@ private:
     unsigned int        getSize;
     QByteArray          getData;
     bool                requestInfo;
+    QByteArray          lastCmdWrite;
+    QByteArray          lastPutWrite;
 
     void                findMemoryLocations();
     void                executeCommand(QByteArray toExec);

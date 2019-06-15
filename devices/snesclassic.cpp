@@ -14,16 +14,13 @@ SNESClassic::SNESClassic()
 {
     m_timer.setSingleShot(true);
     m_timer.setInterval(3);
-    alive_timer.setInterval(2000);
+    alive_timer.setInterval(200);
     socket = new QTcpSocket();
     connect(&alive_timer, &QTimer::timeout, this, &SNESClassic::onAliveTimeout);
     connect(&m_timer, &QTimer::timeout, this, &SNESClassic::onTimerOut);
     connect(socket, &QIODevice::readyRead, this, &SNESClassic::onSocketReadReady);
     connect(socket, &QTcpSocket::disconnected, this, &SNESClassic::onSocketDisconnected);
-    connect(socket, &QTcpSocket::connected, [=] {
-        sDebug() << "Connected to serverstuff";
-        m_state = READY;
-    });
+    connect(socket, &QTcpSocket::connected, this, &SNESClassic::onSocketConnected);
     sDebug() << "Creating SNES Classic device";
     m_state = CLOSED;
     sramLocation = 0;
@@ -51,6 +48,7 @@ void SNESClassic::onSocketReadReady()
         {
             sDebug() << "Error doing a get memory";
             socket->disconnectFromHost();
+            alive_timer.stop();
             return ;
         }
         if (getData.size() == static_cast<int>(getSize))
@@ -72,11 +70,15 @@ void SNESClassic::onSocketReadReady()
         if (data == "OK\n")
             goto cmdFinished;
         if (data == "KO\n") // write command fail, let's close
+        {
             socket->disconnectFromHost();
+            alive_timer.stop();
+        }
     }
     return ;
 cmdFinished:
     m_state = READY;
+    alive_timer.stop();
     emit commandFinished();
 }
 
@@ -106,6 +108,7 @@ void SNESClassic::getAddrCommand(SD2Snes::space space, unsigned int addr, unsign
     getSize = size;
     getData.clear();
     writeSocket("READ_MEM " + canoePid + " " + QByteArray::number(memAddr, 16) + " " + QByteArray::number(size) + "\n");
+    alive_timer.start();
 }
 
 void SNESClassic::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
@@ -127,8 +130,10 @@ void SNESClassic::putAddrCommand(SD2Snes::space space, unsigned int addr, unsign
     if (addr < 0xE00000)
         memAddr = addr + romLocation;
     cmdWasGet = false;
+    lastPutWrite.clear();
     sDebug() << "Put address" << QString::number(addr, 16) << QString::number(memAddr, 16);
     writeSocket("WRITE_MEM " + canoePid + " " + QByteArray::number(memAddr, 16) + " " + QByteArray::number(size) + "\n");
+    alive_timer.start();
 }
 
 void SNESClassic::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
@@ -167,6 +172,7 @@ void SNESClassic::setState(ADevice::State state)
 
 void SNESClassic::writeData(QByteArray data)
 {
+    lastPutWrite += data;
     sDebug() << ">>" << data;
     socket->write(data);
 }
@@ -233,19 +239,29 @@ void SNESClassic::onTimerOut()
 
 void    SNESClassic::onAliveTimeout()
 {
-    return ;
-    /*QTcpSocket tmpSock;
-    tmpSock.connectToHost(SNES_CLASSIC_IP, 1042);
-    sDebug() << "Alive timer connection : " << tmpSock.waitForConnected(50);
-    tmpSock.write("CMD pidof canoe-shvc\n");
-    QByteArray tmp = readCommandReturns(tmpSock);
-    if (tmp.trimmed() != canoePid)
-        socket->close();
-    tmpSock.disconnectFromHost();*/
+    alive_timer.stop();
+    sDebug() << "An operation timeout, ServerStuff has an issue";
+    disconnect(socket, &QTcpSocket::disconnected, this, &SNESClassic::onSocketDisconnected);
+    socket->disconnectFromHost();
+    socket->waitForDisconnected(200);
+    sDebug() << "Reconnecing to SNES classic";
+    // Connect put the device in READY state
+    // We want to keep it BUSY
+    disconnect(socket, &QTcpSocket::connected, this, &SNESClassic::onSocketConnected);
+    connect(socket, &QTcpSocket::disconnected, this, &SNESClassic::onSocketDisconnected);
+    socket->connectToHost(myIp, 1042);
+    if (socket->waitForConnected(100))
+    {
+        writeSocket(lastCmdWrite);
+        if (!cmdWasGet)
+            writeSocket(lastPutWrite);
+    }
+    connect(socket, &QTcpSocket::connected, this, &SNESClassic::onSocketConnected);
 }
 
 void SNESClassic::onSocketDisconnected()
 {
+    alive_timer.stop();
     sInfo() << "disconnected from serverstuff";
     m_state = CLOSED;
     emit closed();
@@ -254,6 +270,7 @@ void SNESClassic::onSocketDisconnected()
 
 void SNESClassic::writeSocket(QByteArray toWrite)
 {
+    lastCmdWrite = toWrite;
     sDebug() << ">>" << toWrite;
     socket->write(toWrite);
 }
@@ -288,9 +305,15 @@ bool SNESClassic::canAttach()
 {
     return m_state == READY || m_state == BUSY;
 }
+void SNESClassic::onSocketConnected()
+{
+    sDebug() << "Connected to serverstuff";
+    m_state = READY;
+}
 
 void SNESClassic::sockConnect(QString ip)
 {
+    myIp = ip;
     sDebug() << "Connecting to serverstuff " << ip;
     socket->connectToHost(ip, 1042);
 }
