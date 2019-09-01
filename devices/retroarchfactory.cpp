@@ -87,7 +87,7 @@ QStringList RetroArchFactory::listDevices()
             auto retroBlockSize = globalSettings->value("RetroArchBlockSize").toInt();
             if (retroBlockSize == 78 && QVersionNumber::fromString(raVersion) >= QVersionNumber::fromString("1.7.7"))
                 retroBlockSize = 2000;
-            retroDev = new RetroArchDevice(m_sock, raVersion, gameName, retroBlockSize, hasSnesLoromMap, hasSnesMemoryMap);
+            retroDev = new RetroArchDevice(m_sock, raVersion, gameName, retroBlockSize, hasSnesMemoryMap, hasSnesLoromMap);
             m_devices.append(retroDev);
             return toret << retroDev->name();
         }
