@@ -7,7 +7,7 @@ You will need the developplent files for websocket and serialport libraries that
 You can etheir use the Qbs build tool or the regular qmake build too to build it. QMake is simpler to use.
 
 ```
-qmake QUsb2Snes.pro CONFIG+='release'
+qmake QUsb2snes.pro CONFIG+='release'
 make
 ```
 
