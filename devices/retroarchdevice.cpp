@@ -159,8 +159,8 @@ void RetroArchDevice::onUdpReadyRead()
          }
          return;
     }
-    emit commandFinished();
     m_state = READY;
+    emit commandFinished();
 }
 
 void RetroArchDevice::read_core_ram(unsigned int addr, unsigned int size)
