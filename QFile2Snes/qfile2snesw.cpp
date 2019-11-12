@@ -77,6 +77,8 @@ void    QFile2SnesW::refreshStatus()
 {
     Usb2Snes::DeviceInfo infos = usb2snes->infos();
     ui->infoLabel->setText(QString(tr("Firmware version : %1 - Rom Playing : %2")).arg(infos.firmwareVersion, infos.romPlaying));
+    if (infos.flags.contains("NO_FILE_CMD"))
+        QMessageBox::information(this, tr("Device error"), tr("The device does not support file operation"));
 }
 
 void QFile2SnesW::onUsb2SnesStateChanged()
