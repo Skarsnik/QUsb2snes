@@ -28,6 +28,7 @@ SNESClassic::SNESClassic()
     ramLocation = 0;
     requestInfo = false;
     cmdWasGet = false;
+    c_rom_infos = nullptr;
 }
 
 //5757524954455F4D454D20373333203165343365312032390A201D7029FF
@@ -36,11 +37,29 @@ SNESClassic::SNESClassic()
 
 void SNESClassic::onSocketReadReady()
 {
+    static rom_type infoRequestType = LoROM;
     if (m_state == CLOSED)
         return;
     QByteArray data = socket->readAll();
     sDebug() << "Read stuff on socket " << cmdWasGet << " : " << data.size();
     sDebug() << "<<" << data << data.toHex();
+    if (requestInfo)
+    {
+        if (c_rom_infos != nullptr)
+            free(c_rom_infos);
+        c_rom_infos = get_rom_info(data.data());
+        if (rom_info_make_sense(c_rom_infos, infoRequestType) || infoRequestType == HiROM)
+        {
+            infoRequestType = LoROM;
+            requestInfo = false;
+            goto cmdFinished;
+        }
+
+        // Checking HiROM
+        writeSocket("READ_MEM " + canoePid + " " + QByteArray::number(0xFFC0 + romLocation, 16) + " " + QByteArray::number(32) + "\n");
+        infoRequestType = HiROM;
+        return ;
+    }
     if (cmdWasGet)
     {
         getData += data;
@@ -53,12 +72,12 @@ void SNESClassic::onSocketReadReady()
         }
         if (getData.size() == static_cast<int>(getSize))
         {
-            if (!requestInfo)
+            /*if (!requestInfo)
                 emit getDataReceived(getData);
             else {
                 dataRead = getData;
                 requestInfo = false;
-            }
+            }*/
             getData.clear();
             getSize = 0;
             cmdWasGet = false;
@@ -80,6 +99,7 @@ cmdFinished:
     m_state = READY;
     alive_timer.stop();
     emit commandFinished();
+    return ;
 }
 
 
@@ -162,7 +182,7 @@ void SNESClassic::infoCommand()
     m_state = BUSY;
     sDebug() << "Requested Info";
     requestInfo = true;
-    getAddrCommand(SD2Snes::space::SNES, 0xFFC0, 32);
+    writeSocket("READ_MEM " + canoePid + " " + QByteArray::number(0x7FC0 + romLocation, 16) + " " + QByteArray::number(32) + "\n");
 }
 
 void SNESClassic::setState(ADevice::State state)
@@ -194,10 +214,9 @@ bool SNESClassic::hasControlCommands()
 
 USB2SnesInfo SNESClassic::parseInfo(const QByteArray &data)
 {
-    struct rom_infos* rInfos = get_rom_info(data.data());
+    Q_UNUSED(data)
     USB2SnesInfo info;
-    info.romPlaying = rInfos->title;
-    free(rInfos);
+    info.romPlaying = c_rom_infos->title;
     info.version = "1.0.0";
     info.deviceName = "SNES Classic";
     info.flags << getFlagString(USB2SnesWS::NO_CONTROL_CMD);

@@ -26,19 +26,23 @@ extern "C" {
 struct rom_infos {
     enum rom_type   type;
     bool            fastrom;
+    bool            valid_checksum;
     char            title[21];
     unsigned int    size;
     unsigned int    sram_size;
     uint16_t        creator_id;
     char            version;
-    char            checksum_comp;
-    char            checksum;
+    unsigned short  checksum_comp;
+    unsigned short  checksum;
 };
 
 struct rom_infos* get_rom_info(const char* data);
+bool              rom_info_make_sense(struct rom_infos* infos, enum rom_type type);
+
 
 #ifdef __cplusplus
 }
 #endif
+
 
 #endif

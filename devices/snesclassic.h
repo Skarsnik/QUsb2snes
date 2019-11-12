@@ -65,6 +65,7 @@ private:
     bool                requestInfo;
     QByteArray          lastCmdWrite;
     QByteArray          lastPutWrite;
+    struct rom_infos*   c_rom_infos;
 
     void                findMemoryLocations();
     void                executeCommand(QByteArray toExec);

@@ -2,6 +2,7 @@
 #define RETROARCHDEVICE_H
 
 #include "../adevice.h"
+#include "../rommapping/rominfo.h"
 
 #include <QObject>
 #include <QUdpSocket>
@@ -63,6 +64,7 @@ private:
     bool         hasSnesMemoryMap;
     bool         hasSnesLoromMap;
     QByteArray   checkReturnedValue;
+    rom_infos*   c_rom_infos;
     void         read_core_ram(unsigned int addr, unsigned int size);
     int          addr_to_addr(unsigned int addr);
     unsigned int blockSize;

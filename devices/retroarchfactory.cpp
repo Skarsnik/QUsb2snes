@@ -54,7 +54,10 @@ QStringList RetroArchFactory::listDevices()
         m_attachError = tr("RetroArch - Did not get a VERSION response.");
         return toret;
     }
-    m_sock->write("READ_CORE_RAM FFC0 32");
+    // Should be loRom rom address
+    auto loRomHeaderAddr = QByteArray::number(0x7FC0 + (0x8000 * ((0x7FC0 + 0x8000) / 0x8000)));
+    // but let's check HiROM
+    m_sock->write(QByteArray("READ_CORE_RAM 40FFC0 32"));// + loRomHeaderAddr.constData());
     m_sock->waitForReadyRead(100);
     if (m_sock->hasPendingDatagrams())
     {
@@ -73,10 +76,14 @@ QStringList RetroArchFactory::listDevices()
             {
                 hasSnesMemoryMap = false;
             } else {
+                tList.removeFirst();
+                tList.removeFirst();
                 struct rom_infos* rInfos = get_rom_info(QByteArray::fromHex(tList.join()).data());
+                sDebug() << rInfos->title;
                 gameName = QString(rInfos->title);
-                hasSnesLoromMap = rInfos->type == LoROM;
+                hasSnesLoromMap = !rom_info_make_sense(rInfos, HiROM);
                 hasSnesMemoryMap = true;
+                free(rInfos);
             }
 
             if(!globalSettings->contains("RetroArchBlockSize"))

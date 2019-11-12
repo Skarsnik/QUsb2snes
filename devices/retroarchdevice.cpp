@@ -28,6 +28,7 @@ RetroArchDevice::RetroArchDevice(QUdpSocket* sock, QString raVersion, QString ga
     m_gameName = gameName;
     blockSize = static_cast<unsigned int>(bSize);
     m_uuid = QUuid::createUuid().toString(QUuid::Id128).left(24);
+    c_rom_infos = nullptr;
 }
 
 
@@ -41,9 +42,10 @@ USB2SnesInfo RetroArchDevice::parseInfo(const QByteArray &data)
 {
     Q_UNUSED(data);
     USB2SnesInfo    info;
-    info.romPlaying = m_gameName;
-    info.version = m_raVersion;
 
+    info.romPlaying = c_rom_infos->title;
+    hasSnesLoromMap = c_rom_infos->type == LoROM;
+    info.version = m_raVersion;
     if(!hasSnesMemoryMap)
     {
         info.flags << getFlagString(USB2SnesWS::NO_ROM_READ);
@@ -82,8 +84,10 @@ void RetroArchDevice::close()
 
 void RetroArchDevice::onUdpReadyRead()
 {
+    static rom_type infoRequestType = HiROM;
+
     QByteArray data = m_sock->readAll();
-    //sDebug() << "<<" << data;
+    sDebug() << "<<" << data;
     if (data.isEmpty())
     {
         emit closed();
@@ -95,19 +99,34 @@ void RetroArchDevice::onUdpReadyRead()
     if(checkingInfo)
     {
         checkingInfo = false;
+        //TODO emit an error
         if(tList.at(2) == "-1")
         {
             hasSnesMemoryMap = false;
+            m_state = READY;
+            emit commandFinished();
+            return ;
         } else {
-            struct rom_infos* rInfos = get_rom_info(QByteArray::fromHex(tList.join()).data());
-            m_gameName = QString(rInfos->title);
-            hasSnesLoromMap = rInfos->type == LoROM;
-            hasSnesMemoryMap = true;
-        }
+            if (c_rom_infos != nullptr)
+                free(c_rom_infos);
+            tList.removeFirst();tList.removeFirst();
+            c_rom_infos = get_rom_info(QByteArray::fromHex(tList.join()));
+            if (rom_info_make_sense(c_rom_infos, infoRequestType) || infoRequestType == LoROM)
+            {
+                infoRequestType = HiROM;
+                hasSnesMemoryMap = true;
+                hasSnesLoromMap = c_rom_infos->type;
+                m_state = READY;
+                emit commandFinished();
+                return ;
+            }
 
-        m_state = READY;
-        emit commandFinished();
-        return;
+            // Checking LoROM
+            auto tmpData = QByteArray("READ_CORE_RAM ") + QByteArray::number(0x7FC0 + (0x8000 * ((0x7FC0 + 0x8000) / 0x8000))) + " 32";
+            m_sock->write(tmpData);
+            infoRequestType = LoROM;
+            return ;
+        }
     }
 
     if (tList.at(2) != "-1")
@@ -350,7 +369,7 @@ void RetroArchDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, 
 void RetroArchDevice::infoCommand()
 {
     sDebug() << "Info command: Checking core memory map status";
-    auto tmpData = "READ_CORE_RAM FFC0 32";
+    auto tmpData = "READ_CORE_RAM 40FFC0 32";
     m_sock->write(tmpData);
     checkingInfo = true;
 }

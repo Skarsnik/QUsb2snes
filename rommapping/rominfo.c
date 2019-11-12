@@ -2,9 +2,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-
-struct rom_infos*    get_rom_info(const char* data)
+struct rom_infos*    get_rom_info(const char* datain)
 {
+    const unsigned char* data = datain;
     struct rom_infos* toret = (struct rom_infos*) malloc(sizeof(struct rom_infos));
     memcpy(toret->title, data, 21);
     toret->type = LoROM;
@@ -19,5 +19,15 @@ struct rom_infos*    get_rom_info(const char* data)
     toret->version = data[27];
     toret->checksum_comp = (data[29] << 8) | data[28];
     toret->checksum = (data[31] << 8) | data[30];
+    toret->valid_checksum = false;
+        if ((toret->checksum ^ toret->checksum_comp) == 0xFFFF)
+            toret->valid_checksum = true;
     return toret;
+}
+
+bool rom_info_make_sense(struct rom_infos *infos, enum rom_type type)
+{
+    if (!(infos->type == type || (type == HiROM && infos->type == ExHiROM)))
+        return false;
+    return infos->valid_checksum;
 }
