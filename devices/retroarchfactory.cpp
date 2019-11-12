@@ -44,15 +44,18 @@ QStringList RetroArchFactory::listDevices()
         }
         sDebug() << "Connected";
     }
-    m_sock->write("VERSION");
-    m_sock->waitForReadyRead(100);
-    if(m_sock->hasPendingDatagrams())
+    if (!globalSettings->value("SkipVersionCheck", 0).toBool())
     {
-        raVersion = m_sock->readAll().trimmed();
-        sDebug() << "Received RA version : " << raVersion;
-    } else {
-        m_attachError = tr("RetroArch - Did not get a VERSION response.");
-        return toret;
+        m_sock->write("VERSION");
+        m_sock->waitForReadyRead(100);
+        if(m_sock->hasPendingDatagrams())
+        {
+            raVersion = m_sock->readAll().trimmed();
+            sDebug() << "Received RA version : " << raVersion;
+        } else {
+            m_attachError = tr("RetroArch - Did not get a VERSION response.");
+            return toret;
+        }
     }
     // Should be loRom rom address
     auto loRomHeaderAddr = QByteArray::number(0x7FC0 + (0x8000 * ((0x7FC0 + 0x8000) / 0x8000)));
@@ -94,7 +97,7 @@ QStringList RetroArchFactory::listDevices()
             auto retroBlockSize = globalSettings->value("RetroArchBlockSize").toInt();
             if (retroBlockSize == 78 && QVersionNumber::fromString(raVersion) >= QVersionNumber::fromString("1.7.7"))
                 retroBlockSize = 2000;
-            retroDev = new RetroArchDevice(m_sock, raVersion, gameName, retroBlockSize, hasSnesLoromMap, hasSnesMemoryMap);
+            retroDev = new RetroArchDevice(m_sock, raVersion, gameName, retroBlockSize, hasSnesMemoryMap, hasSnesLoromMap);
             m_devices.append(retroDev);
             return toret << retroDev->name();
         }
