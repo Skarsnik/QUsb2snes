@@ -122,6 +122,7 @@ int main(int ac, char *ag[])
 
     // let set some know trusted domain
     wsServer.addTrusted("http://www.multitroid.com");
+    wsServer.addTrusted("https://multiworld.samus.link/");
 
     if (app.arguments().size() == 2 && app.arguments().at(1) == "-nogui")
     {

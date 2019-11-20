@@ -175,6 +175,7 @@ void AppUi::init()
     appsMenu->addAction(tr("Remote Applications"));
     appsMenu->addSeparator();
     appsMenu->addAction(QIcon(":/img/multitroid.png"), "Multitroid");
+    appsMenu->addAction(QIcon(":/img/BK small.png"), "SMZ3 Multiworld");
 }
 
 
@@ -200,12 +201,9 @@ void AppUi::onMenuAboutToshow()
 void AppUi::onAppsMenuTriggered(QAction *action)
 {
     if (action->text() == "Multitroid")
-    {
         QDesktopServices::openUrl(QUrl("http://multitroid.com/"));
-        /*QWebEngineView *view = new QWebEngineView(parent);
-        view->load(QUrl("http://qt-project.org/"));
-        view->show();*/
-    }
+    if (action->text() == "SMZ3 Multiworld")
+        QDesktopServices::openUrl(QUrl("https://multiworld.samus.link"));
     if (action->data().isNull())
         return ;
     const ApplicationInfo& appInfo = regularApps[action->data().toString()];

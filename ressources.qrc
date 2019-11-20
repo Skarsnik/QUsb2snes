@@ -12,6 +12,7 @@
         <file>multitroid.png</file>
         <file>updateicon.svg</file>
         <file>microsoft-windows-logo.svg</file>
+        <file>BK small.png</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>
