@@ -69,7 +69,9 @@ By default QUsb2Snes comes with various Magic2Snes scripts.
 
 ## Mac os X
 
-Mac os X release comming soon (tm)
+* Download the lastest release (dmg file) on the [release page](https://github.com/Skarsnik/QUsb2snes/releases)
+
+SD2Snes devices may have issue on mac ox X
 
 ## Linux
 
@@ -81,11 +83,17 @@ If you don't use a SD2Snes, you will have to activate the support for your way t
 
 ## SD2Snes
 
-You need to install the last Usb2Snes firmware by redguy (https://github.com/RedGuyyyy/sd2snes/releases/tag/v7) . Just follows the instruction provided. Don't start usb2snes.exe since QUsb2snes do the same thing that the original software. Your sd2snes device should show up on the Devices menu when connected.
+If you came from usb2snes.com, the firmware should be provided directly on the bundle.
+
+You need to install the last Usb2Snes firmware by Redguy (https://github.com/RedGuyyyy/sd2snes/releases/tag/usb2snes_v11) . Just follows the instruction provided. Don't start usb2snes.exe since QUsb2snes do the same thing that the original software. Your sd2snes device should show up on the Devices menu when connected.
 
 ## SNES9x multitroid
 
-Multitroid provide a patched version of snes9x with a lua script that allow for external software to communicate with it. Get the emulator on http://multitroid.com/. Activate the snes9x bridge on the device menu of QUsb2Snes then run the multibridge.lua scripts on snes9x.
+Snes9x-rr 1.60 should replace the Snex9x multitroid, get it at https://github.com/gocha/snes9x-rr/releases/tag/1.60
+
+Multitroid provide a patched version of snes9x with a lua script that allow for external software to communicate with it. Get the emulator on http://multitroid.com/. 
+
+Activate the Lua bridge on the device menu of QUsb2Snes then run the multibridge.lua scripts on Snes9x.
 
 ## BizHawk 2.3.1 (bsnes core recommanded)
 
@@ -100,9 +108,9 @@ Run your game and then in the `Tools` menu start the `Lua console` click on the 
 
 You need to use etheir `Snex9x` core or one of the `bsnes-mercury` and edit your retroarch.cfg file (can be found in %appData%\RetroArch) to set `network_cmd_enable = "true"` to true (default is false). Then you need to activate the RetroArch virtual device on the devices menu.
 
-Snex9x core :  needing to the patch the ROM (multitroid for example) you etheir need to patch the rom manually with the IPS file or put the IPS file along side the rom with the same name for retroarch to auto patch it.
+Snex9x core :  It does not support ROM write, it can be an issue for multitroid for example, you etheir need to patch the rom manually with the IPS file or put the IPS file along side the rom with the same name for retroarch to auto patch it.
 
-You can connect to a remote RetroArch by adding a RetroArchHost=YourOwnHost in the config.ini file
+You can connect to a remote RetroArch by adding a RetroArchHost=YourOwnHost in the config.ini file, replace YourOwnHost with the right ip/hostname.
 
 ## SNES classic (called also SNES mini)
 
