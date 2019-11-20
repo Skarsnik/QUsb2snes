@@ -43,8 +43,13 @@ USB2SnesInfo RetroArchDevice::parseInfo(const QByteArray &data)
     Q_UNUSED(data);
     USB2SnesInfo    info;
 
-    info.romPlaying = c_rom_infos->title;
-    hasSnesLoromMap = c_rom_infos->type == LoROM;
+    if (c_rom_infos != nullptr)
+    {
+        info.romPlaying = c_rom_infos->title;
+        hasSnesLoromMap = c_rom_infos->type == LoROM;
+    } else {
+        info.romPlaying = "CAN'T READ ROM INFO";
+    }
     info.version = m_raVersion;
     if(!hasSnesMemoryMap)
     {
@@ -135,8 +140,8 @@ void RetroArchDevice::onUdpReadyRead()
         data = tList.join();
         emit getDataReceived(QByteArray::fromHex(data));
     } else {
-        sDebug() << "Not giving data : sending" << lastRCRSize << "bytes";
-        emit getDataReceived(QByteArray(static_cast<int>(lastRCRSize), 0));
+        emit protocolError();
+        return ;
     }
 
     if (bigGet)

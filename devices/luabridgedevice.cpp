@@ -35,6 +35,8 @@ LuaBridgeDevice::LuaBridgeDevice(QTcpSocket* sock, QString name)
     connect(m_socket, SIGNAL(readyRead()), this, SLOT(onClientReadyRead()));
 }
 
+
+// FIXME
 void    LuaBridgeDevice::getRomMapping()
 {
     sDebug() << "Trying to get ROM mapping";

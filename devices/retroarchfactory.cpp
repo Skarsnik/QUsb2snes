@@ -62,6 +62,7 @@ QStringList RetroArchFactory::listDevices()
     // but let's check HiROM
     m_sock->write(QByteArray("READ_CORE_RAM 40FFC0 32"));// + loRomHeaderAddr.constData());
     m_sock->waitForReadyRead(100);
+    //TODO: it's hard to tell what we can read/write, RA UDP support is a nightmare :(
     if (m_sock->hasPendingDatagrams())
     {
         QByteArray data = m_sock->readAll();
