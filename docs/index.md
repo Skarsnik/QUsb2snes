@@ -7,6 +7,8 @@ Welcome to QUsb2Snes documentation.
 
 QUsb2Snes is a reimplementation of the Usb2Snes websocket server using a more multi plateform framework (Qt, ench the Q in the name) than the original one.
 
+You should look at http://http://usb2snes.com/ if you are regular user.
+
 # Contents
 {:.no_toc}
 
