@@ -371,6 +371,7 @@ void AppUi::addWindowsSendToEntry()
 
 void AppUi::onUntrustedConnection(QString origin)
 {
+    disconnect(&wsServer, &WSServer::untrustedConnection, this, &AppUi::onUntrustedConnection);
     QMessageBox msg;
     msg.setText(QString(tr("Received a connection from an untrusted origin %1. Do you want to add this source to the trusted origin list?")).arg(origin));
     msg.setWindowTitle(tr("Untrusted origin"));
@@ -384,6 +385,7 @@ void AppUi::onUntrustedConnection(QString origin)
         tList.append(origin);
         globalSettings->setValue("trustedOrigin", tList.join(";"));
     }
+    connect(&wsServer, &WSServer::untrustedConnection, this, &AppUi::onUntrustedConnection);
 }
 
 QDebug operator<<(QDebug debug, const AppUi::ApplicationInfo &req)
