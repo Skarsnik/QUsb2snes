@@ -79,6 +79,9 @@ SD2Snes devices may have issue on mac ox X
 
 For now you will have to compile the source yourself, see the `LinuxREADME.md` file to how to do it.
 
+### Arch Linux
+There now exists a PKGBUILD for the upstream version of QUsb2Snes which also provides QFile2Snes (https://aur.archlinux.org/packages/qusb2snes-git/)
+
 # Usage
 
 If you don't use a SD2Snes, you will have to activate the support for your way to play SNES in the `devices` menu.
