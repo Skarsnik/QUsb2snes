@@ -97,7 +97,11 @@ int main(int ac, char *ag[])
     QFile   mlog(qApp->applicationDirPath() + "/log.txt");
     QFile   mDebugLog(qApp->applicationDirPath() + "/log-debug.txt");
     logfile.setDevice(&mlog);
+#ifdef Q_OS_LINUX
+    globalSettings = new QSettings("Nyo.fr", "QUsb2Snes");
+#else
     globalSettings = new QSettings("config.ini", QSettings::IniFormat);
+#endif
     if (globalSettings->contains("debugLog") && globalSettings->value("debugLog").toBool())
     {
         mDebugLog.open(QIODevice::WriteOnly | QIODevice::Text);
