@@ -18,6 +18,7 @@
 #include <QObject>
 #include <QHostInfo>
 #include <QVersionNumber>
+#include <QStandardPaths>
 
 WSServer    wsServer;
 QSettings*  globalSettings;
@@ -94,11 +95,17 @@ void    startServer()
 int main(int ac, char *ag[])
 {
     QApplication app(ac, ag);
+#ifdef Q_OS_WIN
     QFile   mlog(qApp->applicationDirPath() + "/log.txt");
     QFile   mDebugLog(qApp->applicationDirPath() + "/log-debug.txt");
+#else
+    QFile   mlog(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0) + "/log.txt");
+    QFile   mDebugLog(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0) + "/log-debug.txt");
+#endif
+
     logfile.setDevice(&mlog);
-#ifdef Q_OS_LINUX
-    globalSettings = new QSettings("Nyo.fr", "QUsb2Snes");
+#ifndef Q_OS_WIN
+    globalSettings = new QSettings("skarsnik.nyo.fr", "QUsb2Snes");
 #else
     globalSettings = new QSettings("config.ini", QSettings::IniFormat);
 #endif
