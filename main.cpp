@@ -19,6 +19,7 @@
 #include <QHostInfo>
 #include <QVersionNumber>
 #include <QStandardPaths>
+#include <QDir>
 
 WSServer    wsServer;
 QSettings*  globalSettings;
@@ -99,11 +100,13 @@ int main(int ac, char *ag[])
     QFile   mlog(qApp->applicationDirPath() + "/log.txt");
     QFile   mDebugLog(qApp->applicationDirPath() + "/log-debug.txt");
 #else
-    QFile   mlog(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0) + "/log.txt");
-    QFile   mDebugLog(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0) + "/log-debug.txt");
+    const QString appDataPath = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0);
+    if (!QFile::exists(appDataPath))
+        QDir().mkdir(appDataPath);
+    QFile   mlog(appDataPath + "/log.txt");
+    QFile   mDebugLog(appDataPath + "/log-debug.txt");
 #endif
 
-    logfile.setDevice(&mlog);
 #ifndef Q_OS_WIN
     globalSettings = new QSettings("skarsnik.nyo.fr", "QUsb2Snes");
 #else
@@ -115,7 +118,10 @@ int main(int ac, char *ag[])
         debugLogFile.setDevice(&mDebugLog);
     }
     if (mlog.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        logfile.setDevice(&mlog);
         qInstallMessageHandler(myMessageOutput);
+    }
     QApplication::setApplicationName("QUsb2Snes");
     // This is only defined in the PRO file
 #ifdef GIT_TAG_VERSION

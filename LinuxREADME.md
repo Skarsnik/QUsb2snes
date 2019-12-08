@@ -1,4 +1,4 @@
-For now QUsb2Snes Linux integration is pretty bad (especially configuration file)
+For now QUsb2Snes Linux integration is not great. It need work on other application detection.
 
 # Compiling
 
@@ -11,7 +11,21 @@ qmake QUsb2snes.pro CONFIG+='release'
 make
 ```
 
-Then start the QUsb2Snes binart from the `release` directory that is created.
+Then start the QUsb2Snes binary from the `release` directory that is created.
+
+# Usage
+
+There is a -nogui option if you want to run it without the system tray icon and interface.
+
+# Files
+
+Logs are put in the standard path for application data. It should be:
+~/.loca/share/QUsb2Snes
+
+And the settings file is into
+~/.config/skarsnik.nyo.fr/QUsb2Snes.conf
+
+
 
 # SD2Snes
 
