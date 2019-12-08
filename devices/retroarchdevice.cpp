@@ -101,12 +101,13 @@ void RetroArchDevice::onUdpReadyRead()
     QList<QByteArray> tList = data.trimmed().split(' ');
     //sDebug() << tList;
 
-    if(checkingInfo)
+    if (checkingInfo)
     {
         checkingInfo = false;
         //TODO emit an error
         if(tList.at(2) == "-1")
         {
+            c_rom_infos = nullptr;
             hasSnesMemoryMap = false;
             m_state = READY;
             emit commandFinished();
@@ -130,6 +131,7 @@ void RetroArchDevice::onUdpReadyRead()
             auto tmpData = QByteArray("READ_CORE_RAM ") + QByteArray::number(0x7FC0 + (0x8000 * ((0x7FC0 + 0x8000) / 0x8000))) + " 32";
             m_sock->write(tmpData);
             infoRequestType = LoROM;
+            checkingInfo = true;
             return ;
         }
     }
