@@ -130,7 +130,7 @@ int main(int ac, char *ag[])
     auto appNap = new AppNapSuspender();
     appNap->suspend();
 #endif
-
+    qDebug() << "Runing QUsb2Snes version " << QApplication::applicationVersion();
     // let set some know trusted domain
     wsServer.addTrusted("http://www.multitroid.com");
     wsServer.addTrusted("https://multiworld.samus.link/");
