@@ -89,8 +89,6 @@ void RetroArchDevice::close()
 
 void RetroArchDevice::onUdpReadyRead()
 {
-    static rom_type infoRequestType = HiROM;
-
     QByteArray data = m_sock->readAll();
     sDebug() << "<<" << data;
     if (data.isEmpty())
@@ -117,21 +115,10 @@ void RetroArchDevice::onUdpReadyRead()
                 free(c_rom_infos);
             tList.removeFirst();tList.removeFirst();
             c_rom_infos = get_rom_info(QByteArray::fromHex(tList.join()));
-            if (rom_info_make_sense(c_rom_infos, infoRequestType) || infoRequestType == LoROM)
-            {
-                infoRequestType = HiROM;
-                hasSnesMemoryMap = true;
-                hasSnesLoromMap = c_rom_infos->type;
-                m_state = READY;
-                emit commandFinished();
-                return ;
-            }
-
-            // Checking LoROM
-            auto tmpData = QByteArray("READ_CORE_RAM ") + QByteArray::number(0x7FC0 + (0x8000 * ((0x7FC0 + 0x8000) / 0x8000))) + " 32";
-            m_sock->write(tmpData);
-            infoRequestType = LoROM;
-            checkingInfo = true;
+            hasSnesMemoryMap = true;
+            hasSnesLoromMap = c_rom_infos->type == LoROM;
+            m_state = READY;
+            emit commandFinished();
             return ;
         }
     }
@@ -193,6 +180,7 @@ void RetroArchDevice::read_core_ram(unsigned int addr, unsigned int size)
 {
     QByteArray data = "READ_CORE_RAM " + QByteArray::number(addr, 16) + " " + QByteArray::number(size);
     lastRCRSize = size;
+    sDebug() << ">>" << data;
     m_sock->write(data);
 }
 
@@ -377,6 +365,7 @@ void RetroArchDevice::infoCommand()
 {
     sDebug() << "Info command: Checking core memory map status";
     auto tmpData = "READ_CORE_RAM 40FFC0 32";
+    sDebug() << ">> " << tmpData;
     m_sock->write(tmpData);
     checkingInfo = true;
 }

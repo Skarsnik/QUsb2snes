@@ -60,7 +60,7 @@ QStringList RetroArchFactory::listDevices()
     // Should be loRom rom address
     auto loRomHeaderAddr = QByteArray::number(0x7FC0 + (0x8000 * ((0x7FC0 + 0x8000) / 0x8000)));
     // but let's check HiROM
-    m_sock->write(QByteArray("READ_CORE_RAM 40FFC0 32"));// + loRomHeaderAddr.constData());
+    m_sock->write(QByteArray("READ_CORE_RAM 40FFC0 32"));
     m_sock->waitForReadyRead(100);
     //TODO: it's hard to tell what we can read/write, RA UDP support is a nightmare :(
     if (m_sock->hasPendingDatagrams())
@@ -85,7 +85,7 @@ QStringList RetroArchFactory::listDevices()
                 struct rom_infos* rInfos = get_rom_info(QByteArray::fromHex(tList.join()).data());
                 sDebug() << rInfos->title;
                 gameName = QString(rInfos->title);
-                hasSnesLoromMap = !rom_info_make_sense(rInfos, HiROM);
+                hasSnesLoromMap = rInfos->type == LoROM;
                 hasSnesMemoryMap = true;
                 free(rInfos);
             }
