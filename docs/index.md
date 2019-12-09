@@ -7,7 +7,7 @@ Welcome to QUsb2Snes documentation.
 
 QUsb2Snes is a reimplementation of the Usb2Snes websocket server using a more multi plateform framework (Qt, ench the Q in the name) than the original one.
 
-You should look at http://http://usb2snes.com/ if you are regular user.
+You should look at http://usb2snes.com/ if you are regular user.
 
 # Contents
 {:.no_toc}
@@ -111,11 +111,11 @@ Run your game and then in the `Tools` menu start the `Lua console` click on the 
 
 ## RetroArch
 
-You need to use etheir `Snex9x` core or one of the `bsnes-mercury` and edit your retroarch.cfg file (can be found in %appData%\RetroArch) to set `network_cmd_enable = "true"` to true (default is false). Then you need to activate the RetroArch virtual device on the devices menu.
+You can use Snex9x (not recommanded) or bsnes-mercury cores. You need to activate the network command support, etheir in the configuration menu of RetroArch or editing your retroarch.cfg file (can be found in %appData%\RetroArch) to set network_cmd_enable = "true" (default is false). Then you need to activate the RetroArch virtual device on the devices menu. Any flavor of bsnes-mercury is prefered as we can access the ROM data.
 
-Snex9x core :  It does not support ROM write, it can be an issue for multitroid for example, you etheir need to patch the rom manually with the IPS file or put the IPS file along side the rom with the same name for retroarch to auto patch it.
+Snex9x core : For software needing to the patch the ROM (multitroid for example) you etheir need to patch the rom manually with the IPS file or put the IPS file along side the rom with the same name for retroarch to auto patch it.
 
-You can connect to a remote RetroArch by adding a RetroArchHost=YourOwnHost in the config.ini file, replace YourOwnHost with the right ip/hostname.
+You can connect to a remote RetroArch by adding a RetroArchHost=YourOwnHost in the config file, replace YourOwnHost with the right ip/hostname.
 
 ## SNES classic (called also SNES mini)
 
