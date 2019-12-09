@@ -49,6 +49,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     // Main menu creation is here
     menu = new QMenu();
     menu->addAction(QIcon(":/img/icon64x64.ico"), "QUsb2Snes v" + QApplication::applicationVersion());
+    menu->addAction("Happy Hearth's Warming");
     menu->addSeparator();
 
     deviceMenu = menu->addMenu(QIcon(":/img/deviceicon.svg"), tr("Devices", "Menu entry"));
