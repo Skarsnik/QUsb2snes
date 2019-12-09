@@ -58,6 +58,9 @@ private slots:
     void    onRTSChanged(bool set);
 
 private:
+    void    readPacket(const QByteArray& packetData);
+
+private:
     QSerialPort m_port;
 
     QByteArray  dataReceived;

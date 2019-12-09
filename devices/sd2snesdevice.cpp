@@ -49,16 +49,24 @@ void SD2SnesDevice::close()
 
 void SD2SnesDevice::spReadyRead()
 {
+    while (m_port.bytesAvailable() >= blockSize)
+        readPacket(m_port.read(blockSize));
+}
+
+void SD2SnesDevice::readPacket(const QByteArray& packetData)
+{
+    Q_ASSERT(packetData.size() == blockSize);
+
     static QByteArray   responseBlock = QByteArray();
     static bool         firstBlock = true;
     static int          dataSent = 0;
 
-    qint64 bytesToRead = m_port.bytesAvailable();
-    bytesReceived += bytesToRead;
-    dataRead = m_port.readAll();
-    dataReceived.append(dataRead);
+    bytesReceived += packetData.size();
+    dataRead = packetData;
+    dataReceived.append(packetData);
 
-    sDebug() << "SP Received: " << bytesToRead << " (" << bytesReceived << ")";
+    //sDebug() << "<<" << packetData;
+    sDebug() << "SP Received: " << packetData.size() << " (" << bytesReceived << ")";
 
     /* If we've received over 512 bytes and NORESP is not set, parse response header */
     if(responseBlock.isEmpty() && dataReceived.size() >= 512 && (m_commandFlags & SD2Snes::server_flags::NORESP) == 0)
@@ -284,7 +292,12 @@ void SD2SnesDevice::writeData(QByteArray data)
 
     auto written = m_port.write(data);
     sDebug() << "Written : " << written << " bytes";
+#ifdef Q_OS_LINUX
+    // Prevents a QSerialPort::ResourceError "Resource temporarily unavailable" error when uploading files to sd2snes.
+    m_port.waitForBytesWritten();
+#else
     m_port.flush();
+#endif
     if (m_currentCommand == SD2Snes::VPUT)
     {
         sDebug() << "Putsize: " << m_putSize << " sendSize:" << sendSize;
