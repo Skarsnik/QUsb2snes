@@ -177,6 +177,10 @@ void AppUi::init()
     appsMenu->addSeparator();
     appsMenu->addAction(QIcon(":/img/multitroid.png"), "Multitroid");
     appsMenu->addAction(QIcon(":/img/BK small.png"), "SMZ3 Multiworld");
+
+    connect(qApp, &QCoreApplication::aboutToQuit, [=]() {
+      sysTray->hide();
+    });
 }
 
 
