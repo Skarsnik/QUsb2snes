@@ -21,6 +21,13 @@ Copyright 2016 Sylvain "Skarsnik" Colinet
 #include <string.h>
 #include <stdlib.h>
 
+char rommapping_to_name[4][8] = {
+        "LoROM",
+        "HiROM",
+        "ExLoROM",
+        "ExHiROM"
+};
+
 char *rommapping_error_text;
 
 int	rommapping_snes_to_pc(const unsigned int snes_addr, enum rom_type rom_type, bool header)

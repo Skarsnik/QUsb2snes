@@ -56,13 +56,14 @@ void    LuaBridgeDevice::getRomMapping()
         {
             data.append(static_cast<char>(v.toInt()));
         }
-        sDebug() << data;
+        sDebug() << data.toHex();
+        //sDebug() << data.at(21);
         struct rom_infos* rInfos = get_rom_info(data.data());
         gameName = rInfos->title;
-        romMapping = ((rInfos->type == LoROM) ? LoROM : HiROM); // Screw ExHiROM
+        romMapping = rInfos->type;
         free(rInfos);
     }
-    sDebug() << "ROM is " << ((romMapping == LoROM) ? "LoROM" : "HiROM");
+    sDebug() << "ROM is " << rommapping_to_name[romMapping] << romMapping;
 }
 
 /*
@@ -97,13 +98,58 @@ QPair<QByteArray, unsigned int>    LuaBridgeDevice::getBizHawkAddress(unsigned i
     return toret;
 }
 
+/* This is from asar code from https://github.com/RPGHacker/asar/blob/master/src/asar/libsmw.h#L125
+*/
+
+static int asarpctosnes(unsigned int addr2, int mapper)
+{
+    int addr = static_cast<unsigned int>(addr2);
+    if (mapper==LoROM)
+    {
+        if (addr>=0x400000) return -1;
+        addr=((addr<<1)&0x7F0000)|(addr&0x7FFF)|0x8000;
+        return addr|0x800000;
+    }
+    if (mapper==HiROM)
+    {
+        if (addr>=0x400000) return -1;
+        return addr|0xC00000;
+    }
+    if (mapper == ExLoROM)
+    {
+        if (addr>=0x800000) return -1;
+        if (addr&0x400000)
+        {
+            addr-=0x400000;
+            addr=((addr<<1)&0x7F0000)|(addr&0x7FFF)|0x8000;
+            return addr;
+        }
+        else
+        {
+            addr=((addr<<1)&0x7F0000)|(addr&0x7FFF)|0x8000;
+            return addr|0x800000;
+        }
+    }
+    if (mapper == ExHiROM)
+    {
+        if (addr>=0x800000) return -1;
+        if (addr&0x400000) return addr;
+        return addr|0xC00000;
+    }
+}
+
 unsigned int LuaBridgeDevice::getSnes9xAddress(unsigned int addr)
 {
     if (addr >= 0xF50000 && addr < 0xF70000)
         return addr - 0xF50000 + 0x7E0000;
     if (addr >= 0xE00000)
-        return static_cast<unsigned int>(rommapping_sram_pc_to_snes(addr - 0xE00000, romMapping, false));
-    return static_cast<unsigned int>(rommapping_pc_to_snes(addr, romMapping, false));
+    {
+        enum rom_type mapping = romMapping;
+        if (mapping == ExHiROM)
+            mapping = HiROM;
+        return static_cast<unsigned int>(rommapping_sram_pc_to_snes(addr - 0xE00000, mapping, false));
+    }
+    return static_cast<unsigned int>(asarpctosnes(addr, romMapping));
 }
 
 void LuaBridgeDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
@@ -181,7 +227,7 @@ void LuaBridgeDevice::writeData(QByteArray data)
 
 QString LuaBridgeDevice::name() const
 {
-    return m_name;
+   return "Emu - " + m_name;
 }
 
 bool LuaBridgeDevice::hasFileCommands()
@@ -199,7 +245,7 @@ USB2SnesInfo LuaBridgeDevice::parseInfo(const QByteArray &data)
     Q_UNUSED(data)
     USB2SnesInfo info;
     info.romPlaying = gameName;
-    info.version = "1.0.0";
+    info.version = "1.1.0";
     if (bizhawk)
         info.deviceName = "BizHawk";
     else
