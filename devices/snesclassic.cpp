@@ -72,12 +72,7 @@ void SNESClassic::onSocketReadReady()
         }
         if (getData.size() == static_cast<int>(getSize))
         {
-            /*if (!requestInfo)
-                emit getDataReceived(getData);
-            else {
-                dataRead = getData;
-                requestInfo = false;
-            }*/
+            emit getDataReceived(getData);
             getData.clear();
             getSize = 0;
             cmdWasGet = false;

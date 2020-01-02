@@ -277,11 +277,8 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
     auto newAddr = addr_to_addr(addr);
     if (newAddr == -1)
     {
-        emit getDataReceived(QByteArray(static_cast<int>(size), 0));
-        //m_timer->start();
-        sDebug() << "GetAddress finished";
-        m_state = READY;
-        emit commandFinished();
+        m_state = CLOSED;
+        emit protocolError();
         return ;
     }
 

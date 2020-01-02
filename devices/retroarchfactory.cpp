@@ -111,11 +111,13 @@ QStringList RetroArchFactory::listDevices()
 
 bool RetroArchFactory::deleteDevice(ADevice *dev)
 {
+    sDebug() << "Cleaning RetroArch device" << (retroDev != nullptr);
     Q_UNUSED(dev);
     if (retroDev == nullptr)
         return false;
     retroDev->deleteLater();
     retroDev = nullptr;
+    m_devices.clear();
     return true;
 }
 
