@@ -49,7 +49,10 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     // Main menu creation is here
     menu = new QMenu();
     menu->addAction(QIcon(":/img/icon64x64.ico"), "QUsb2Snes v" + QApplication::applicationVersion());
-    menu->addAction("Happy Hearth's Warming");
+    connect(menu->addAction("Don't donate to PCF, give me your money"), &QAction::triggered, [=]()
+    {
+        QDesktopServices::openUrl(QUrl("https://github.com/sponsors/Skarsnik"));
+    });
     menu->addSeparator();
 
     deviceMenu = menu->addMenu(QIcon(":/img/deviceicon.svg"), tr("Devices", "Menu entry"));
