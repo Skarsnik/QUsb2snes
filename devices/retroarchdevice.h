@@ -13,7 +13,8 @@ class RetroArchDevice : public ADevice
 {
     Q_OBJECT
 public:
-    RetroArchDevice(QUdpSocket* sock, QString raVersion, QString gameName, int bSize, bool snesMemoryMap, bool snesLoromMap);
+    RetroArchDevice(QUdpSocket* sock, QString raVersion, int bSize);
+    RetroArchDevice(QUdpSocket* sock, QString raVersion, int bSize, QString gameName, enum rom_type romType);
 
     // ADevice interface
 public:
@@ -61,8 +62,8 @@ private:
     unsigned int sizeWritten;
     bool         checkingRetroarch;
     bool         checkingInfo;
-    bool         hasSnesMemoryMap;
-    bool         hasSnesLoromMap;
+    bool         hasRomAccess;
+    enum rom_type   romType;
     QByteArray   checkReturnedValue;
     rom_infos*   c_rom_infos;
     void         read_core_ram(unsigned int addr, unsigned int size);
@@ -70,6 +71,7 @@ private:
     unsigned int blockSize;
     QString      m_uuid;
 
+    void    create(QUdpSocket *sock, QString raVersion, int bSize);
 signals:
     void    checkReturned();
 };

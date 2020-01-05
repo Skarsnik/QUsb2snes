@@ -51,58 +51,90 @@ QStringList RetroArchFactory::listDevices()
         if(m_sock->hasPendingDatagrams())
         {
             raVersion = m_sock->readAll().trimmed();
+            if (raVersion == "")
+            {
+                m_attachError = tr("RetroArch - Probably not running");
+                return toret;
+            }
             sDebug() << "Received RA version : " << raVersion;
         } else {
             m_attachError = tr("RetroArch - Did not get a VERSION response.");
             return toret;
         }
     }
-    // Should be loRom rom address
-    auto loRomHeaderAddr = QByteArray::number(0x7FC0 + (0x8000 * ((0x7FC0 + 0x8000) / 0x8000)));
-    // but let's check HiROM
+    // Check is a game is running
+    sDebug() << "Checking if something is running (read core 0 1)";
+    m_sock->write("READ_CORE_RAM 0 1");
+    m_sock->waitForReadyRead(100);
+    QByteArray data;
+    if (!m_sock->hasPendingDatagrams())
+    {
+        m_attachError = tr("RetroArch - No game is running or core does not support memory read.");
+        return toret;
+    }
+    data = m_sock->readAll();
+    sDebug() << "<<" << data;
+    if (data == "READ_CORE_RAM 0 -1\n")
+    {
+        m_attachError = tr("RetroArch - No game is running or core does not support memory read.");
+        return toret;
+    }
+
+    /*
+     * alttp (lorom), sm (hirom), smz3 combo (exhirom)
+     * Reading FFC0
+     * Snes9x core
+     *  loRom : all zeros
+     *  hiRom : all 55
+     *  exHiRom : all 55
+     * BSnes-mercury
+     *  loRom : correct data
+     *  hiRom : correct data
+     *  exHirom : incorrect data
+     * --
+     * Reading 40FFC0
+     * Snes9x core
+     *  loRom : -1
+     *  hiRom : -1
+     *  exHiRom : -1
+     * BSnes-mercury
+     *  loRom : correct data
+     *  hiRom : correct data
+     *  exHirom : correct data
+     * */
+    sDebug() << "Trying to get rom header";
     m_sock->write(QByteArray("READ_CORE_RAM 40FFC0 32"));
     m_sock->waitForReadyRead(100);
-    //TODO: it's hard to tell what we can read/write, RA UDP support is a nightmare :(
     if (m_sock->hasPendingDatagrams())
     {
-        QByteArray data = m_sock->readAll();
-        if (data != "-1" && data != "")
+        data = m_sock->readAll();
+        sDebug() << "<<" << data;
+        QList<QByteArray> tList = data.trimmed().split(' ');
+
+        if(!globalSettings->contains("RetroArchBlockSize"))
         {
+            globalSettings->setValue("RetroArchBlockSize", 78);
+        }
 
-            sDebug() << data;
-            /* Detect retroarch core capabilities, and SNES header info if possible */
-            QList<QByteArray> tList = data.trimmed().split(' ');
-            bool hasSnesMemoryMap = false;
-            bool hasSnesLoromMap = false;
+        auto retroBlockSize = globalSettings->value("RetroArchBlockSize").toInt();
+        if (retroBlockSize == 78 && QVersionNumber::fromString(raVersion) >= QVersionNumber::fromString("1.7.7"))
+            retroBlockSize = 2000;
+        // This is likely snes9x core
+        if (tList.at(2) == "-1")
+        {
+            retroDev = new RetroArchDevice(m_sock, raVersion, retroBlockSize);
+        } else {
             QString gameName;
-
-            if(tList.at(2) == "-1")
-            {
-                hasSnesMemoryMap = false;
-            } else {
-                tList.removeFirst();
-                tList.removeFirst();
-                struct rom_infos* rInfos = get_rom_info(QByteArray::fromHex(tList.join()).data());
-                sDebug() << rInfos->title;
-                gameName = QString(rInfos->title);
-                hasSnesLoromMap = rInfos->type == LoROM;
-                hasSnesMemoryMap = true;
-                free(rInfos);
-            }
-
-            if(!globalSettings->contains("RetroArchBlockSize"))
-            {
-                globalSettings->setValue("RetroArchBlockSize", 78);
-            }
-
-            auto retroBlockSize = globalSettings->value("RetroArchBlockSize").toInt();
-            if (retroBlockSize == 78 && QVersionNumber::fromString(raVersion) >= QVersionNumber::fromString("1.7.7"))
-                retroBlockSize = 2000;
-            retroDev = new RetroArchDevice(m_sock, raVersion, gameName, retroBlockSize, hasSnesMemoryMap, hasSnesLoromMap);
+            tList.removeFirst();
+            tList.removeFirst();
+            struct rom_infos* rInfos = get_rom_info(QByteArray::fromHex(tList.join()).data());
+            sDebug() << rInfos->title;
+            gameName = QString(rInfos->title);
+            retroDev = new RetroArchDevice(m_sock, raVersion, retroBlockSize, gameName, rInfos->type);
+            free(rInfos);
+        }
             m_devices.append(retroDev);
             return toret << retroDev->name();
-        }
-        m_attachError = QString(tr("RetroArch %1 - Current core does not support memory read.")).arg(raVersion);
     } else {
         m_attachError = tr("RetroArch - Did not get a response to READ_CORE_RAM.");
     }

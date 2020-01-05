@@ -8,7 +8,21 @@
 Q_LOGGING_CATEGORY(log_retroarch, "RETROARCH")
 #define sDebug() qCDebug(log_retroarch)
 
-RetroArchDevice::RetroArchDevice(QUdpSocket* sock, QString raVersion, QString gameName, int bSize, bool snesMemoryMap, bool snesLoromMap)
+RetroArchDevice::RetroArchDevice(QUdpSocket *sock, QString raVersion, int bSize)
+{
+    create(sock, raVersion, bSize);
+    hasRomAccess = false;
+}
+
+RetroArchDevice::RetroArchDevice(QUdpSocket *sock, QString raVersion, int bSize, QString gameName, rom_type pRomType)
+{
+    create(sock, raVersion, bSize);
+    m_gameName = gameName;
+    romType = pRomType;
+    hasRomAccess = true;
+}
+
+void    RetroArchDevice::create(QUdpSocket* sock, QString raVersion, int bSize)
 {
     m_sock = sock;
     m_state = READY;
@@ -21,11 +35,8 @@ RetroArchDevice::RetroArchDevice(QUdpSocket* sock, QString raVersion, QString ga
     connect(m_sock, SIGNAL(readyRead()), this, SLOT(onUdpReadyRead()));
     bigGet = false;
     checkingRetroarch = false;
-    hasSnesMemoryMap = snesMemoryMap;
-    hasSnesLoromMap = snesLoromMap;
     checkingInfo = false;
     m_raVersion = raVersion;
-    m_gameName = gameName;
     blockSize = static_cast<unsigned int>(bSize);
     m_uuid = QUuid::createUuid().toString(QUuid::Id128).left(24);
     c_rom_infos = nullptr;
@@ -46,18 +57,17 @@ USB2SnesInfo RetroArchDevice::parseInfo(const QByteArray &data)
     if (c_rom_infos != nullptr)
     {
         info.romPlaying = c_rom_infos->title;
-        hasSnesLoromMap = c_rom_infos->type == LoROM;
     } else {
         info.romPlaying = "CAN'T READ ROM INFO";
     }
     info.version = m_raVersion;
-    if(!hasSnesMemoryMap)
+    if(!hasRomAccess)
     {
         info.flags << getFlagString(USB2SnesWS::NO_ROM_READ);
     } else {
         info.flags << "SNES_MEMORY_MAP";
 
-        if(hasSnesLoromMap)
+        if(romType == LoROM)
         {
             info.flags << "SNES_LOROM";
         } else {
@@ -102,11 +112,10 @@ void RetroArchDevice::onUdpReadyRead()
     if (checkingInfo)
     {
         checkingInfo = false;
-        //TODO emit an error
         if(tList.at(2) == "-1")
         {
             c_rom_infos = nullptr;
-            hasSnesMemoryMap = false;
+            hasRomAccess = false;
             m_state = READY;
             emit commandFinished();
             return ;
@@ -115,8 +124,8 @@ void RetroArchDevice::onUdpReadyRead()
                 free(c_rom_infos);
             tList.removeFirst();tList.removeFirst();
             c_rom_infos = get_rom_info(QByteArray::fromHex(tList.join()));
-            hasSnesMemoryMap = true;
-            hasSnesLoromMap = c_rom_infos->type == LoROM;
+            hasRomAccess = true;
+            romType = c_rom_infos->type;
             m_state = READY;
             emit commandFinished();
             return ;
@@ -153,7 +162,7 @@ void RetroArchDevice::onUdpReadyRead()
 
             addrBigGet += sizePrevBigGet;
 
-            if(hasSnesLoromMap && (addrBigGet < 0x700000 || addrBigGet >= 0x800000))
+            /*if(hasSnesLoromMap && (addrBigGet < 0x700000 || addrBigGet >= 0x800000))
             {
                 if(((addrBigGet&0xFFFF) + sizePrevBigGet) > 0xFFFF)
                 {
@@ -164,7 +173,7 @@ void RetroArchDevice::onUdpReadyRead()
                 {
                     mSize = 0x10000 - (addrBigGet&0xFFFF);
                 }
-            }
+            }*/
 
             sizePrevBigGet = mSize;
             sizeRequested += mSize;
@@ -227,43 +236,43 @@ void RetroArchDevice::putFile(QByteArray name, unsigned int size)
     Q_UNUSED(size);
 }
 
-int RetroArchDevice::addr_to_addr(unsigned int addr)
+// ref is https://github.com/tewtal/pusb2snes/blob/master/src/main/python/devices/retroarch.py
+
+int RetroArchDevice::addr_to_addr(unsigned int addr2)
 {
-    if(!hasSnesMemoryMap)
+    int addr = static_cast<int>(addr2);
+    // Rom access
+    if (addr < 0xE00000)
     {
-        if (addr >= 0xF50000 && addr <= 0xF70000)
-            addr -= 0xF50000;
-        else {
-            if (addr >= 0xE00000)
-                addr = addr - 0xE00000 + 0x20000;
-            else
-                return -1;
-        }
-    } else {
-        if(addr >= 0xF50000 && addr <= 0xF70000)
+        if (!hasRomAccess)
+            return -1;
+        if (romType == LoROM)
+            return 0x800000 + (addr + (0x8000 * (addr + 0x8000) / 0x8000));
+        if (romType == HiROM)
         {
-            addr -= 0x770000;
-        }
-        else if(addr >= 0xE00000 && addr <= 0xE10000)
-        {
-            if(hasSnesLoromMap)
-            {
-                addr -= 0x700000;
-            } else {
-                addr -= 0x3FA000;
-            }
-        }
-        else if(addr < 0x700000)
-        {
-            if(hasSnesLoromMap)
-            {
-                addr = (addr + (0x8000 * ((addr+0x8000)/0x8000)));
-            } else {
-                addr = 0x400000;
-            }
+            if (addr < 0x400000)
+                return addr + 0xC00000;
+            else //exhirom
+                return addr + 0x400000;
         }
     }
-    return static_cast<int>(addr);
+    // WRAM access is pretty simple
+    if (addr >= 0xF50000 && addr <= 0xF70000)
+    {
+        if (hasRomAccess) {
+            return addr - 0xF50000 + 0x7E0000;
+        } else {
+            return addr - 0xF50000;
+        }
+    }
+    if (addr >= 0xE00000)
+    {
+        if (!hasRomAccess)
+            return addr - 0xE00000 + 0x20000;
+        if (romType == LoROM)
+            return addr - 0xE00000 + 0x700000;
+        return lorom_sram_pc_to_snes(addr2 - 0xE00000);
+    }
 }
 
 void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
@@ -296,7 +305,7 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
         addrBigGet = 0;
     }
 
-    if (hasSnesLoromMap && (newAddr < 0x700000 || newAddr >= 0x800000) && ((newAddr&0xFFFF) >= 0x8000))
+    /*if (hasSnesLoromMap && (newAddr < 0x700000 || newAddr >= 0x800000) && ((newAddr&0xFFFF) >= 0x8000))
     {
         if(((static_cast<unsigned int>(newAddr)+size)&0xFFFF) < 0x8000)
         {
@@ -307,7 +316,7 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
             sizePrevBigGet = size;
             addrBigGet = static_cast<unsigned int>(newAddr);
         }
-    }
+    }*/
 
     read_core_ram(static_cast<unsigned int>(newAddr), size);
 }
