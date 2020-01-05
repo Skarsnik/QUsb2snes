@@ -75,15 +75,12 @@ if not event then
 
 local socket = require("socket.core")
 
-
-print(memory.getmemorydomainlist())
-
 local connection
 local host = '127.0.0.1'
 local port = 65398
 local connected = false
 local stopped = false
-local version = ""
+local version = "4"
 if is_snes9x then
   version = 1
 else
@@ -142,7 +139,7 @@ local main = function()
 
     if not connected then
         print('Multibridge LUA r' .. version)
-        print('Connecting to Multibridge at ' .. host .. ':' .. port)
+        print('Connecting to QUsb2Snes at ' .. host .. ':' .. port)
         connection, err = socket:tcp()
         if err ~= nil then
             emu.print(err)
@@ -154,13 +151,13 @@ local main = function()
             print("Error while connecting: " .. errorMessage)
             stopped = true
             connected = false
-            print("Please press \"Restart\" to try to reconnect to Multibridge, make sure its running")
+            print("Please press \"Restart\" to try to reconnect to QUsb2Snes, make sure it's running and the Lua bridge device is activated")
             return
         end
 
         connection:settimeout(0)
         connected = true
-        print('Connected to Multibridge')
+        print('Connected to QUsb2Snes')
         return
     end
     local s, status = connection:receive('*l')
@@ -168,7 +165,7 @@ local main = function()
         onMessage(s)
     end
     if status == 'closed' then
-        print('Connection to Multibridge is closed')
+        print('Connection to QUsb2Snes is closed')
         connection:close()
         connected = false
         return
