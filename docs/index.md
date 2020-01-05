@@ -98,7 +98,7 @@ Snes9x-rr 1.60 should replace the Snex9x multitroid, get it at https://github.co
 
 Multitroid provide a patched version of snes9x with a lua script that allow for external software to communicate with it. Get the emulator on http://multitroid.com/. 
 
-Activate the Lua bridge on the device menu of QUsb2Snes then run the multibridge.lua scripts on Snes9x.
+Activate the Lua bridge on the device menu of QUsb2Snes then run the multibridge.lua script from the Bizhawk folder on Snes9x.
 
 ## BizHawk 2.3.1 (bsnes core recommanded)
 
