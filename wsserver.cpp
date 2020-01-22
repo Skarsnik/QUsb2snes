@@ -61,7 +61,7 @@ void WSServer::onNewConnection()
     connect(newSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onClientError(QAbstractSocket::SocketError)));
 
     WSInfos wi;
-    wi.name = "Websocket " + QString::number((size_t)ws, 16);
+    wi.name = "Websocket " + QString::number((size_t)newSocket, 16);
     wi.attached = false;
     wi.attachedTo = nullptr;
     wi.commandState = NOCOMMAND;
