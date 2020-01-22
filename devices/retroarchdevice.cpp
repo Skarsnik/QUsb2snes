@@ -369,6 +369,7 @@ void RetroArchDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, 
 
 void RetroArchDevice::infoCommand()
 {
+    m_state = BUSY;
     sDebug() << "Info command: Checking core memory map status";
     auto tmpData = "READ_CORE_RAM 40FFC0 32";
     sDebug() << ">> " << tmpData;
