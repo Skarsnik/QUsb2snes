@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QSettings>
+#include "myfilesystemmodel.h"
 #include "usb2snes.h"
 #include "usb2snesfilemodel.h"
 
@@ -27,7 +28,7 @@ public:
 
 private slots:
 
-    void on_localFilesListView_doubleClicked(const QModelIndex &index);
+    void on_localFilesTreeView_doubleClicked(const QModelIndex &index);
 
     void    onUsb2SnesStateChanged();
 
@@ -54,6 +55,10 @@ private slots:
 
     void on_patchButton_clicked();
 
+    void on_newDirButton_clicked();
+
+    void on_backToolButton_clicked();
+
 private:
     State               m_state;
     Ui::QFile2SnesW     *ui;
@@ -61,12 +66,14 @@ private:
     Usb2Snes*           usb2snes;
     Usb2SnesFileModel*  usb2snesModel;
     bool                started;
+    MyFileSystemModel*  localFileModel;
 
     void    setLFilepath(QString path);
     bool    listAndAttach();
     void refreshStatus();
 
     // QWidget interface
+    void updateLocalFileView(QString path);
 protected:
     void closeEvent(QCloseEvent *event);
 };

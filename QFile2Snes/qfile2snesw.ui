@@ -134,14 +134,25 @@
          </layout>
         </item>
         <item>
-         <widget class="QLabel" name="currentPathLabel">
-          <property name="text">
-           <string>Current Path</string>
-          </property>
-         </widget>
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <widget class="QToolButton" name="backToolButton">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="currentPathLabel">
+            <property name="text">
+             <string>Current Path</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
         <item>
-         <widget class="QListView" name="localFilesListView">
+         <widget class="QTreeView" name="localFilesTreeView">
           <property name="editTriggers">
            <set>QAbstractItemView::NoEditTriggers</set>
           </property>
@@ -153,6 +164,15 @@
           </property>
           <property name="dragDropMode">
            <enum>QAbstractItemView::DragDrop</enum>
+          </property>
+          <property name="rootIsDecorated">
+           <bool>false</bool>
+          </property>
+          <property name="itemsExpandable">
+           <bool>false</bool>
+          </property>
+          <property name="sortingEnabled">
+           <bool>true</bool>
           </property>
          </widget>
         </item>

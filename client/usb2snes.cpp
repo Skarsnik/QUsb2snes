@@ -341,6 +341,11 @@ void Usb2Snes::boot(QString path)
     sendRequest("Boot", QStringList() << path);
 }
 
+void Usb2Snes::mkdir(QString dirPath)
+{
+    sendRequest("MakeDir", QStringList() << dirPath);
+}
+
 void Usb2Snes::reset()
 {
     sendRequest("Reset");

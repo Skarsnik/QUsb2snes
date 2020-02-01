@@ -115,6 +115,8 @@ bool Usb2SnesFileModel::dropMimeData(const QMimeData *data, Qt::DropAction actio
     qDebug() << data->urls().at(0);
     QFile fi(data->urls().at(0).toLocalFile());
     QFileInfo fileInfo(fi);
+    if (fileInfo.isDir())
+        return false;
 
     fi.open(QIODevice::ReadOnly);
     QByteArray fileData = fi.readAll();

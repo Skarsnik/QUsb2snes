@@ -88,6 +88,7 @@ public:
     void                    renameFile(QString oldPath, QString newPath);
     void                    deleteFile(QString fileName);
     void                    boot(QString path);
+    void                    mkdir(QString dirPath);
     void                    reset();
     void                    menu();
     State                   state();
