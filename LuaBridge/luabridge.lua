@@ -138,7 +138,7 @@ local main = function()
     end
 
     if not connected then
-        print('Multibridge LUA r' .. version)
+        print('LuaBridge r' .. version)
         print('Connecting to QUsb2Snes at ' .. host .. ':' .. port)
         connection, err = socket:tcp()
         if err ~= nil then

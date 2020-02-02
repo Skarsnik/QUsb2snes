@@ -72,7 +72,7 @@ void AppUi::init()
     retroarchAction->setCheckable(true);
     connect(retroarchAction, SIGNAL(triggered(bool)), this, SLOT(onRetroarchTriggered(bool)));
 
-    luaBridgeAction = new QAction(QIcon(":/img/icone-snes9x.gif"), tr("Enable Lua bridge (snes9x-rr)"));
+    luaBridgeAction = new QAction(QIcon(":/img/icone-snes9x.gif"), tr("Enable Lua bridge (Snes9x-rr/BizHawk)"));
     luaBridgeAction->setCheckable(true);
     connect(luaBridgeAction, SIGNAL(triggered(bool)), this, SLOT(onLuaBridgeTriggered(bool)));
 

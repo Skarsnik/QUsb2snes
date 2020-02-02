@@ -21,16 +21,19 @@ Otherwise, download the latest release of [QUsb2Snes](https://github.com/Skarsni
 
 You need to install the last Usb2Snes firmware by Redguyyy (https://github.com/RedGuyyyy/sd2snes/releases/) . Just follows the instruction provided. Don't start usb2snes.exe since QUsb2snes do the same thing that the original software. Your sd2snes device should show up on the Devices menu when connected.
 
-## SNES9x multitroid
+## SNES9x Rerecording
 
-Multitroid provide a patched version of Snes9x with a lua script that allow for external software to communicate with it. Get the emulator on http://multitroid.com/ or use snes9x-rr 1.60 . Activate the Lua bridge on the device menu of QUsb2Snes then run the multibridge.lua script from the Bizhawk folder on Snes9x (from the Lua console window)
+Snes9x-rr allows to run Lua scripts in the emulator, that allows use to connect to QUsb2snes. You can use the Multitroid version of Snes9x-rr (http://multitroid.com/) or use Snes9x-rr 1.60 https://github.com/gocha/snes9x-rr/releases. Older version of Snes9x-rr does not allow to write to ROM from Lua so some application will not work.
+
+Activate the `Lua bridge` on the device menu of QUsb2Snes.
+Then run the luabridge.lua script from the LuaBridge folder from the Lua console window in Snes9x
 
 ## BizHawk 2.3.1 (bsnes core recommanded)
 
-In the device menu of QUsb2Snes activate the `lua bridge`
+In the device menu of QUsb2Snes activate the `Lua bridge`
 
 You will need to change the Lua support on the emulator. Go into the `Config -> Customize` menu then goes into the Advanced tab and select `Lua+LuaInterface` at the bottom in the Lua core part. Restart the emulator.
-In the Lua directory of BizHawk create a `lua_bridge` directory (or a similar name) then copy the content of the BizHawk directory from QUsb2Snes (the lua file and the dll file).
+In the Lua directory of BizHawk create a `lua_bridge` directory (or a similar name) then copy the content of the LuaBridge directory from QUsb2Snes (the lua file and the dll file).
 Run your game and then in the `Tools` menu start the `Lua console` click on the folder icon to load the `multibridge.lua` file. You need to close the Lua console if you want to disconnect properly.
 
 ## RetroArch with Snes core
@@ -44,7 +47,7 @@ You can connect to a remote RetroArch by adding a `RetroArchHost=YourOwnHost` in
 
 ## SNES classic (called also SNES mini)
 
-Only tested with Super Metroid.
+Only tested with Super Metroid. This also only work with the native emulator (called canoe), if you use RetroArch on your snes classic, please refer to the RetroArch section.
 
 Enable the SNES classic support on the device menu.
 

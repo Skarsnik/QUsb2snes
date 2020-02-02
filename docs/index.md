@@ -92,13 +92,12 @@ If you came from usb2snes.com, the firmware should be provided directly on the b
 
 You need to install the last Usb2Snes firmware by Redguy (https://github.com/RedGuyyyy/sd2snes/releases/tag/usb2snes_v11) . Just follows the instruction provided. Don't start usb2snes.exe since QUsb2snes do the same thing that the original software. Your sd2snes device should show up on the Devices menu when connected.
 
-## SNES9x multitroid
+## SNES9x Rerecording
 
-Snes9x-rr 1.60 should replace the Snex9x multitroid, get it at https://github.com/gocha/snes9x-rr/releases/tag/1.60
+Snes9x-rr allows to run Lua scripts in the emulator, that allows use to connect to QUsb2snes. You can use the Multitroid version of Snes9x-rr (http://multitroid.com/) or use Snes9x-rr 1.60 https://github.com/gocha/snes9x-rr/releases. Older version of Snes9x-rr does not allow to write to ROM from Lua so some application will not work.
 
-Multitroid provide a patched version of snes9x with a lua script that allow for external software to communicate with it. Get the emulator on http://multitroid.com/. 
-
-Activate the Lua bridge on the device menu of QUsb2Snes then run the multibridge.lua script from the Bizhawk folder on Snes9x.
+Activate the `Lua bridge` on the device menu of QUsb2Snes.
+Then run the luabridge.lua script from the LuaBridge folder from the Lua console window in Snes9x
 
 ## BizHawk 2.3.1 (bsnes core recommanded)
 
@@ -119,10 +118,16 @@ You can connect to a remote RetroArch by adding a RetroArchHost=YourOwnHost in t
 
 ## SNES classic (called also SNES mini)
 
-Mainly tested with Super Metroid.
+Only tested with Super Metroid. This also only work with the native emulator (called canoe), if you use RetroArch on your snes classic, please refer to the RetroArch section.
 
 Enable the SNES classic support on the device menu.
 
-You need to 'hack' your SNES classic with the Hakchi2 CE version (https://github.com/TeamShinkansen/hakchi2/releases/) then remove the covershell mod (as explained in https://github.com/TeamShinkansen/hakchi2/releases/tag/v3.4.0). Install the `serverstuff` mod provided by QUsb2snes: copy the `serverstuff.hmod` to the user_mods directory on Hakchi2CE, then install the mod with Hakchi2 Start the game and check if the SNES classic appear on the Devices menu, it should display SNES classic : no client connected. If not, try restarting the game.
+You need to 'hack' your SNES classic with the Hakchi2 CE version (https://github.com/TeamShinkansen/hakchi2/releases/) then remove the covershell mod if needed (as explained in https://github.com/TeamShinkansen/hakchi2/releases/tag/v3.4.0). 
 
-It will not work with the 'normal' hakchi2 version as the Hakchi2 CE provide a more stable way to access the SNES Classic.
+Install the `serverstuff` mod provided by QUsb2snes: copy the `serverstuff.hmod` to the `user_mods` directory on Hakchi2, then install the mod with Hakchi2
+
+Start the game and check if the SNES classic appear on the Devices menu, it should display something like `SNES classic : no client connected`. If not, try restarting the game.
+
+It will not work with the 'normal' Hakchi2 version as the Hakchi2 CE provide a more stable way to access the SNES Classic.
+
+If for some reason your SNES classic does not have the expected IP address (connected via wifi or something) you can add a `SNESClassicIP=myip` in the config.ini file.
