@@ -23,6 +23,7 @@ QProgressBar* pb;
 QLabel* label;
 QList<QNetworkRequest> listReq;
 QStringList exeToDL = {"QUsb2Snes.exe", "QFile2Snes.exe"};
+QString newQUsbVersion;
 
 
 
@@ -30,7 +31,7 @@ void    startQUsb2Snes()
 {
     qDebug() << "Starting QUsb2Snes";
     label->setText(QObject::tr("Starting QUsb2Snes"));
-    QProcess::startDetached(qApp->applicationDirPath() + "/QUsb2Snes.exe");
+    QProcess::startDetached(qApp->applicationDirPath() + "/QUsb2Snes.exe", QStringList() << "-updated" << newQUsbVersion);
     qDebug() << "starting exit";
     QTimer::singleShot(1000, [=] {qApp->exit(0);});
 }
@@ -45,6 +46,7 @@ void    requestFinished(QNetworkReply* reply)
         QJsonDocument doc = QJsonDocument::fromJson(data);
         QJsonArray jArr = doc.array();
         QJsonArray assets = jArr.at(0).toObject().value("assets").toArray();
+        newQUsbVersion = jArr.at(0).toObject().value("tag_name").toString();
         foreach(const QJsonValue& value, assets)
         {
             if (value.toObject().value("name").toString() == "QUsb2Snes.exe")
