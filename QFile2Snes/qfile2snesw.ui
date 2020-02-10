@@ -181,9 +181,9 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="sd2snesLabel">
           <property name="text">
-           <string>SD2Snes files</string>
+           <string>SD2Snes directory:</string>
           </property>
          </widget>
         </item>

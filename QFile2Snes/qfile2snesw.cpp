@@ -161,6 +161,7 @@ void QFile2SnesW::on_usb2snesListView_doubleClicked(const QModelIndex &index)
         newPath.chop(1);
     }
     usb2snesModel->setPath(newPath);
+    ui->sd2snesLabel->setText(QString(tr("SD2Snes directory: %1")).arg(newPath));
     ui->usb2snesListView->clearSelection();
     ui->usb2snesListView->selectionModel()->clearSelection();
     ui->renameButton->setEnabled(false);
@@ -297,6 +298,7 @@ void QFile2SnesW::on_newDirButton_clicked()
     {
         usb2snesModel->setPath(usb2snesModel->currentDir());
         usb2snes->mkdir(usb2snesModel->currentDir() + "/" + text);
+        usb2snesModel->setPath(usb2snesModel->currentDir());
     }
 }
 
