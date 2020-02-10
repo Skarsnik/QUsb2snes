@@ -69,5 +69,6 @@ QUsb2snes project follow the GPL version 3 licence, you can find the full versio
 
 Flat style icons are from google https://material.io/tools/icons/?style=baseline and under Apache Licence 2.0
 Snes9x and RetroArch icon are from their respective project
+QUsb2Snes icon is from TrenteR_TR on FrankerFaceZ with changed contrast/light.
 Most pony icons are from FrankerFaceZ
 
