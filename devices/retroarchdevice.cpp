@@ -385,7 +385,7 @@ void RetroArchDevice::writeData(QByteArray data)
     {
         sDebug() << ">>" << dataToWrite;
         m_sock->write(dataToWrite);
-        m_sock->waitForBytesWritten();
+        m_sock->waitForBytesWritten(20);
         sDebug() << "Write finished";
         m_state = READY;
         emit commandFinished();

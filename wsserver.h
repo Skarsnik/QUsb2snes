@@ -73,6 +73,9 @@ private:
         ClientCommandState      commandState;
         QList<unsigned int>     pendingPutSizes;
         QList<QByteArray>       pendingPutDatas;
+        // This is to handle getting out a Putaddr out of queue
+        // before receiving data for it
+        QList<MRequest*>        pendingPutReqWithNoData;
         QByteArray              recvData;
         QByteArray              ipsData;
         unsigned int            ipsSize;
