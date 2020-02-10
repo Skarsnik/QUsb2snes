@@ -63,13 +63,17 @@ artifacts:
     name: package
   - path: release\QUsb2Snes.exe
     name: executable
+  - path: release\QFile2Snes.exe
+    name: qfile2snes
+  - path: release\WinUpdater.exe
+    name: winupdater
 
 deploy:
   description: 'Automated deployment'
   provider: GitHub
   auth_token:
     secure: JF5Ki0Bz+mvMrqw5k0u7273c8GsUAqMwe/P7ts5PKLR+G7InkGqkvTqlAZb6GDGv
-  artifact: release\QUsb2Snes.exe, QUsb2Snes-$(APPVEYOR_REPO_TAG_NAME).7z
+  artifact: release\QUsb2Snes.exe, release\QFile2Snes.exe, release\WinUpdater.exe, QUsb2Snes-$(APPVEYOR_REPO_TAG_NAME).7z
   draft: true
   prerelease: false
   on:

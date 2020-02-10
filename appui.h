@@ -10,14 +10,18 @@
 #include <QObject>
 #include <QSettings>
 #include <QSystemTrayIcon>
+#include <QNetworkAccessManager>
+#include <QLabel>
+#include <QProgressBar>
 
 
 class AppUi : public QObject
 {
     Q_OBJECT
 public:
-    explicit AppUi(QObject *parent = nullptr);
-    void     init();
+    explicit    AppUi(QObject *parent = nullptr);
+    void        init();
+    void        updated(QString fromVersion);
     QSystemTrayIcon*    sysTray;
 
 signals:
@@ -34,6 +38,7 @@ private slots:
     void    onMagic2SnesMenuTriggered(QAction*action);
     void    addWindowsSendToEntry();
     void    onUntrustedConnection(QString origin);
+    void    DLManagerRequestFinished(QNetworkReply *reply);
 
 private:
     struct ApplicationInfo {
@@ -64,6 +69,11 @@ private:
     RetroArchFactory*               retroarchFactory;
     SNESClassicFactory*             snesClassic;
     QMap<QString, ApplicationInfo>  regularApps;
+
+    QNetworkAccessManager*          dlManager;
+    QLabel*                         dlLabel;
+    QProgressBar*                   dlProgressBar;
+    QWidget*                        dlWindow;
 
     void                checkForApplications();
     void                handleMagic2Snes(QString path);

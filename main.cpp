@@ -169,6 +169,9 @@ int main(int ac, char *ag[])
         return app.exec();
     }
     AppUi*  appUi = new AppUi();
+    int updatedIndex = app.arguments().indexOf("-updated");
+    if (updatedIndex != -1)
+        appUi->updated(app.arguments().at(updatedIndex + 1));
     appUi->sysTray->show();
     QTimer::singleShot(200, &startServer);
     return app.exec();

@@ -12,6 +12,7 @@
 #include <QVBoxLayout>
 #include <QTimer>
 #include <QIcon>
+#include <QMessageBox>
 
 
 const QString githubUrl = "https://api.github.com/repos/Skarsnik/QUsb2snes/";
@@ -20,6 +21,20 @@ QNetworkAccessManager* manager = new QNetworkAccessManager();
 QNetworkReply* dlReply;
 QProgressBar* pb;
 QLabel* label;
+QList<QNetworkRequest> listReq;
+QStringList exeToDL = {"QUsb2Snes.exe", "QFile2Snes.exe"};
+
+
+
+void    startQUsb2Snes()
+{
+    qDebug() << "Starting QUsb2Snes";
+    label->setText(QObject::tr("Starting QUsb2Snes"));
+    QProcess::startDetached(qApp->applicationDirPath() + "/QUsb2Snes.exe");
+    qDebug() << "starting exit";
+    QTimer::singleShot(1000, [=] {qApp->exit(0);});
+}
+
 
 void    requestFinished(QNetworkReply* reply)
 {
@@ -39,43 +54,67 @@ void    requestFinished(QNetworkReply* reply)
                                   jArr.at(0).toObject().value("tag_name").toString()));
                 QNetworkRequest req(QUrl(value.toObject().value("browser_download_url").toString()));
                 req.setRawHeader("Accept",  "application/octet-stream");
-                dlReply = manager->get(req);
-                QObject::connect(dlReply, &QNetworkReply::redirected, [=] {
-                   qDebug() << "DL reply redirected";
-                });
-                QObject::connect(dlReply, &QNetworkReply::downloadProgress, [=](qint64 bytesRcv, qint64 bytesTotal)
-                {
-                    qDebug() << 20 + (bytesRcv / bytesTotal) * 80;
-                    pb->setValue(20 + (bytesRcv / bytesTotal) * 80);
-                });
+                listReq.append(req);
                 qDebug() << "Found QUsb2Snes.exe asset";
-                step = 1;
-                return ;
+            }
+            if (value.toObject().value("name").toString() == "QFile2Snes.exe")
+            {
+                QNetworkRequest req(QUrl(value.toObject().value("browser_download_url").toString()));
+                req.setRawHeader("Accept",  "application/octet-stream");
+                listReq.append(req);
             }
         }
-        qApp->exit(1);
+        step = 1;
+        dlReply = manager->get(listReq.takeFirst());
+        QObject::connect(dlReply, &QNetworkReply::redirected, [=] {
+           qDebug() << "DL reply redirected";
+        });
+        QObject::connect(dlReply, &QNetworkReply::downloadProgress, [=](qint64 bytesRcv, qint64 bytesTotal)
+        {
+            qDebug() << 20 + (bytesRcv / bytesTotal) * 80;
+            pb->setValue(20 + (bytesRcv / bytesTotal) * 80);
+        });
+
+        return ;
      }
-     if (step == 1)
+     if (step >= 1)
      {
-         QFile file("QUsb2Snes.exe");
+         QString fileStr = exeToDL.takeFirst();
+         QFile file(fileStr);
 
          pb->setValue(100);
-         label->setText(QObject::tr("Writing QUsb2Snes.exe"));
+         label->setText(QString(QObject::tr("Writing %1")).arg(fileStr));
          if (file.open(QIODevice::WriteOnly))
          {
             qDebug() << data.size();
             file.write(data);
-            qDebug() << "QUsb2Snes written";
+            qDebug() << fileStr << " written";
             file.flush();
             file.close();
-            label->setText(QObject::tr("Starting QUsb2Snes"));
-            QProcess::startDetached(qApp->applicationDirPath() + "/QUsb2Snes.exe");
-            QTimer::singleShot(500, [=] {qApp->exit(0);});
          } else {
+            QMessageBox::critical(nullptr, QString(QObject::tr("Error writing %1")).arg(fileStr),
+                                  QObject::tr("There was an error writing the new QUsb2Snes, check if QUsb2Snes is not running and restart the update (or the updater)"));
             qApp->exit(1);
          }
+         if (listReq.isEmpty()) {
+             startQUsb2Snes();
+             return ;
+         }
+         pb->setValue(0);
+         dlReply = manager->get(listReq.takeFirst());
+         label->setText(QString(QObject::tr("Downloading new %1")).arg(exeToDL.first()));
+         QObject::connect(dlReply, &QNetworkReply::redirected, [=] {
+            qDebug() << "DL reply redirected";
+         });
+         QObject::connect(dlReply, &QNetworkReply::downloadProgress, [=](qint64 bytesRcv, qint64 bytesTotal)
+         {
+             qDebug() << 20 + (bytesRcv / bytesTotal) * 80;
+             pb->setValue(20 + (bytesRcv / bytesTotal) * 80);
+         });
      }
 }
+
+
 
 void    startDelayed()
 {
@@ -87,7 +126,7 @@ int main(int ac, char* ag[])
     QApplication app(ac, ag);
     QObject::connect(manager, &QNetworkAccessManager::finished, &requestFinished);
     manager->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
-    QTimer::singleShot(1000, &startDelayed);
+    QTimer::singleShot(1500, &startDelayed);
 
     label = new QLabel();
     pb = new QProgressBar();
