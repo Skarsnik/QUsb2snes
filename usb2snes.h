@@ -90,12 +90,15 @@ Q_NAMESPACE
     Attach, // Attach to the devise using the name [portdevice]
     AppVersion, // Give the version of the App {version}
     Name, // Specificy the name of the client [name]
+    Close, // TODO this close the connection server side
+
 
     // Special
     Info, // Give information about the sd2snes firmware {firmwareversion, versionstring, romrunning, flag1, flag2...}TOFIX
     Boot, // Boot a rom [romname] TOTEST
     Menu, // Get back to the menu TOTEST
     Reset, // Reset TOTEST
+    Binary, // TODO Send data directly to the sd2snes I guess?
     Stream, // TODO
     Fence, // TODO
 
