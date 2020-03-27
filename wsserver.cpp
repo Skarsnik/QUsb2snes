@@ -236,11 +236,11 @@ LError:
 void    WSServer::addToPendingRequest(ADevice* device, MRequest *req)
 {
     pendingRequests[device].append(req);
-    if (req->opcode == USB2SnesWS::PutAddress || req->opcode == USB2SnesWS::PutIPS)
+    if (req->opcode == USB2SnesWS::PutAddress || req->opcode == USB2SnesWS::PutIPS || req->opcode == USB2SnesWS::PutFile)
     {
         bool ok;
         wsInfos[req->owner].pendingPutSizes.append(req->arguments.at(1).toInt(&ok, 16));
-        wsInfos[req->owner].pendingPutReqWithNoData.append(req);
+        //wsInfos[req->owner].pendingPutReqWithNoData.append(req);
         sDebug() << "Adding a Put command in queue, adding size" << wsInfos[req->owner].pendingPutSizes.last();
     }
 }
@@ -252,8 +252,8 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
     infos.recvData.append(data);
     infos.byteReceived += data.size();
     ADevice* dev = wsInfos.value(ws).attachedTo;
-    sDebug() << infos.name << "Received binary data" << data.size();
-    if (infos.commandState != ClientCommandState::WAITINGBDATAREPLY)
+    sDebug() << infos.name << "Received binary data" << data.size() << data.toHex() << "Pending size: " << infos.pendingPutSizes;
+    if (infos.commandState != ClientCommandState::WAITINGBDATAREPLY && infos.pendingPutSizes.empty())
     {
         setError(ErrorType::ProtocolError, "Sending binary data when nothing waiting for it");
         clientError(ws);
@@ -272,23 +272,41 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
             return ;
         }
         QList<unsigned int>& pend = infos.pendingPutSizes;
-        if (pend.isEmpty()) {
+        sDebug() << pend.isEmpty() << infos.currentPutSize;
+        if (pend.isEmpty() || infos.currentPutSize != 0) {
             infos.byteReceived = 0;
             infos.recvData.clear();
-            dev->writeData(data);
-        } else {
-            sDebug() << "Data for pending request" << infos.byteReceived << pend.first();
-            if (pend.first() == infos.byteReceived)
+            if (data.size() == infos.currentPutSize)
             {
-                sDebug() << infos.name << "Putting data in queue";
-                infos.pendingPutDatas.append(infos.recvData);
-                pend.removeFirst();
-                infos.pendingPutReqWithNoData.removeFirst();
-                infos.byteReceived = 0;
-                infos.recvData.clear();
+                dev->writeData(data);
+                return ;
+            }
+            if (data.size() < infos.currentPutSize) // We need two case since the previous one can
+                                                    // trigger the finish signal and mess up currentPutSize
+            {
+                dev->writeData(data);
+                infos.currentPutSize -= data.size();
+                return ;
+            } else {
+                dev->writeData(data.left(infos.currentPutSize));
+                data = data.mid(infos.currentPutSize - 1);
+                //sDebug() << "Wriging before cps :" << __func__ << infos.currentPutSize;
+                infos.currentPutSize = 0;
+                //sDebug() << "Wriging after cps :" << __func__ << infos.currentPutSize;
             }
         }
-
+        sDebug() << "Data for pending request" << infos.byteReceived << pend.first();
+        sDebug() << infos.name << "Putting data in queue";
+        //infos.pendingPutDatas.append(data);
+        if (pend.first() == infos.byteReceived)
+        {
+            sDebug() << infos.name << "Putting data in queue";
+            infos.pendingPutDatas.append(infos.recvData);
+            pend.removeFirst();
+            //infos.pendingPutReqWithNoData.removeFirst();
+            infos.byteReceived = 0;
+            infos.recvData.clear();
+        }
     }
 }
 
@@ -366,7 +384,7 @@ void        WSServer::processCommandQueue(ADevice* device)
         req->wasPending = true;
         // Request is no longer in queue, so expected data need to not go in queue
         // if not already here.
-        if (req->opcode == USB2SnesWS::PutAddress)
+        /*if (req->opcode == USB2SnesWS::PutAddress)
         {
             WSInfos& wInfos = wsInfos[req->owner];
             if (wInfos.pendingPutReqWithNoData.contains(req))
@@ -374,7 +392,7 @@ void        WSServer::processCommandQueue(ADevice* device)
                 wInfos.pendingPutReqWithNoData.removeFirst();
                 wInfos.pendingPutSizes.removeFirst();
             }
-        }
+        }*/
         executeRequest(req);
     }
 }

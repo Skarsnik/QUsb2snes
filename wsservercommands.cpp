@@ -202,10 +202,6 @@ void    WSServer::executeRequest(MRequest *req)
                 }
                 device->putAddrCommand(req->space, flags, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
             }
-            if (req->wasPending && !wsInfos[ws].pendingPutReqWithNoData.contains(req))
-            {
-                device->writeData(wsInfos[ws].pendingPutDatas.takeFirst());
-            }
         } else {
            QList<QPair<unsigned int, quint8> > pairs;
            for (int i = 0; i < req->arguments.size(); i += 2)
@@ -216,6 +212,9 @@ void    WSServer::executeRequest(MRequest *req)
         }
         req->state = RequestState::WAITINGREPLY;
         wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
+        sDebug() << "Wriging before cps :" << __func__ << wsInfos[ws].currentPutSize;
+        wsInfos[ws].currentPutSize = req->arguments.at(1).toUInt(&ok, 16);
+        sDebug() << "Writing after cps" << __func__ << wsInfos[ws].currentPutSize;
         break;
     }
 
@@ -241,6 +240,38 @@ void    WSServer::executeRequest(MRequest *req)
         clientError(ws);
     }
     }
+
+    // There are multiple case with pending put request
+    // 1A : this was the only request in queue all data are here -> send pendingData.first
+    // 1B : this was the only request in queue, no data          -> do nothing
+    // 1C : this was the only request in queue, missing data     -> send recvData
+    // 2A : other pending request, all data are here             -> send pendingData.first
+    // 2B : other pending request, no data                       -> do nothing
+    // 2C : other pending request, missing data                  -> send recvData
+    /*
+     *
+    */
+
+    if (req->wasPending && (req->opcode == USB2SnesWS::PutFile || req->opcode == USB2SnesWS::PutAddress))
+    {
+        wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
+        if (!wsInfos[ws].pendingPutDatas.isEmpty()) // This cover 1A and 2A
+        {                                           // Only imcomplete data can be for later requests if this is not empty
+            sDebug() << "Pending 1A & 2A";
+            device->writeData(wsInfos[ws].pendingPutDatas.takeFirst());
+            wsInfos[ws].commandState = ClientCommandState::WAITINGREPLY;
+        } else {
+            if (!wsInfos[ws].recvData.isEmpty()) // This cover 1C and 2C
+            {
+                sDebug() << "Pending 1C & 2C";
+                device->writeData(wsInfos[ws].recvData);
+                wsInfos[ws].pendingPutSizes.takeFirst();
+            } else {
+                sDebug() << "Pending 1B & 2B";
+                wsInfos[ws].pendingPutSizes.takeFirst();
+            }
+        }
+    }
     sDebug() << "Request executed";
     return ;
 endServerRequest:
@@ -258,6 +289,9 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
 {
     DeviceInfos&  info = devicesInfos[device];
     sDebug() << "Processing command finished" << info.currentCommand;
+    sDebug() << "Wriging before cps : " << __func__ << wsInfos[info.currentWS].currentPutSize;
+    wsInfos[info.currentWS].currentPutSize = 0;
+    sDebug() << "Wriging after cps :" << __func__ << wsInfos[info.currentWS].currentPutSize;
     switch (info.currentCommand) {
     case USB2SnesWS::Info :
     {
