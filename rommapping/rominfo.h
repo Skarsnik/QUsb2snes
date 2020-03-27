@@ -27,7 +27,7 @@ struct rom_infos {
     enum rom_type   type;
     bool            fastrom;
     bool            valid_checksum;
-    char            title[21];
+    char            title[22];
     unsigned int    size;
     unsigned int    sram_size;
     uint16_t        creator_id;

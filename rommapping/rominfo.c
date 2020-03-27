@@ -7,6 +7,7 @@ struct rom_infos*    get_rom_info(const char* datain)
     const unsigned char* data = datain;
     struct rom_infos* toret = (struct rom_infos*) malloc(sizeof(struct rom_infos));
     memcpy(toret->title, data, 21);
+    toret->title[21] = 0;
     toret->type = LoROM;
     toret->fastrom = (data[21] & 0b00110000) == 0b00110000;
     if (data[21] & 1)

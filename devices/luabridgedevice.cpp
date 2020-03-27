@@ -11,11 +11,14 @@
 Q_LOGGING_CATEGORY(log_luaBridgeDevice, "LUABridgeDevice")
 #define sDebug() qCDebug(log_luaBridgeDevice)
 
+
+#define setState(X_STATE) sDebug() << "Changed state to " << X_STATE << "in" <<  __func__; m_state = X_STATE;
+
 LuaBridgeDevice::LuaBridgeDevice(QTcpSocket* sock, QString name)
 {
     timer.setInterval(3);
     timer.setSingleShot(true);
-    m_state = CLOSED;
+    setState(CLOSED);
     m_socket = sock;
     m_name = name;
     infoReq = false;
@@ -60,6 +63,7 @@ void    LuaBridgeDevice::getRomMapping()
         //sDebug() << data.at(21);
         struct rom_infos* rInfos = get_rom_info(data.data());
         gameName = rInfos->title;
+        sDebug() << gameName << rInfos->title;
         romMapping = rInfos->type;
         free(rInfos);
     }
@@ -167,13 +171,13 @@ void LuaBridgeDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
 
     sDebug() << ">>" << toWrite;
     sDebug() << "Writen" << m_socket->write(toWrite) << "Bytes";
-    m_state = BUSY;
+    setState(BUSY);
 }
 
 void LuaBridgeDevice::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
     Q_UNUSED(space)
-    m_state = BUSY;
+    setState(BUSY);
     putAddr = addr;
     putSize = size;
 }
@@ -193,7 +197,7 @@ void LuaBridgeDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, 
 
 void LuaBridgeDevice::infoCommand()
 {
-    m_state = BUSY;
+    setState(BUSY);
     timer.start();
 }
 
@@ -218,10 +222,10 @@ void LuaBridgeDevice::writeData(QByteArray data)
         toSend += "\n";
         sDebug() << ">>" << toSend;
         m_socket->write(toSend);
-        emit commandFinished();
         receivedSize = 0;
         received.clear();
-        m_state = READY;
+        setState(READY);
+        emit commandFinished();
     }
 }
 
@@ -268,7 +272,7 @@ QTcpSocket *LuaBridgeDevice::socket()
 
 bool LuaBridgeDevice::open()
 {
-    m_state = READY;
+    setState(READY);
     return true;
 }
 
@@ -305,7 +309,7 @@ void LuaBridgeDevice::onClientReadyRead()
             data.append(static_cast<char>(v.toInt()));
         }
         //sDebug() << data;
-        m_state = READY;
+        setState(READY);
         emit getDataReceived(data);
         emit commandFinished();
         dataRead.clear();
@@ -323,7 +327,7 @@ void LuaBridgeDevice::onClientDisconnected()
 
 void LuaBridgeDevice::onTimerOut()
 {
-    m_state = READY;
+    setState(READY);
     sDebug() << "Fake command finished";
     emit commandFinished();
 }
