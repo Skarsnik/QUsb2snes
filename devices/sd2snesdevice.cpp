@@ -276,6 +276,7 @@ bool SD2SnesDevice::canAttach()
 
 void SD2SnesDevice::writeData(QByteArray data)
 {
+    static unsigned int writeCount = 0;
     //sDebug() << ">>" << data.size() << data;
     auto sendSize = data.size();
 
@@ -289,15 +290,22 @@ void SD2SnesDevice::writeData(QByteArray data)
 #ifdef Q_OS_MACOS
     QThread::msleep(10);
 #endif
-
-    auto written = m_port.write(data);
-    sDebug() << "Written : " << written << " bytes";
+    QByteArray temp;
+    int i = 0;
+    temp = data.mid(i, 2048);
+    while (!temp.isEmpty())
+    {
+        auto written = m_port.write(temp);
 #ifdef Q_OS_LINUX
     // Prevents a QSerialPort::ResourceError "Resource temporarily unavailable" error when uploading files to sd2snes.
-    m_port.waitForBytesWritten();
+        m_port.waitForBytesWritten();
 #else
-    m_port.flush();
+        m_port.flush();
 #endif
+        sDebug() << "Written : " << written << " bytes - " "Write count" << writeCount++;
+        i += 2048;
+        temp = data.mid(i, 2048);
+    }
     if (m_currentCommand == SD2Snes::VPUT)
     {
         sDebug() << "Putsize: " << m_putSize << " sendSize:" << sendSize;
