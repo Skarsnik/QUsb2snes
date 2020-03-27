@@ -247,7 +247,7 @@ int RetroArchDevice::addr_to_addr(unsigned int addr2)
         if (!hasRomAccess)
             return -1;
         if (romType == LoROM)
-            return 0x800000 + (addr + (0x8000 * (addr + 0x8000) / 0x8000));
+            return 0x800000 + (addr + (0x8000 * ((addr + 0x8000) / 0x8000)));
         if (romType == HiROM)
         {
             if (addr < 0x400000)
