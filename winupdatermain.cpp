@@ -24,6 +24,7 @@ QLabel* label;
 QList<QNetworkRequest> listReq;
 QStringList exeToDL = {"QUsb2Snes.exe", "QFile2Snes.exe"};
 QString newQUsbVersion;
+QMap<QString, QString> locations;
 
 
 
@@ -82,7 +83,7 @@ void    requestFinished(QNetworkReply* reply)
      if (step >= 1)
      {
          QString fileStr = exeToDL.takeFirst();
-         QFile file(fileStr);
+         QFile file(locations[fileStr] + "/" + fileStr);
 
          pb->setValue(100);
          label->setText(QString(QObject::tr("Writing %1")).arg(fileStr));
@@ -129,6 +130,9 @@ int main(int ac, char* ag[])
     QObject::connect(manager, &QNetworkAccessManager::finished, &requestFinished);
     manager->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
     QTimer::singleShot(1500, &startDelayed);
+    locations["QUsb2Snes.exe"] = "";
+    locations["QFile2Snes.exe"] = "apps/QFile2Snes/";
+
 
     label = new QLabel();
     pb = new QProgressBar();
