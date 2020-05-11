@@ -222,7 +222,7 @@ void AppUi::onAppsMenuTriggered(QAction *action)
     if (action->text() == "Multitroid")
         QDesktopServices::openUrl(QUrl("http://multitroid.com/"));
     if (action->text() == "SMZ3 Multiworld")
-        QDesktopServices::openUrl(QUrl("https://multiworld.samus.link"));
+        QDesktopServices::openUrl(QUrl("https://samus.link"));
     if (action->data().isNull())
         return ;
     const ApplicationInfo& appInfo = regularApps[action->data().toString()];
