@@ -42,12 +42,16 @@ You can use Snex9x (not recommanded) or bsnes-mercury cores. You need to activat
 
 Snex9x core : For software needing to the patch the ROM (multitroid for example) you etheir need to patch the rom manually with the IPS file or put the IPS file along side the rom with the same name for retroarch to auto patch it.
 
-You can connect to a remote RetroArch by adding a `RetroArchHost=YourOwnHost` in the config file.
+You can connect to a remote RetroArch by adding a `RetroArchHosts="remoteName=ip"` in the config file. If you want to add multiple hosts, just add ; between each host definition.
 
 
 ## SNES classic (called also SNES mini)
 
-Only tested with Super Metroid. This also only work with the native emulator (called canoe), if you use RetroArch on your snes classic, please refer to the RetroArch section.
+If for some reason your SNES classic does not have the expected IP address (connected via wifi or something) you can add a `SNESClassicIP=myip` in the config.ini file.
+
+### Native emulator (canoe)
+
+Mostly tested with Super Metroid.
 
 Enable the SNES classic support on the device menu.
 
@@ -59,7 +63,10 @@ Start the game and check if the SNES classic appear on the Devices menu, it shou
 
 It will not work with the 'normal' Hakchi2 version as the Hakchi2 CE provide a more stable way to access the SNES Classic.
 
-If for some reason your SNES classic does not have the expected IP address (connected via wifi or something) you can add a `SNESClassicIP=myip` in the config.ini file.
+
+### RetroArch
+
+Enable the RetroArch support. Open Hakchi2 CE and in the menu go to 'tools -> open ftp client' it should open your default browser, copy paste the url it should look like `ftp://169.254.13.37/` for the default ip, and paste in the file explorer to go to it (if it ask you for user/password, just put root as user, there is no password). Go into the `/etc/libretro/` folder and copy the retroarch.cgf file somewhere. Open the copy with a text editor and search for the `network_cmd_enable` entry, replace `false` with `true`, save. Then now put your copy in place of the original one.
 
 # Licence
 

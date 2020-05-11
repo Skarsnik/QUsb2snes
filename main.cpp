@@ -141,7 +141,8 @@ int main(int ac, char *ag[])
     // let set some know trusted domain
     wsServer.addTrusted("http://www.multitroid.com");
     wsServer.addTrusted("https://multiworld.samus.link/");
-    wsServer.addTrusted("http://usb2snes.com/");
+    wsServer.addTrusted("http://usb2snes.com");
+    wsServer.addTrusted("https://samus.link");
 
     if (app.arguments().size() == 2 && app.arguments().at(1) == "-nogui")
     {
