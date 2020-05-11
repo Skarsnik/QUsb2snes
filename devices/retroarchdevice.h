@@ -9,12 +9,23 @@
 #include <qtimer.h>
 
 
+struct RetroArchInfos {
+    QString     gameName;
+    QString     version;
+    rom_type    romType;
+    QString     error;
+    uint        blockSize;
+};
+
 class RetroArchDevice : public ADevice
 {
     Q_OBJECT
 public:
-    RetroArchDevice(QUdpSocket* sock, QString raVersion, int bSize);
-    RetroArchDevice(QUdpSocket* sock, QString raVersion, int bSize, QString gameName, enum rom_type romType);
+
+
+    RetroArchDevice(QUdpSocket* sock, RetroArchInfos info, QString name);
+    /*RetroArchDevice(QUdpSocket* sock, QString raVersion, int bSize);
+    RetroArchDevice(QUdpSocket* sock, QString raVersion, int bSize, QString gameName, enum rom_type romType);*/
 
     // ADevice interface
 public:
@@ -37,6 +48,9 @@ public:
     USB2SnesInfo parseInfo(const QByteArray &data);
     QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI);
 
+    static RetroArchInfos   getRetroArchInfos(QUdpSocket* sock);
+    friend class RetroArchFactory;
+
 
 public slots:
     bool open();
@@ -52,6 +66,9 @@ private:
     QTimer*      m_timer;
     QString      m_raVersion;
     QString      m_gameName;
+    QString      hostName;
+    QHostAddress hostAddress;
+
     bool         bigGet;
     unsigned int sizeBigGet;
     unsigned int sizeRequested;

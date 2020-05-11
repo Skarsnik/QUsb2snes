@@ -6,6 +6,8 @@
 #include "retroarchfactory.h"
 #include "../rommapping/rominfo.h"
 
+#define SNES_CLASSIC_IP "169.254.13.37"
+
 Q_LOGGING_CATEGORY(log_retroarchfact, "RA Factory")
 #define sDebug() qCDebug(log_retroarchfact)
 
@@ -13,9 +15,52 @@ extern QSettings* globalSettings;
 
 RetroArchFactory::RetroArchFactory()
 {
-    m_sock = new QUdpSocket(this);
-    connect(m_sock, &QUdpSocket::disconnected, this, &RetroArchFactory::onUdpDisconnected);
-    retroDev = nullptr;
+    QString snesclassicIP;
+    if (globalSettings->contains("SNESClassicIP"))
+        snesclassicIP = globalSettings->value("SNESClassicIP").toString();
+    else
+        snesclassicIP = SNES_CLASSIC_IP;
+    RAHost scHost;
+    scHost.addr = QHostAddress(snesclassicIP);
+    scHost.name = "SNES Classic";
+    raHosts[scHost.name] = scHost;
+    RAHost local;
+    local.addr = QHostAddress("127.0.0.1");
+    local.name = "Localhost";
+    raHosts[local.name] = local;
+    // Compatibility with previous version
+    if (globalSettings->contains("RetroArchHost"))
+    {
+        QString oldEntry = globalSettings->value("RetroArchHost").toString();
+        if (oldEntry == "127.0.0.1")
+        {
+            globalSettings->remove("RetroArchHost");
+        } else {
+            RAHost old;
+            old.addr = QHostAddress(oldEntry);
+            old.name = oldEntry;
+            raHosts[oldEntry] = old;
+        }
+    }
+    if (globalSettings->contains("RetroArchHosts"))
+    {
+        QString hostString = globalSettings->value("RetroArchHosts").toString();
+        sDebug() << hostString;
+        QStringList hosts = hostString.split(';');
+        foreach(QString host, hosts) {
+            QString name;
+            RAHost newHost;
+            if (host.contains('=')) {
+                name = host.split('=').at(0);
+                newHost.addr = QHostAddress(host.split('=').at(1));
+            } else {
+                name = host;
+                newHost.addr = QHostAddress(host);
+            }
+            newHost.name = name;
+            raHosts[name] = newHost;
+        }
+    }
 }
 
 
@@ -23,143 +68,59 @@ QStringList RetroArchFactory::listDevices()
 {
     m_attachError.clear();
     QStringList toret;
-    if (retroDev != nullptr)
-        return toret << retroDev->name();
-    if (!(m_sock->state() == QUdpSocket::ConnectedState || m_sock->state() == QUdpSocket::BoundState))
+    QMutableMapIterator<QString, RAHost> i(raHosts);
+    while (i.hasNext())
     {
-        sDebug() << "Trying to connect to RetroArch";
-
-        if(!globalSettings->contains("RetroArchHost"))
+        i.next();
+        RAHost& host = i.value();
+        if (host.sock == nullptr || host.device == nullptr)
         {
-            globalSettings->setValue("RetroArchHost", "127.0.0.1");
-        }
-
-        auto retroarchHost = QHostAddress(globalSettings->value("RetroArchHost").toString());
-
-        m_sock->connectToHost(retroarchHost, 55355);
-        if (!m_sock->waitForConnected(50))
-        {
-            m_attachError = tr("Can't connect to RetroArch.");
-            return toret;
-        }
-        sDebug() << "Connected";
-    }
-    if (!globalSettings->value("SkipVersionCheck", 0).toBool())
-    {
-        m_sock->write("VERSION");
-        m_sock->waitForReadyRead(100);
-        if(m_sock->hasPendingDatagrams())
-        {
-            raVersion = m_sock->readAll().trimmed();
-            if (raVersion == "")
+            if (tryNewRetroArchHost(host))
             {
-                m_attachError = tr("RetroArch - Probably not running");
-                return toret;
+                toret << host.device->name();
             }
-            sDebug() << "Received RA version : " << raVersion;
         } else {
-            m_attachError = tr("RetroArch - Did not get a VERSION response.");
-            return toret;
+            disconnect(host.sock, &QUdpSocket::readyRead, host.device, nullptr);
+            RetroArchInfos info = RetroArchDevice::getRetroArchInfos(host.sock);
+            if (info.error.isEmpty())
+                toret << host.device->name();
+            connect(host.sock, &QUdpSocket::readyRead, host.device, &RetroArchDevice::onUdpReadyRead);
         }
-    }
-    // Check is a game is running
-    sDebug() << "Checking if something is running (read core 0 1)";
-    m_sock->write("READ_CORE_RAM 0 1");
-    m_sock->waitForReadyRead(100);
-    QByteArray data;
-    if (!m_sock->hasPendingDatagrams())
-    {
-        m_attachError = tr("RetroArch - No game is running or core does not support memory read.");
-        return toret;
-    }
-    data = m_sock->readAll();
-    sDebug() << "<<" << data;
-    if (data == "READ_CORE_RAM 0 -1\n")
-    {
-        m_attachError = tr("RetroArch - No game is running or core does not support memory read.");
-        return toret;
-    }
-
-    /*
-     * alttp (lorom), sm (hirom), smz3 combo (exhirom)
-     * Reading FFC0
-     * Snes9x core
-     *  loRom : all zeros
-     *  hiRom : all 55
-     *  exHiRom : all 55
-     * BSnes-mercury
-     *  loRom : correct data
-     *  hiRom : correct data
-     *  exHirom : incorrect data
-     * --
-     * Reading 40FFC0
-     * Snes9x core
-     *  loRom : -1
-     *  hiRom : -1
-     *  exHiRom : -1
-     * BSnes-mercury
-     *  loRom : correct data
-     *  hiRom : correct data
-     *  exHirom : correct data
-     * */
-    sDebug() << "Trying to get rom header";
-    m_sock->write(QByteArray("READ_CORE_RAM 40FFC0 32"));
-    m_sock->waitForReadyRead(100);
-    if (m_sock->hasPendingDatagrams())
-    {
-        data = m_sock->readAll();
-        sDebug() << "<<" << data;
-        QList<QByteArray> tList = data.trimmed().split(' ');
-
-        if(!globalSettings->contains("RetroArchBlockSize"))
-        {
-            globalSettings->setValue("RetroArchBlockSize", 78);
-        }
-
-        auto retroBlockSize = globalSettings->value("RetroArchBlockSize").toInt();
-        if (retroBlockSize == 78 && QVersionNumber::fromString(raVersion) >= QVersionNumber::fromString("1.7.7"))
-            retroBlockSize = 2000;
-        // This is likely snes9x core
-        if (tList.at(2) == "-1")
-        {
-            retroDev = new RetroArchDevice(m_sock, raVersion, retroBlockSize);
-        } else {
-            QString gameName;
-            tList.removeFirst();
-            tList.removeFirst();
-            struct rom_infos* rInfos = get_rom_info(QByteArray::fromHex(tList.join()).data());
-            sDebug() << rInfos->title;
-            gameName = QString(rInfos->title);
-            retroDev = new RetroArchDevice(m_sock, raVersion, retroBlockSize, gameName, rInfos->type);
-            free(rInfos);
-        }
-            m_devices.append(retroDev);
-            return toret << retroDev->name();
-    } else {
-        m_attachError = tr("RetroArch - Did not get a response to READ_CORE_RAM.");
-    }
+     }
     return toret;
 }
 
 bool RetroArchFactory::deleteDevice(ADevice *dev)
 {
-    sDebug() << "Cleaning RetroArch device" << (retroDev != nullptr);
-    Q_UNUSED(dev);
-    if (retroDev == nullptr)
-        return false;
-    retroDev->deleteLater();
-    retroDev = nullptr;
-    m_devices.clear();
+    sDebug() << "Cleaning RetroArch device :" << dev->name();
+    RetroArchDevice* raDev = static_cast<RetroArchDevice*>(dev);
+    QMutableMapIterator<QString, RAHost> i(raHosts);
+    while (i.hasNext())
+    {
+        i.next();
+        if (i.value().device == raDev)
+            i.value().device = nullptr;
+    }
+    raDev->deleteLater();
+    //m_devices.removeAt(m_devices.indexOf(dev));
     return true;
 }
 
 QString RetroArchFactory::status()
 {
+    QString status;
     listDevices();
-    if (retroDev != nullptr)
-        return QString(tr("RetroArch %1 device ready.")).arg(raVersion);
-    else
-        return m_attachError;
+    QMapIterator<QString, RAHost> i(raHosts);
+    while (i.hasNext())
+    {
+        i.next();
+        const RAHost& host = i.value();
+        status += QString("RetroArch %1 : %2").arg(host.name).arg(host.status);
+        if (i.hasNext())
+            status += " | ";
+    }
+    sDebug() << status;
+    return status;
 }
 
 QString RetroArchFactory::name() const
@@ -167,10 +128,69 @@ QString RetroArchFactory::name() const
     return "RetroArch";
 }
 
+ADevice *RetroArchFactory::attach(QString deviceName)
+{
+    QMapIterator<QString, RAHost> i(raHosts);
+    while (i.hasNext())
+    {
+        i.next();
+        if (i.value().device->name() == deviceName)
+            return i.value().device;
+    }
+    return nullptr;
+}
+
 void RetroArchFactory::onUdpDisconnected()
 {
-    retroDev->closed();
-    m_devices.clear();
-    raVersion.clear();
-    deleteDevice(retroDev);
+
+}
+
+bool RetroArchFactory::tryNewRetroArchHost(RAHost& host)
+{
+    QUdpSocket* sock;
+    sDebug() << "Trying to connect to New RetroArch" << host.name << host.addr;
+    if (host.sock == nullptr)
+    {
+        host.sock = new QUdpSocket(this);
+        host.sock->connectToHost(host.addr, host.port);
+        if (!host.sock->waitForConnected(200))
+        {
+            host.status = tr("Can't connect to RetroArch.");
+            m_attachError = host.status;
+            host.sock->deleteLater();
+            host.sock = nullptr;
+            return false;
+        }
+    }
+    sock = host.sock;
+    sDebug() << "Connected, aka can create the connection";
+    sock->write("VERSION");
+    sock->waitForReadyRead(200);
+    if(sock->hasPendingDatagrams())
+    {
+        QString raVersion = sock->readAll().trimmed();
+        if (raVersion == "")
+        {
+            m_attachError = tr("Probably not running");
+            host.status = m_attachError;
+            return false;
+        }
+        sDebug() << "Received RA version : " << raVersion;
+    } else {
+        m_attachError = tr("Could not get the version.");
+        host.status = m_attachError;
+        return false;
+    }
+    RetroArchInfos info = RetroArchDevice::getRetroArchInfos(sock);
+    if (!info.error.isEmpty())
+    {
+        m_attachError = info.error;
+        host.status = info.error;
+        return false;
+    }
+    RetroArchDevice* newDev = new RetroArchDevice(sock, info, host.name);
+    host.device = newDev;
+    m_devices << newDev;
+    host.status = QString("RetroArch %1, running %2").arg(info.version).arg(info.gameName);
+    return true;
 }

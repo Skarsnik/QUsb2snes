@@ -10,6 +10,20 @@
 class RetroArchFactory : public DeviceFactory
 {
     Q_OBJECT
+    struct RAHost {
+        RAHost() {
+            sock = nullptr;
+            port = 55355;
+            device = nullptr;
+        }
+        QString             name;
+        QHostAddress        addr;
+        QUdpSocket*         sock;
+        quint16             port;
+        QString             status;
+        RetroArchDevice*    device;
+    };
+
 public:
     RetroArchFactory();
 
@@ -19,14 +33,18 @@ public:
     bool deleteDevice(ADevice *dev);
     QString status();
     QString name() const;
+    ADevice* attach(QString deviceName);
 
 
 private slots:
     void    onUdpDisconnected();
+
 private:
-    QUdpSocket*      m_sock;
-    QString          raVersion;
-    RetroArchDevice* retroDev;
+    QMap<QString, RAHost>           raHosts;
+
+    bool            checkRetroArchHost(RAHost& host);
+
+    bool            tryNewRetroArchHost(RAHost& host);
 };
 
 #endif // RETROARCHFACTORY_H

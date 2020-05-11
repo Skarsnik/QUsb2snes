@@ -1,6 +1,7 @@
 #include <QEventLoop>
 #include <QLoggingCategory>
 #include <QUuid>
+#include <QVersionNumber>
 
 #include "retroarchdevice.h"
 #include "../rommapping/rominfo.h"
@@ -8,6 +9,7 @@
 Q_LOGGING_CATEGORY(log_retroarch, "RETROARCH")
 #define sDebug() qCDebug(log_retroarch)
 
+/*
 RetroArchDevice::RetroArchDevice(QUdpSocket *sock, QString raVersion, int bSize)
 {
     create(sock, raVersion, bSize);
@@ -21,6 +23,106 @@ RetroArchDevice::RetroArchDevice(QUdpSocket *sock, QString raVersion, int bSize,
     romType = pRomType;
     hasRomAccess = true;
 }
+*/
+
+RetroArchDevice::RetroArchDevice(QUdpSocket *sock, RetroArchInfos info, QString name)
+{
+    create(sock, info.version, info.blockSize);
+    hostName = name;
+    m_gameName = info.gameName;
+    romType = info.romType;
+    hasRomAccess = !info.gameName.isEmpty();
+}
+
+
+RetroArchInfos RetroArchDevice::getRetroArchInfos(QUdpSocket *sock)
+{
+    RetroArchInfos infos;
+
+    sock->write("VERSION");
+    sock->waitForReadyRead(100);
+    if(sock->hasPendingDatagrams())
+    {
+        infos.version = sock->readAll().trimmed();
+        if (infos.version == "")
+        {
+            infos.error = tr("RetroArch - Probably not running");
+            return infos;
+        }
+        sDebug() << "Received RA version : " << infos.version;
+    } else {
+        infos.error = tr("RetroArch - Did not get a VERSION response.");
+        return infos;
+    }
+    sDebug() << "Checking if something is running (read core 0 1)";
+    sock->write("READ_CORE_RAM 0 1");
+    sock->waitForReadyRead(100);
+    QByteArray data;
+    if (!sock->hasPendingDatagrams())
+    {
+        infos.error = tr("RetroArch - No game is running or core does not support memory read.");
+        return infos;
+    }
+    data = sock->readAll();
+    sDebug() << "<<" << data;
+    if (data == "READ_CORE_RAM 0 -1\n")
+    {
+        infos.error = tr("RetroArch - No game is running or core does not support memory read.");
+        return infos;
+    }
+
+    /*
+     * alttp (lorom), sm (hirom), smz3 combo (exhirom)
+     * Reading FFC0
+     * Snes9x core
+     *  loRom : all zeros
+     *  hiRom : all 55
+     *  exHiRom : all 55
+     * BSnes-mercury
+     *  loRom : correct data
+     *  hiRom : correct data
+     *  exHirom : incorrect data
+     * --
+     * Reading 40FFC0
+     * Snes9x core
+     *  loRom : -1
+     *  hiRom : -1
+     *  exHiRom : -1
+     * BSnes-mercury
+     *  loRom : correct data
+     *  hiRom : correct data
+     *  exHirom : correct data
+     * */
+    sDebug() << "Trying to get rom header";
+    sock->write(QByteArray("READ_CORE_RAM 40FFC0 32"));
+    sock->waitForReadyRead(100);
+    if (sock->hasPendingDatagrams())
+    {
+        data = sock->readAll();
+        sDebug() << "<<" << data;
+        QList<QByteArray> tList = data.trimmed().split(' ');
+        infos.blockSize = 78;
+        if (QVersionNumber::fromString(infos.version) >= QVersionNumber::fromString("1.7.7"))
+            infos.blockSize = 2000;
+        // This is likely snes9x core
+        if (tList.at(2) == "-1")
+        {
+            return infos;
+        } else {
+            tList.removeFirst();
+            tList.removeFirst();
+            struct rom_infos* rInfos = get_rom_info(QByteArray::fromHex(tList.join()).data());
+            sDebug() << rInfos->title;
+            infos.gameName = QString(rInfos->title);
+            infos.romType = rInfos->type;
+            free(rInfos);
+        }
+    } else {
+        infos.error = tr("RetroArch - Did not get a response to reading rominfos.");
+    }
+    return infos;
+}
+
 
 void    RetroArchDevice::create(QUdpSocket* sock, QString raVersion, int bSize)
 {
@@ -45,7 +147,7 @@ void    RetroArchDevice::create(QUdpSocket* sock, QString raVersion, int bSize)
 
 QString RetroArchDevice::name() const
 {
-    return QString("RetroArch %1").arg(m_uuid);
+    return QString("RetroArch %1").arg(hostName);
 }
 
 
@@ -85,6 +187,7 @@ QList<ADevice::FileInfos> RetroArchDevice::parseLSCommand(QByteArray &dataI)
     Q_UNUSED(dataI);
     return QList<ADevice::FileInfos>();
 }
+
 
 bool RetroArchDevice::open()
 {
