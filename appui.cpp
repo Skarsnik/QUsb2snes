@@ -54,7 +54,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     // Main menu creation is here
     menu = new QMenu();
     menu->addAction(QIcon(":/img/icon64x64.ico"), "QUsb2Snes v" + QApplication::applicationVersion());
-    connect(menu->addAction("Stay at home, give me your money!"), &QAction::triggered, [=]()
+    connect(menu->addAction("Summer is here, yay"), &QAction::triggered, [=]()
     {
         QDesktopServices::openUrl(QUrl("https://github.com/sponsors/Skarsnik"));
     });
