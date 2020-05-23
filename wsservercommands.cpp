@@ -110,6 +110,7 @@ void    WSServer::executeRequest(MRequest *req)
         device->putFile(req->arguments.at(0).toLatin1(), req->arguments.at(1).toUInt(&ok, 16));
         req->state = RequestState::WAITINGREPLY;
         wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
+        wsInfos[ws].currentPutSize = req->arguments.at(1).toUInt(&ok, 16);
         break;
     }
     case USB2SnesWS::Rename : {
@@ -265,6 +266,7 @@ void    WSServer::executeRequest(MRequest *req)
             {
                 sDebug() << "Pending 1C & 2C";
                 device->writeData(wsInfos[ws].recvData);
+                wsInfos[ws].currentPutSize = wsInfos[ws].currentPutSize - wsInfos[ws].recvData.size();
                 wsInfos[ws].pendingPutSizes.takeFirst();
             } else {
                 sDebug() << "Pending 1B & 2B";
