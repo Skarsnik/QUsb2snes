@@ -368,7 +368,7 @@ int RetroArchDevice::addr_to_addr(unsigned int addr2)
             return addr - 0xF50000;
         }
     }
-    if (addr >= 0xE00000)
+    if (addr >= 0xE00000 && addr < 0xF70000)
     {
         if (!hasRomAccess)
             return addr - 0xE00000 + 0x20000;
@@ -376,6 +376,7 @@ int RetroArchDevice::addr_to_addr(unsigned int addr2)
             return addr - 0xE00000 + 0x700000;
         return lorom_sram_pc_to_snes(addr2 - 0xE00000);
     }
+    return -1;
 }
 
 void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
@@ -383,13 +384,11 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
     sDebug() << "GetAddress " << space << addr << size;
     m_state = BUSY;
 
-    if (space != SD2Snes::SNES)
-        return;
-
     auto newAddr = addr_to_addr(addr);
-    if (newAddr == -1)
+    if (space != SD2Snes::SNES || newAddr == -1)
     {
         m_state = CLOSED;
+        sDebug() << "Error, address or space incorect";
         emit protocolError();
         return ;
     }
@@ -436,15 +435,14 @@ void RetroArchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, u
     sizeWritten = 0;
     unsigned int addr = addr0;
     m_state = BUSY;
-
-    if (space != SD2Snes::space::SNES)
-        return;
-
     int newAddr = addr_to_addr(addr);
-
-    if (newAddr == -1)
-        return;
-
+    if (space != SD2Snes::space::SNES || newAddr == -1)
+    {
+        m_state = CLOSED;
+        sDebug() << "Error, address or space incorect";
+        emit protocolError();
+        return ;
+    }
     sDebug() << "WRITING TO RAM/SRAM" << newAddr;
     dataToWrite = "WRITE_CORE_RAM " + QByteArray::number(newAddr, 16) + " ";
 }

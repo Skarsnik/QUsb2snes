@@ -134,7 +134,7 @@ ADevice *RetroArchFactory::attach(QString deviceName)
     while (i.hasNext())
     {
         i.next();
-        if (i.value().device->name() == deviceName)
+        if (i.value().device != nullptr && i.value().device->name() == deviceName)
             return i.value().device;
     }
     return nullptr;
