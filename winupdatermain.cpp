@@ -22,10 +22,49 @@ QNetworkReply* dlReply;
 QProgressBar* pb;
 QLabel* label;
 QList<QNetworkRequest> listReq;
+QStringList         listReqExe;
 QStringList exeToDL = {"QUsb2Snes.exe", "QFile2Snes.exe"};
 QString newQUsbVersion;
 QMap<QString, QString> locations;
 
+static QTextStream logfile;
+static QTextStream cout(stdout);
+
+void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+    QByteArray localMsg = msg.toLocal8Bit();
+    QTextStream*    log = &logfile;
+#ifdef QT_NO_DEBUG
+    QString logString = QString("%6 %5 - %7: %1").arg(localMsg.constData()).arg(context.category, 20).arg(QDateTime::currentDateTime().toString(Qt::ISODate));
+#else
+    QString logString = QString("%6 %5 - %7: %1 \t(%2:%3, %4)").arg(localMsg.constData()).arg(context.file).arg(context.line).arg(context.function).arg(context.category, 20).arg(QDateTime::currentDateTime().toString(Qt::ISODate));
+#endif
+    switch (type)
+    {
+        case QtDebugMsg:
+            *log << logString.arg("Debug");
+            break;
+        case QtCriticalMsg:
+            *log << logString.arg("Critical");
+            break;
+        case QtWarningMsg:
+            *log << logString.arg("Warning");
+            break;
+        case QtFatalMsg:
+            *log << logString.arg("Fatal");
+            *log<< "\n"; log->flush();
+            QMessageBox::critical(nullptr, QObject::tr("Critical error"), msg);
+            qApp->exit(1);
+            break;
+        case QtInfoMsg:
+            *log << logString.arg("Info");
+            break;
+    }
+    *log << "\n";
+    log->flush();
+    cout << QString("%1 : %2").arg(context.category, 20).arg(msg) << "\n";
+    cout.flush();
+}
 
 
 void    startQUsb2Snes()
@@ -58,16 +97,20 @@ void    requestFinished(QNetworkReply* reply)
                 QNetworkRequest req(QUrl(value.toObject().value("browser_download_url").toString()));
                 req.setRawHeader("Accept",  "application/octet-stream");
                 listReq.append(req);
+                listReqExe.append("QUsb2Snes.exe");
                 qDebug() << "Found QUsb2Snes.exe asset";
             }
             if (value.toObject().value("name").toString() == "QFile2Snes.exe")
             {
                 QNetworkRequest req(QUrl(value.toObject().value("browser_download_url").toString()));
                 req.setRawHeader("Accept",  "application/octet-stream");
+                qDebug() << "Found QFile2Snes.exe asset";
                 listReq.append(req);
+                listReqExe.append("QFile2Snes.exe");
             }
         }
         step = 1;
+        label->setText(QString(QObject::tr("Downloading new %1")).arg(listReqExe.first()));
         dlReply = manager->get(listReq.takeFirst());
         QObject::connect(dlReply, &QNetworkReply::redirected, [=] {
            qDebug() << "DL reply redirected";
@@ -82,9 +125,9 @@ void    requestFinished(QNetworkReply* reply)
      }
      if (step >= 1)
      {
-         QString fileStr = exeToDL.takeFirst();
+         QString fileStr = listReqExe.takeFirst();
          QFile file(locations[fileStr] + "/" + fileStr);
-
+         qDebug() << "Creating " << file.fileName();
          pb->setValue(100);
          label->setText(QString(QObject::tr("Writing %1")).arg(fileStr));
          if (file.open(QIODevice::WriteOnly))
@@ -95,8 +138,9 @@ void    requestFinished(QNetworkReply* reply)
             file.flush();
             file.close();
          } else {
+            qDebug() << "Can't write file";
             QMessageBox::critical(nullptr, QString(QObject::tr("Error writing %1")).arg(fileStr),
-                                  QObject::tr("There was an error writing the new QUsb2Snes, check if QUsb2Snes is not running and restart the update (or the updater)"));
+                                  QString(QObject::tr("There was an error writing %1, check if %1 is not running and restart the update (or the updater)")).arg(fileStr));
             qApp->exit(1);
          }
          if (listReq.isEmpty()) {
@@ -105,7 +149,7 @@ void    requestFinished(QNetworkReply* reply)
          }
          pb->setValue(0);
          dlReply = manager->get(listReq.takeFirst());
-         label->setText(QString(QObject::tr("Downloading new %1")).arg(exeToDL.first()));
+         label->setText(QString(QObject::tr("Downloading new %1")).arg(listReqExe.first()));
          QObject::connect(dlReply, &QNetworkReply::redirected, [=] {
             qDebug() << "DL reply redirected";
          });
@@ -130,9 +174,14 @@ int main(int ac, char* ag[])
     QObject::connect(manager, &QNetworkAccessManager::finished, &requestFinished);
     manager->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
     QTimer::singleShot(1500, &startDelayed);
-    locations["QUsb2Snes.exe"] = "";
-    locations["QFile2Snes.exe"] = "apps/QFile2Snes/";
-
+    locations["QUsb2Snes.exe"] = qApp->applicationDirPath();
+    locations["QFile2Snes.exe"] = qApp->applicationDirPath() + "/apps/QFile2Snes/";
+    QFile   mlog(qApp->applicationDirPath() + "/updaterlog.txt");
+    if (mlog.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        logfile.setDevice(&mlog);
+        qInstallMessageHandler(myMessageOutput);
+    }
 
     label = new QLabel();
     pb = new QProgressBar();
