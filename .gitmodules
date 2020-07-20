@@ -1,0 +1,3 @@
+[submodule "extras/SNESClassicMemoryFinder/snesclassicstuff"]
+	path = extras/SNESClassicMemoryFinder/snesclassicstuff
+	url = https://github.com/Skarsnik/snesclassicstuff.git
