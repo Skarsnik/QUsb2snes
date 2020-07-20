@@ -279,6 +279,7 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
             if (data.size() == infos.currentPutSize)
             {
                 dev->writeData(data);
+                infos.currentPutSize = 0;
                 return ;
             }
             if (data.size() < infos.currentPutSize) // We need two case since the previous one can
