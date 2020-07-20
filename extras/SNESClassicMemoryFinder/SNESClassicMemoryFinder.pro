@@ -6,7 +6,7 @@
 
 QT       += core gui
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets network
 
 TARGET = SNESClassicMemoryFinder
 TEMPLATE = app
@@ -26,13 +26,17 @@ CONFIG += c++11
 
 SOURCES += \
         main.cpp \
+        snesclassicstuff/stuffclient/stuffclient.cpp \
         snesclassicmemoryfinder.cpp
 
 HEADERS += \
-        snesclassicmemoryfinder.h
+        snesclassicmemoryfinder.h \
+        snesclassicstuff/stuffclient/stuffclient.h
 
 FORMS += \
         snesclassicmemoryfinder.ui
+
+INCLUDEPATH += snesclassicstuff/stuffclient/
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

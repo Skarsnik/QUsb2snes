@@ -130,6 +130,7 @@ QString RetroArchFactory::name() const
 
 ADevice *RetroArchFactory::attach(QString deviceName)
 {
+    m_attachError.clear();
     QMapIterator<QString, RAHost> i(raHosts);
     while (i.hasNext())
     {
