@@ -231,7 +231,12 @@ void LuaBridgeDevice::writeData(QByteArray data)
 
 QString LuaBridgeDevice::name() const
 {
-   return "Emu - " + m_name;
+    return "Emu - " + m_name;
+}
+
+QString LuaBridgeDevice::luaName() const
+{
+    return m_name;
 }
 
 bool LuaBridgeDevice::hasFileCommands()

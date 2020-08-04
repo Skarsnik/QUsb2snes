@@ -3,6 +3,7 @@
 
 #include "../devicefactory.h"
 #include "luabridgedevice.h"
+#include <QRandomGenerator>
 
 #include <QObject>
 #include <QTcpServer>
@@ -27,6 +28,8 @@ private:
     QStringList                 allocatedNames;
     QTcpServer*                 server;
     QList<QTcpSocket*>          clients;
+    QRandomGenerator*           rng;
+    quint32                     rngSeed;
     QMap<QTcpSocket*, LuaBridgeDevice*> mapSockDev;
 };
 

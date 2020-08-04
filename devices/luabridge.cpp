@@ -1,19 +1,30 @@
 #include "luabridge.h"
+#include <QSettings>
 
 #include <QLoggingCategory>
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
-    #include <QRandomGenerator>
-#endif
 
 Q_LOGGING_CATEGORY(log_luaBridge, "LUABridge")
 #define sDebug() qCDebug(log_luaBridge)
 
+
+extern QSettings* globalSettings;
+
 LuaBridge::LuaBridge()
 {
     server = new QTcpServer(this);
+    if (!globalSettings->contains("LuaBridgeRNGSeed"))
+    {
+        rngSeed = QRandomGenerator::global()->generate();
+        globalSettings->setValue("LuaBridgeRNGSeed", rngSeed);
+    } else {
+        rngSeed = globalSettings->value("LuaBridgeRNGSeed").toUInt();
+    }
+    rng = new QRandomGenerator(rngSeed);
     connect(server, &QTcpServer::newConnection, this, &LuaBridge::onNewConnection);
     server->listen(QHostAddress("127.0.0.1"), 65398);
     sDebug() << "Lua bridge created";
+    sDebug() << "Seed is " << rngSeed;
+
 }
 
 
@@ -56,15 +67,15 @@ void LuaBridge::onNewConnection()
     QStringList names;
     names << "Cloudchaser" << "Flitter" << "Bonbon" << "Thunderlane" << "Cloud Kicker"
           << "Derpy Hooves" << "Roseluck" << "Octavia Melody" << "Dj-Pon3" << "Berrypunch";
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
-    QString devName = names.at(QRandomGenerator::global()->bounded(10));
+//#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
+    QString devName = names.at(rng->bounded(10));
     while (allocatedNames.contains(devName))
-        devName = names.at(QRandomGenerator::global()->bounded(10));
-#else
+        devName = names.at(rng->bounded(10));
+/*#else
     QString devName = names.at(qrand() % 10);
     while (allocatedNames.contains(devName))
         devName = names.at(qrand() % 10);
-#endif
+#endif*/
     sDebug() << "New client connected" << devName;
     allocatedNames << devName;
     LuaBridgeDevice*    newDev = new LuaBridgeDevice(newclient, devName);
@@ -78,8 +89,13 @@ void LuaBridge::onClientDisconnected()
 {
     QTcpSocket* sock = qobject_cast<QTcpSocket*>(sender());
     LuaBridgeDevice* ldev = mapSockDev[sock];
-    sDebug() << "Lua script closed the connection" << ldev->name();
+    sDebug() << "Lua script closed the connection" << ldev->luaName();
     ldev->closed();
-    allocatedNames.removeAll(ldev->name());
+    allocatedNames.removeAll(ldev->luaName());
+    if (allocatedNames.isEmpty())
+    {
+        sDebug() << "No client connected, reseting the names";
+        rng->seed(rngSeed);
+    }
     deleteDevice(ldev);
 }
