@@ -15,7 +15,7 @@ Then start the QUsb2Snes binary from the `release` directory that is created.
 
 # Usage
 
-There is a -nogui option if you want to run it without the system tray icon and interface.
+There is a `-nogui` option if you want to run it without the system tray icon and interface.
 
 # Files
 
@@ -25,7 +25,13 @@ Logs are put in the standard path for application data. It should be:
 And the settings file is into
 ~/.config/skarsnik.nyo.fr/QUsb2Snes.conf
 
+To configure QUsb2snes for RetroArch when using `-nogui` option
 
+Add retroarchdevice to the config under General, for example:
+```
+[General]
+retroarchdevice=true
+```
 
 # SD2Snes
 
