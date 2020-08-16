@@ -30,6 +30,7 @@ public slots:
 
 
 private slots:
+    void    onSD2SnesTriggered(bool checked);
     void    onRetroarchTriggered(bool checked);
     void    onLuaBridgeTriggered(bool checked);
     void    onSNESClassicTriggered(bool checked);
@@ -61,6 +62,7 @@ private:
     QMenu*              magic2SnesMenu;
     QMenu*              miscMenu;
     QString             magic2SnesExe;
+    QAction*            sd2snesAction;
     QAction*            retroarchAction;
     QAction*            snesClassicAction;
     QAction*            luaBridgeAction;

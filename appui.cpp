@@ -33,15 +33,15 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
 {
     sysTray = new QSystemTrayIcon(QIcon(":/img/icon64x64.ico"));
     qApp->setQuitOnLastWindowClosed(false);
-    retroarchFactory = nullptr;
-    sd2snesFactory = new SD2SnesFactory();
-    wsServer.addDeviceFactory(sd2snesFactory);
+
     QObject::connect(&wsServer, &WSServer::listenFailed, [=](const QString& err) {
         QMessageBox::critical(nullptr, tr("Error starting the websocket server"),
                               QString(tr("There was an error starting the core of the application : %1.\n"
                                          "Make sure you don't have another software running that use the same port (8080). This can be the old Usb2Snes application or Crowd Control for example.")).arg(err));
         qApp->exit(1);
     });
+    retroarchFactory = nullptr;
+    sd2snesFactory = nullptr;
     luaBridge = nullptr;
     snesClassic = nullptr;
     dlManager = nullptr;
@@ -73,6 +73,10 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
 
 void AppUi::init()
 {
+    sd2snesAction = new QAction(QIcon(":/img/sd2snes.png"), tr("Enable SD2SNES Support"));
+    sd2snesAction->setCheckable(true);
+    connect(sd2snesAction, SIGNAL(triggered(bool)), this, SLOT(onSD2SnesTriggered(bool)));
+
     retroarchAction = new QAction(QIcon(":/img/retroarch.png"), tr("Enable RetroArch virtual device (use bsnes-mercury if possible)"));
     retroarchAction->setCheckable(true);
     connect(retroarchAction, SIGNAL(triggered(bool)), this, SLOT(onRetroarchTriggered(bool)));
@@ -84,6 +88,12 @@ void AppUi::init()
     snesClassicAction = new QAction(QIcon(":/img/chrysalis.png"), tr("Enable SNES Classic support (experimental)"));
     snesClassicAction->setCheckable(true);
     connect(snesClassicAction, SIGNAL(triggered(bool)), this, SLOT(onSNESClassicTriggered(bool)));
+    if (globalSettings->value("sd2snessupport").toBool())
+    {
+        sd2snesFactory = new SD2SnesFactory();
+        wsServer.addDeviceFactory(sd2snesFactory);
+        sd2snesAction->setChecked(true);
+    }
     if (globalSettings->value("retroarchdevice").toBool())
     {
         retroarchFactory = new RetroArchFactory();
@@ -212,6 +222,7 @@ void AppUi::onMenuAboutToshow()
     if (retroarchFactory != nullptr)
         addDevicesInfo(retroarchFactory);
     deviceMenu->addSeparator();
+    deviceMenu->addAction(sd2snesAction);
     deviceMenu->addAction(retroarchAction);
     deviceMenu->addAction(luaBridgeAction);
     deviceMenu->addAction(snesClassicAction);
@@ -435,7 +446,16 @@ QDebug operator<<(QDebug debug, const AppUi::ApplicationInfo &req)
     return debug;
 }
 
-
+void AppUi::onSD2SnesTriggered(bool checked)
+{
+    if (checked == true)
+    {
+        if (sd2snesFactory == nullptr)
+            sd2snesFactory = new SD2SnesFactory();
+        wsServer.addDeviceFactory(sd2snesFactory);
+    }
+    globalSettings->setValue("sd2snessupport", checked);
+}
 
 void AppUi::onRetroarchTriggered(bool checked)
 {
