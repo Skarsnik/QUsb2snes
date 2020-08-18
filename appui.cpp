@@ -23,6 +23,7 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #include "appui.h"
 #include "devices/snesclassic.h"
 #include "wsserver.h"
+#include "tempdeviceselector.h"
 
 const  QString             applicationJsonFileName = "qusb2snesapp.json";
 
@@ -73,7 +74,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
 
 void AppUi::init()
 {
-    sd2snesAction = new QAction(QIcon(":/img/sd2snes.png"), tr("Enable SD2SNES Support"));
+    sd2snesAction = new QAction(QIcon(":/img/ikari.ico"), tr("Enable SD2SNES Support"));
     sd2snesAction->setCheckable(true);
     connect(sd2snesAction, SIGNAL(triggered(bool)), this, SLOT(onSD2SnesTriggered(bool)));
 
@@ -141,6 +142,7 @@ void AppUi::init()
                      &QAction::triggered, this, &AppUi::addWindowsSendToEntry);
     if (!globalSettings->contains("SendToSet"))
     {
+        globalSettings->setValue("SendToSet", true);
         QMessageBox msg;
         msg.setText(tr("Do you want to create a entry in the 'Send To' menu of Windows to upload file to the sd2snes?"));
         msg.setInformativeText(tr("This will only be asked once, if you want to add it later go into the Misc menu."));
@@ -149,8 +151,7 @@ void AppUi::init()
         msg.setDefaultButton(QMessageBox::Ok);
         int ret = msg.exec();
         if (ret == QMessageBox::Ok)
-            addWindowsSendToEntry();
-        globalSettings->setValue("SendToSet", true);
+            addWindowsSendToEntry();        
     }
     if (!globalSettings->contains("checkUpdateCounter") || globalSettings->value("checkUpdateCounter").toInt() == 5)
     {
@@ -199,6 +200,22 @@ void AppUi::init()
     connect(qApp, &QCoreApplication::aboutToQuit, [=]() {
       sysTray->hide();
     });
+    if (!globalSettings->contains("FirstTime"))
+    {
+        globalSettings->setValue("FirstTime", true);
+        TempDeviceSelector selector;
+        if (selector.exec() == QDialog::Accepted)
+        {
+            if (selector.devices.contains("SD2SNES"))
+                onSD2SnesTriggered(true);
+            if (selector.devices.contains("LUA"))
+                onLuaBridgeTriggered(true);
+            if (selector.devices.contains("RETROARCH"))
+                onRetroarchTriggered(true);
+            if (selector.devices.contains("CLASSIC"))
+                onSNESClassicTriggered(true);
+        }
+    }
 }
 
 void AppUi::updated(QString fromVersion)
