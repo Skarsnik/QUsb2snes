@@ -60,6 +60,11 @@ void SNESClassicFactory::findMemoryLocations()
     QByteArray pmap;
     executeCommand(QByteArray("pmap ") + canoePid + " -x -q | grep -v canoe-shvc | grep -v /lib | grep rwx | grep anon");
     pmap = readCommandReturns(socket);
+
+    ramLocation = 0;
+    sramLocation = 0;
+    romLocation = 0;
+
     QList<QByteArray> memEntries = pmap.split('\n');
     foreach (QByteArray memEntry, memEntries)
     {
@@ -69,12 +74,25 @@ void SNESClassicFactory::findMemoryLocations()
         bool ok;
         QStringList ls = s.split(" ", QString::SkipEmptyParts);
         sDebug() << ls.at(0);
-        if (ls.at(1) == "5092")
+
+        unsigned int i = ls.at(1).toUInt();
+
+        if (i == 5092)
+        {
             sramLocation = ls.at(0).toULong(&ok, 16) + 0x26E0;
-        if (ls.at(1) == "6444")
+        }
+        else if (i >= 6000 && i <= 6444)
+        {
+            if(ramLocation != 6444)
+            {
+                sInfo() << "Hey, listen! Using a possibly nonconforming RAM segment size " << i << ". If whatever software is on the other end of this complains about a bad ROM or your game crashes, this is probably why.";
+            }
             ramLocation = ls.at(0).toULong(&ok, 16) + 0x121BF4;
-        if (ls.at(1) == "8196")
+        }
+        else if (i == 8196)
+        {
             romLocation = ls.at(0).toULong(&ok, 16) + 0x38;
+        }
     }
     sDebug() << "Locations : ram/sram/rom" << QString::number(ramLocation, 16) << QString::number(sramLocation, 16) << QString::number(romLocation, 16);
 }
