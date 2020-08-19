@@ -23,7 +23,7 @@ You need to install the last Usb2Snes firmware by Redguyyy (https://github.com/R
 
 ## SNES9x Rerecording
 
-Snes9x-rr allows to run Lua scripts in the emulator, that allows use to connect to QUsb2snes. You can use the Multitroid version of Snes9x-rr (http://multitroid.com/) or use Snes9x-rr 1.60 https://github.com/gocha/snes9x-rr/releases. Older version of Snes9x-rr does not allow to write to ROM from Lua so some application will not work.
+Snes9x-rr allows to run Lua scripts in the emulator, that allows the emulator to connect to QUsb2snes. You can use the Multitroid version of Snes9x-rr (http://multitroid.com/) or use Snes9x-rr 1.60 https://github.com/gocha/snes9x-rr/releases. Older version of Snes9x-rr does not allow to write to ROM from Lua so some application will not work.
 
 Activate the `Lua bridge` on the device menu of QUsb2Snes.
 Then run the luabridge.lua script from the LuaBridge folder from the Lua console window in Snes9x
@@ -67,6 +67,12 @@ It will not work with the 'normal' Hakchi2 version as the Hakchi2 CE provide a m
 ### RetroArch
 
 Enable the RetroArch support. Open Hakchi2 CE and in the menu go to 'tools -> open ftp client' it should open your default browser, copy paste the url it should look like `ftp://169.254.13.37/` for the default ip, and paste in the file explorer to go to it (if it ask you for user/password, just put root as user, there is no password). Go into the `/etc/libretro/` folder and copy the retroarch.cgf file somewhere. Open the copy with a text editor and search for the `network_cmd_enable` entry, replace `false` with `true`, save. Then now put your copy in place of the original one.
+
+
+## BSnes-AS
+
+Activate the `Lua bridge` on the device menu of QUsb2Snes.
+In the `Script` menu of Bsnes-as, select `Load Script` and pick the usb2snes.as file from the included scripts folder.
 
 # Licence
 
