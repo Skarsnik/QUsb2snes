@@ -34,6 +34,8 @@ private:
     void executeCommand(QByteArray toExec);
     void writeSocket(QByteArray toWrite);
     QByteArray readCommandReturns(QTcpSocket *msocket);
+    QByteArray readSocketReturns(QTcpSocket* msocket);
+
     void findMemoryLocations();
     bool checkStuff();
     void aliveCheck();
