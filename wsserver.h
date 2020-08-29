@@ -95,7 +95,7 @@ public:
     };
 
     explicit    WSServer(QObject *parent = nullptr);
-    bool        start(QHostAddress lAddress, quint16 port);
+    QString     start(QHostAddress lAddress, quint16 port);
     QString&    errorString() const;
     void        addDevice(ADevice* device);
     void        removeDevice(ADevice* device);
@@ -129,7 +129,8 @@ private:
     QMetaEnum                           cmdMetaEnum;
     QMetaEnum                           spaceMetaEnum;
     QMetaEnum                           flagsMetaEnum;
-    QWebSocketServer*                   wsServer;
+    QList<QWebSocketServer*>            wsServers;
+    //QWebSocketServer*                   wsServer;
     QMap<QWebSocket*, WSInfos>          wsInfos;
     QList<ADevice*>                     devices;
     QList<DeviceFactory*>               deviceFactories;

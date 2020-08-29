@@ -15,7 +15,7 @@ quint64 WSServer::MRequest::gId = 0;
 
 WSServer::WSServer(QObject *parent) : QObject(parent)
 {
-    wsServer = new QWebSocketServer(QStringLiteral("USB2SNES Server"), QWebSocketServer::NonSecureMode, this);
+    //wsServer = new QWebSocketServer(QStringLiteral("USB2SNES Server"), QWebSocketServer::NonSecureMode, this);
     const QMetaObject &mo = USB2SnesWS::staticMetaObject;
     const QMetaObject &mo2 = SD2Snes::staticMetaObject;
     int i = mo.indexOfEnumerator("opcode");
@@ -28,23 +28,24 @@ WSServer::WSServer(QObject *parent) : QObject(parent)
     trustedOrigin.append("");
 }
 
-bool WSServer::start(QHostAddress lAddress, quint16 port)
+QString WSServer::start(QHostAddress lAddress, quint16 port)
 {
-    if (wsServer->listen(lAddress, port))
+    QWebSocketServer* newServer = new QWebSocketServer(QStringLiteral("USB2SNES Server"), QWebSocketServer::NonSecureMode, this);
+    if (newServer->listen(lAddress, port))
     {
         sInfo() << "WebSocket server started : listenning " << lAddress << "port : " << port;
-        connect(wsServer, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
-        connect(wsServer, SIGNAL(closed()), this, SLOT(onWSClosed()));
-        connect(wsServer, SIGNAL(serverError(QWebSocketProtocol::CloseCode)), this, SLOT(onWSError(QWebSocketProtocol::CloseCode)));
-        return true;
+        connect(newServer, &QWebSocketServer::newConnection, this, &WSServer::onNewConnection);
+        connect(newServer, &QWebSocketServer::closed, this, &WSServer::onWSClosed);
+        connect(newServer, &QWebSocketServer::serverError, this, &WSServer::onWSError);
+        wsServers.append(newServer);
+        return QString();
     }
-    emit listenFailed(wsServer->errorString());
-    return false;
+    return newServer->errorString();
 }
 
 void WSServer::onNewConnection()
-{
-    QWebSocket* newSocket = wsServer->nextPendingConnection();
+{ 
+    QWebSocket* newSocket = qobject_cast<QWebSocketServer*>(sender())->nextPendingConnection();
     sInfo() << "New connection from " << newSocket->origin();
     if (!trustedOrigin.contains(newSocket->origin()))
     {
