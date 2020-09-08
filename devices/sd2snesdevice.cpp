@@ -47,6 +47,110 @@ void SD2SnesDevice::close()
     m_state = CLOSED;
 }
 
+
+/*
+ * USB2Snes firmware protocol is a bit simple
+ * You send a block of 512 bytes with the command you want to do, arguments, flags...
+ *
+ * Then you receive a response block of blocksize if you did not specify no response
+ * Then if a case of a command that give you data (ls, get...) you will receive
+ * your data + padding to reach the block size
+ * As: if you ask for 1060 byte, you will receive, 1054 byte + 512 bytes (the remaining 6 bytes then the padding)
+ *
+ * If you are writing data for example a put command, you also need to pad the data
+ * to reach block size, for example writing 600 bytes, you send 512 + 88 and 424 bytes of padding.
+ *
+ * OPCODE, SPACE and FLAGS value are in the usb2snes.h file
+ *
+*/
+
+
+/*
+ *  To send a regular command the format is
+ *  "USBA", OPCODE, SPACE, FLAGS, ..... (252) arg 2 (256) arg1
+ *  Yes args are in the middle of the block
+ *  Only the MV command place the second argument after the first sequence
+ */
+
+void    SD2SnesDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray& arg, const QByteArray arg2 = QByteArray())
+{
+    int filer_size = 512 - 7;
+    blockSize = 512;
+    m_commandFlags = flags;
+    sDebug() << "CMD : " << opcode << space << flags << arg;
+    QByteArray data("USBA");
+    data.append(static_cast<char>(opcode));
+    data.append(static_cast<char>(space));
+    data.append(static_cast<char>(flags));
+    data.append(QByteArray().fill(0, filer_size));
+    data.replace(256, arg.size(), arg);
+    if (!arg2.isEmpty() && opcode != SD2Snes::opcode::MV)
+        data.replace(252, arg2.size(), arg2);
+    if (!arg2.isEmpty() && opcode == SD2Snes::opcode::MV)
+        data.replace(8, arg2.size(), arg2);
+    sDebug() << ">>" << data.left(8).toHex() << "- 252-272 : " << data.mid(252, 20).toHex();
+    m_state = BUSY;
+    m_currentCommand = opcode;
+    writeData(data);
+}
+
+
+/*
+ * VPUT & VGET are a bit more complex as you need to use 64B block mode and noresp flags.
+ *
+ * then at byte 32 you put 1 byte size, 3 bytes for addr, 1 byte size2, 3 bytes addr 2, etc..
+ */
+
+void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags,
+                                    const QList<QPair<unsigned int, quint8> >& args)
+{
+    int filer_size = 64 - 7;
+    // SD2Snes expect this flags for vget and vput
+    flags |= SD2Snes::server_flags::DATA64B | SD2Snes::server_flags::NORESP;
+    blockSize = 64;
+    m_commandFlags = flags;
+    sDebug() << "CMD : " << opcode << space << flags << args;
+    QByteArray data("USBA");
+    data.append(static_cast<char>(opcode));
+    data.append(static_cast<char>(space));
+    data.append(static_cast<char>(flags));
+    data.append(QByteArray().fill(0, filer_size));
+    int i = 0;
+    int tsize = 0;
+    foreach (auto infos, args) {
+        data[32 + i * 4] = static_cast<char>(infos.second);
+        data[33 + i * 4] = static_cast<char>((infos.first >> 16) & 0xFF);
+        data[34 + i * 4] = static_cast<char>((infos.first >> 8) & 0xFF);
+        data[35 + i * 4] = static_cast<char>(infos.first & 0xFF);
+        i++;
+        tsize += infos.second;
+    }
+    sDebug() << "VCMD Sending : " << data;
+    if (opcode == SD2Snes::opcode::VGET)
+        m_getSize = tsize;
+    if (opcode == SD2Snes::opcode::VPUT)
+        m_putSize = tsize + blockSize;
+    m_state = BUSY;
+    m_currentCommand = opcode;
+    writeData(data);
+}
+
+
+
+/*
+ * Most command will return first a response block, this is mostly to validate the command
+ * In a case of a GET command this response block will contains the size of data
+ * returned by the GET (mostly usefull for file get)
+ *  The response block look like "USBA", RESPONSE
+ *
+ * Then you get your data relevant to the command :
+ * Nothing for most command as a valid response block mean it's ok.
+ * GET/VGET you get your data + padding to have a number of byte that are a multiple of blocksize (sig)
+ * LS command return you a sequence of bytes like TYPE (1 byte), NAME
+ *    0/1 are for file/directory, 02 mark that the name is in the next block (fuck this)
+ *    FF is the end of the list.
+*/
+
 void SD2SnesDevice::spReadyRead()
 {
     while (m_port.bytesAvailable() >= blockSize)
@@ -207,61 +311,6 @@ bool    SD2SnesDevice::checkEndForGet()
         return bytesReceived == cmp_size + blockSize;
 }
 
-void    SD2SnesDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray& arg, const QByteArray arg2 = QByteArray())
-{
-    int filer_size = 512 - 7;
-    blockSize = 512;
-    m_commandFlags = flags;
-    sDebug() << "CMD : " << opcode << space << flags << arg;
-    QByteArray data("USBA");
-    data.append(static_cast<char>(opcode));
-    data.append(static_cast<char>(space));
-    data.append(static_cast<char>(flags));
-    data.append(QByteArray().fill(0, filer_size));
-    data.replace(256, arg.size(), arg);
-    if (!arg2.isEmpty() && opcode != SD2Snes::opcode::MV)
-        data.replace(252, arg2.size(), arg2);
-    if (!arg2.isEmpty() && opcode == SD2Snes::opcode::MV)
-        data.replace(8, arg2.size(), arg2);
-    sDebug() << ">>" << data.left(8).toHex() << "- 252-272 : " << data.mid(252, 20).toHex();
-    m_state = BUSY;
-    m_currentCommand = opcode;
-    writeData(data);
-}
-
-void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags,
-                                    const QList<QPair<unsigned int, quint8> >& args)
-{
-    int filer_size = 64 - 7;
-    // SD2Snes expect this flags for vget and vput
-    flags |= SD2Snes::server_flags::DATA64B | SD2Snes::server_flags::NORESP;
-    blockSize = 64;
-    m_commandFlags = flags;
-    sDebug() << "CMD : " << opcode << space << flags << args;
-    QByteArray data("USBA");
-    data.append(static_cast<char>(opcode));
-    data.append(static_cast<char>(space));
-    data.append(static_cast<char>(flags));
-    data.append(QByteArray().fill(0, filer_size));
-    int i = 0;
-    int tsize = 0;
-    foreach (auto infos, args) {
-        data[32 + i * 4] = static_cast<char>(infos.second);
-        data[33 + i * 4] = static_cast<char>((infos.first >> 16) & 0xFF);
-        data[34 + i * 4] = static_cast<char>((infos.first >> 8) & 0xFF);
-        data[35 + i * 4] = static_cast<char>(infos.first & 0xFF);
-        i++;
-        tsize += infos.second;
-    }
-    sDebug() << "VCMD Sending : " << data;
-    if (opcode == SD2Snes::opcode::VGET)
-        m_getSize = tsize;
-    if (opcode == SD2Snes::opcode::VPUT)
-        m_putSize = tsize + blockSize;
-    m_state = BUSY;
-    m_currentCommand = opcode;
-    writeData(data);
-}
 
 void SD2SnesDevice::infoCommand()
 {
@@ -374,7 +423,7 @@ void SD2SnesDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
     sendCommand(op, SD2Snes::space::SNES, SD2Snes::server_flags::NONE, args);
 }
 
-static QByteArray   int24ToData(quint32 number)
+static QByteArray   int32ToData(quint32 number)
 {
     QByteArray data;
     data.append(static_cast<char>((number >> 24) & 0xFF));
@@ -389,7 +438,7 @@ static QByteArray   int24ToData(quint32 number)
 
 void SD2SnesDevice::putFile(QByteArray name, unsigned int size)
 {
-    QByteArray data = int24ToData(size);
+    QByteArray data = int32ToData(size);
     responseSizeExpected = 512;
     m_currentCommand = SD2Snes::opcode::PUT;
     m_commandFlags = 0;
@@ -410,8 +459,8 @@ void SD2SnesDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsi
     m_getSize = 0;
     m_get_expected_size = static_cast<int>(size);
     checkCommandEnd = &SD2SnesDevice::checkEndForGet;
-    QByteArray data1 = int24ToData(addr);
-    QByteArray data2 = int24ToData(size);
+    QByteArray data1 = int32ToData(addr);
+    QByteArray data2 = int32ToData(size);
     sendCommand(SD2Snes::opcode::GET, space, SD2Snes::server_flags::NONE, data1, data2);
 }
 
@@ -430,8 +479,8 @@ void SD2SnesDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned in
 void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
     responseSizeExpected = 512;
-    QByteArray data1 = int24ToData(addr);
-    QByteArray data2 = int24ToData(size);
+    QByteArray data1 = int32ToData(addr);
+    QByteArray data2 = int32ToData(size);
     sendCommand(SD2Snes::opcode::PUT, space, SD2Snes::server_flags::NONE, data1, data2);
 }
 
@@ -444,11 +493,13 @@ void SD2SnesDevice::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned in
 void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
 {
     responseSizeExpected = 512;
-    QByteArray data1 = int24ToData(addr);
-    QByteArray data2 = int24ToData(size);
+    QByteArray data1 = int32ToData(addr);
+    QByteArray data2 = int32ToData(size);
     sendCommand(SD2Snes::opcode::PUT, space, flags, data1, data2);
 }
 
+
+// Why we send the whole response?
 QList<ADevice::FileInfos> SD2SnesDevice::parseLSCommand(QByteArray& dataI)
 {
     QList<FileInfos>  infos;
