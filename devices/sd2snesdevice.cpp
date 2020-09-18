@@ -409,8 +409,6 @@ bool SD2SnesDevice::hasVariaditeCommands()
 
 void    SD2SnesDevice::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
 {
-    if (op == SD2Snes::opcode::LS)
-       checkCommandEnd = &SD2SnesDevice::checkEndForLs;
     if (op == SD2Snes::opcode::GET)
     {
         m_getSize = 0;
