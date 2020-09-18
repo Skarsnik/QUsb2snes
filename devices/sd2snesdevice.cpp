@@ -78,11 +78,15 @@ void    SD2SnesDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space,
     blockSize = 512;
     m_commandFlags = flags;
     sDebug() << "CMD : " << opcode << space << flags << arg;
+    skipResponse = false;
+    if (opcode == SD2Snes::opcode::PUT)
+        skipResponse = true;
     QByteArray data("USBA");
     data.append(static_cast<char>(opcode));
     data.append(static_cast<char>(space));
     data.append(static_cast<char>(flags));
     data.append(QByteArray().fill(0, filer_size));
+    //sDebug() << arg.toHex() << data.toHex();
     data.replace(256, arg.size(), arg);
     if (!arg2.isEmpty() && opcode != SD2Snes::opcode::MV)
         data.replace(252, arg2.size(), arg2);
@@ -91,7 +95,7 @@ void    SD2SnesDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space,
     sDebug() << ">>" << data.left(8).toHex() << "- 252-272 : " << data.mid(252, 20).toHex();
     m_state = BUSY;
     m_currentCommand = opcode;
-    writeData(data);
+    writeToDevice(data);
 }
 
 
@@ -127,12 +131,12 @@ void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space
     }
     sDebug() << "VCMD Sending : " << data;
     if (opcode == SD2Snes::opcode::VGET)
-        m_getSize = tsize;
+        m_get_expected_size = tsize;
     if (opcode == SD2Snes::opcode::VPUT)
-        m_putSize = tsize + blockSize;
+        m_putSize = tsize;
     m_state = BUSY;
     m_currentCommand = opcode;
-    writeData(data);
+    writeToDevice(data);
 }
 
 
@@ -142,6 +146,7 @@ void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space
  * In a case of a GET command this response block will contains the size of data
  * returned by the GET (mostly usefull for file get)
  *  The response block look like "USBA", RESPONSE
+ * For the INFO command, the response block contains the infos.
  *
  * Then you get your data relevant to the command :
  * Nothing for most command as a valid response block mean it's ok.
@@ -153,107 +158,113 @@ void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space
 
 void SD2SnesDevice::spReadyRead()
 {
-    while (m_port.bytesAvailable() >= blockSize)
-        readPacket(m_port.read(blockSize));
-}
-
-void SD2SnesDevice::readPacket(const QByteArray& packetData)
-{
-    Q_ASSERT(packetData.size() == blockSize);
-
     static QByteArray   responseBlock = QByteArray();
-    static bool         firstBlock = true;
-    static int          dataSent = 0;
+    static int          bytesGetSent = 0;
+    bytesReceived += m_port.bytesAvailable();
+    QByteArray data = m_port.readAll();
+    dataReceived += data;
 
-    bytesReceived += packetData.size();
-    dataRead = packetData;
-    dataReceived.append(packetData);
-
-    //sDebug() << "<<" << packetData;
-    sDebug() << "SP Received: " << packetData.size() << " (" << bytesReceived << ")";
-
-    /* If we've received over 512 bytes and NORESP is not set, parse response header */
-    if(responseBlock.isEmpty() && dataReceived.size() >= 512 && (m_commandFlags & SD2Snes::server_flags::NORESP) == 0)
+    sDebug() << "SP Received: " << data.size() << " (" << bytesReceived << ")";
+    // Expecting a response block
+    // We remove these data when we get the full block, that avoid lot of headache after
+    if (responseBlock.isEmpty() && (m_commandFlags & SD2Snes::server_flags::NORESP) == 0)
     {
-        responseBlock = dataReceived.left(512);
-        if(responseBlock.left(5) != (QByteArray("USBA").append(SD2Snes::opcode::RESPONSE)) || responseBlock.at(5) == 1)
+        if (bytesReceived >= blockSize)
         {
-            sDebug() << "Protocol error:" << responseBlock.left(6);
-            m_state = READY;
-            if(fileGetCmd)
-                fileData = dataReceived.mid(512, m_getSize);
+            responseBlock = dataReceived.left(blockSize);
+            dataReceived.remove(0, blockSize);
+            data.remove(0, blockSize);
+            bytesReceived -= blockSize;
+            if(responseBlock.left(5) != (QByteArray("USBA").append(SD2Snes::opcode::RESPONSE)) || responseBlock.at(5) == 1)
+            {
+                sDebug() << "Protocol error:" << responseBlock.left(6);
+                m_state = READY;
+                dataReceived.clear();
+                bytesReceived = 0;
+                fileGetCmd = false;
+                m_getSize = -1;
+                responseBlock.clear();
+                emit protocolError();
+                return;
+            }
+        } else {
+            return;
+        }
+    }
+    // Most command only need a valid response block
+    if (m_currentCommand != SD2Snes::opcode::GET && m_currentCommand != SD2Snes::opcode::VGET
+        && m_currentCommand != SD2Snes::opcode::LS)
+    {
+        if (m_currentCommand == SD2Snes::opcode::INFO)
+            dataRead = responseBlock;
+        if (skipResponse) // The firmware like to send me response block before a large put cmd is done?
+        {
+            responseBlock.clear();
             dataReceived.clear();
             bytesReceived = 0;
-            fileGetCmd = false;
-            firstBlock = true;
-            m_getSize = -1;
-            responseBlock.clear();
-            emit protocolError();
+            skipResponse = false;
             return;
         }
-    }
-
-    if(m_getSize <= 0 && (m_currentCommand == SD2Snes::opcode::GET) && responseBlock.size() > 0)
-    {
-        dataSent = 512;
-        m_getSize =  ((responseBlock.at(252)&0xFF) << 24);
-        m_getSize += ((responseBlock.at(253)&0xFF) << 16);
-        m_getSize += ((responseBlock.at(254)&0xFF) << 8);
-        m_getSize += ((responseBlock.at(255)&0xFF));
-        sDebug() << "Received block size:" << m_getSize;
-        if(fileGetCmd)
+        goto cmdFinished;
+    } else {
+        if (m_currentCommand == SD2Snes::opcode::LS)
         {
-            emit sizeGet(static_cast<unsigned int>(m_getSize));
+            lsData.append(dataReceived);
+            if (checkEndForLs())
+                goto cmdFinished;
+            return;
         }
-    }
-
-    if(responseSizeExpected == -1)
-    {
-        if((this->*checkCommandEnd)() == false)
+        if (!responseBlock.isEmpty())
         {
-            if((m_getSize >= 0 && m_getSize > bytesReceived && bytesReceived > dataSent) || m_getSize < 0)
-            {
-                auto dSend = dataReceived.mid(dataSent);
-                emit getDataReceived(dSend);
-                dataSent += dSend.size();
+            m_getSize =  ((responseBlock.at(252)&0xFF) << 24);
+            m_getSize += ((responseBlock.at(253)&0xFF) << 16);
+            m_getSize += ((responseBlock.at(254)&0xFF) << 8);
+            m_getSize += ((responseBlock.at(255)&0xFF));
+            sDebug() << "Received block size:" << m_getSize;
+        } else {
+            m_getSize = m_get_expected_size;
+        }
+        if (fileGetCmd)
+            emit sizeGet(m_getSize);
+        // We want to send data ASAP
+        /*
+         * the issue we receive
+         */
+        // Remember the firmware pad data, we don't want to send the padding
+        int firmwareBytesExpected = m_getSize;
+        if (m_getSize % blockSize)
+            firmwareBytesExpected = m_getSize + (blockSize - (m_getSize % blockSize));
+        // We are fine, not dealing with the padding yet.
+        if (bytesReceived <= m_getSize)
+        {
+            bytesGetSent += data.size();
+            emit getDataReceived(data);
+        }
+        if (bytesReceived > m_getSize)
+        {
+            QByteArray tmp = data.left(m_getSize - bytesGetSent);
+            if (!tmp.isEmpty()) {
+                bytesGetSent += tmp.size();
+                emit getDataReceived(tmp);
             }
-            sDebug() << "Waiting for more data to arrive";
-            return;
         }
-    } else {
-        if(bytesReceived != responseSizeExpected)
+        if (firmwareBytesExpected == bytesReceived)
         {
-            dataSent = 0;
-            return;
+            bytesGetSent = 0;
+            goto cmdFinished;
         }
     }
-
-    sDebug() << m_currentCommand;
-
-    if(m_getSize >= 0)
-    {
-        emit getDataReceived(dataReceived.mid(dataSent, (m_getSize + 512) - dataSent));
-    } else {
-        emit getDataReceived(dataReceived.mid(dataSent));
-    }
-
+    return;
+cmdFinished:
     m_state = READY;
-    dataRead = dataReceived;
-    if (fileGetCmd)
-    {
-        fileData = dataRead.mid(512, m_getSize);
-    }
-    dataReceived.clear();
     bytesReceived = 0;
-    fileGetCmd = false;
-    firstBlock = true;
-    m_getSize = -1;
+    dataReceived.clear();
     responseBlock.clear();
-    dataSent = 0;
-    sDebug() << "Command finished";
+    bytesGetSent = 0;
+    m_getSize = 0;
     emit commandFinished();
-
 }
+
 
 void SD2SnesDevice::spErrorOccurred(QSerialPort::SerialPortError err)
 {
@@ -279,42 +290,25 @@ void SD2SnesDevice::onDTRChanged(bool set)
 
 bool SD2SnesDevice::checkEndForLs()
 {
-    if (dataReceived.size() == 512)
-        return false;
-    QByteArray data = dataReceived.mid(512);
     int cpt = 0;
     unsigned char type;
-    while (cpt < data.size())
+    while (cpt < lsData.size())
     {
-        type = static_cast<unsigned char>(data.at(cpt));
+        type = static_cast<unsigned char>(lsData.at(cpt));
         if (type == 0xFF)
             break;
         cpt++;
-        while (cpt < data.size() && data.at(cpt) != 0)
+        while (cpt < lsData.size() && lsData.at(cpt) != 0)
             cpt++;
         cpt++;
     }
-    if (cpt >= data.size())
+    if (cpt >= lsData.size())
         return false;
     return true;
 }
 
-bool    SD2SnesDevice::checkEndForGet()
-{
-    int cmp_size = m_getSize;
-    if (m_getSize % blockSize != 0)
-        cmp_size = (m_getSize / blockSize) * blockSize + blockSize;
-    //sDebug() << cmp_size;
-    if (m_commandFlags & SD2Snes::server_flags::NORESP)
-        return bytesReceived == cmp_size;
-    else
-        return bytesReceived == cmp_size + blockSize;
-}
-
-
 void SD2SnesDevice::infoCommand()
 {
-    responseSizeExpected = 512;
     sendCommand(SD2Snes::opcode::INFO, SD2Snes::space::FILE, SD2Snes::server_flags::NONE, QByteArray());
 }
 
@@ -323,45 +317,64 @@ bool SD2SnesDevice::canAttach()
     return true;
 }
 
-void SD2SnesDevice::writeData(QByteArray data)
+void SD2SnesDevice::writeToDevice(const QByteArray& data)
 {
     static unsigned int writeCount = 0;
-    //sDebug() << ">>" << data.size() << data;
-    auto sendSize = data.size();
-
-    if (data.size() < blockSize)
-        data.append(QByteArray().fill(0, blockSize - data.size()));
-    if (data.size() % blockSize != 0)
-    {
-        data.resize((data.size() / blockSize) * blockSize + blockSize);
-    }
-
 #ifdef Q_OS_MACOS
     QThread::msleep(10);
 #endif
-    QByteArray temp;
-    int i = 0;
-    temp = data.mid(i, 2048);
-    while (!temp.isEmpty())
-    {
-        auto written = m_port.write(temp);
+    auto written = m_port.write(data);
+    sDebug() << "Written : " << written << " bytes - " "Write count" << writeCount++;
 #ifdef Q_OS_LINUX
     // Prevents a QSerialPort::ResourceError "Resource temporarily unavailable" error when uploading files to sd2snes.
         m_port.waitForBytesWritten();
 #else
-        m_port.flush();
+    m_port.waitForBytesWritten();
+    m_port.flush();
 #endif
-        sDebug() << "Written : " << written << " bytes - " "Write count" << writeCount++;
-        i += 2048;
-        temp = data.mid(i, 2048);
-    }
-    if (m_currentCommand == SD2Snes::VPUT)
-    {
-        sDebug() << "Putsize: " << m_putSize << " sendSize:" << sendSize;
-        m_putSize -= sendSize;
-        if (m_putSize != 0)
-            return ;
+}
 
+void    SD2SnesDevice::beNiceToFirmWare(const QByteArray& data)
+{
+    int nbChunk = data.size() / blockSize;
+    if (data.size() % blockSize)
+        nbChunk += 1;
+    for (unsigned int i = 0; i < nbChunk; i++)
+    {
+        writeToDevice(data.mid(i * blockSize, blockSize));
+    }
+}
+
+void SD2SnesDevice::writeData(QByteArray data)
+{
+    static unsigned int dataSent = 0;
+    unsigned int toWriteSize = data.size();
+    sDebug() << toWriteSize << dataSent << m_putSize;
+    // We are done sending stuff and this cover most case
+    // Since only putfile is likely to send more than blocksize data
+    if (dataSent + toWriteSize == m_putSize)
+    {
+        dataSent += toWriteSize;
+        if (m_putSize % blockSize == 0)
+            beNiceToFirmWare(data);
+        else {
+            sDebug() << "Adding padding to the write" << blockSize - (m_putSize % blockSize);
+            beNiceToFirmWare(data + QByteArray(blockSize - (m_putSize % blockSize), 0));
+        }
+    } else {
+        dataSent += data.size();
+        beNiceToFirmWare(data);
+    }
+    sDebug() << "Putsize: " << m_putSize << " sendSize:" << toWriteSize;
+    if (m_putSize != dataSent)
+        return ;
+    dataSent = 0;
+    // Skipresponse is set to true for PUT cmd, only a new cmd or the reception of
+    // a premature response block unset it
+    if (skipResponse)
+        skipResponse = false;
+    else
+    {
         m_state = READY;
         dataRead = dataReceived;
         dataReceived.clear();
@@ -388,21 +401,20 @@ bool SD2SnesDevice::hasControlCommands()
     return true;
 }
 
+bool SD2SnesDevice::hasVariaditeCommands()
+{
+    return true;
+}
+
 
 void    SD2SnesDevice::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
 {
-    responseSizeExpected = 512;
     if (op == SD2Snes::opcode::LS)
-    {
-        responseSizeExpected = -1;
-        checkCommandEnd = &SD2SnesDevice::checkEndForLs;
-    }
+       checkCommandEnd = &SD2SnesDevice::checkEndForLs;
     if (op == SD2Snes::opcode::GET)
     {
-        responseSizeExpected = -1;
         m_getSize = 0;
         fileGetCmd = true;
-        checkCommandEnd = &SD2SnesDevice::checkEndForGet;
     }
     if (args.size() != 2)
         sendCommand(op, SD2Snes::space::FILE, SD2Snes::server_flags::NONE, args[0]);
@@ -419,17 +431,16 @@ void SD2SnesDevice::fileCommand(SD2Snes::opcode op, QByteArray args)
 
 void SD2SnesDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
 {
-    responseSizeExpected = 512;
     sendCommand(op, SD2Snes::space::SNES, SD2Snes::server_flags::NONE, args);
 }
 
 static QByteArray   int32ToData(quint32 number)
 {
-    QByteArray data;
-    data.append(static_cast<char>((number >> 24) & 0xFF));
-    data.append(static_cast<char>((number >> 16) & 0xFF));
-    data.append(static_cast<char>((number >> 8) & 0xFF));
-    data.append(static_cast<char>(number & 0xFF));
+    QByteArray data(4, 0);
+    data[0] = static_cast<char>((number >> 24) & 0xFF);
+    data[1] = static_cast<char>((number >> 16) & 0xFF);
+    data[2] = static_cast<char>((number >> 8) & 0xFF);
+    data[3] = static_cast<char>(number & 0xFF);
     //sDebug() << "convertir numnber" << number << "to bitarray : " << data.toHex();
     return data;
 
@@ -439,9 +450,9 @@ static QByteArray   int32ToData(quint32 number)
 void SD2SnesDevice::putFile(QByteArray name, unsigned int size)
 {
     QByteArray data = int32ToData(size);
-    responseSizeExpected = 512;
     m_currentCommand = SD2Snes::opcode::PUT;
     m_commandFlags = 0;
+    m_putSize = size;
     sendCommand(SD2Snes::opcode::PUT, SD2Snes::space::FILE, SD2Snes::server_flags::NONE, name, data);
 }
 
@@ -455,10 +466,8 @@ void SD2SnesDevice::getSetAddrCommand(SD2Snes::opcode op, unsigned int addr, uns
 
 void SD2SnesDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
-    responseSizeExpected = -1;
     m_getSize = 0;
     m_get_expected_size = static_cast<int>(size);
-    checkCommandEnd = &SD2SnesDevice::checkEndForGet;
     QByteArray data1 = int32ToData(addr);
     QByteArray data2 = int32ToData(size);
     sendCommand(SD2Snes::opcode::GET, space, SD2Snes::server_flags::NONE, data1, data2);
@@ -467,32 +476,28 @@ void SD2SnesDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsi
 
 void SD2SnesDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
 {
-    responseSizeExpected = -1;
     m_getSize = 0;
     m_get_expected_size = 0;
     foreach (auto p, args)
         m_get_expected_size += p.second;
-    checkCommandEnd = &SD2SnesDevice::checkEndForGet;
     sendVCommand(SD2Snes::opcode::VGET, space, SD2Snes::server_flags::NONE, args);
 }
 
 void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
-    responseSizeExpected = 512;
     QByteArray data1 = int32ToData(addr);
     QByteArray data2 = int32ToData(size);
+    m_putSize = size;
     sendCommand(SD2Snes::opcode::PUT, space, SD2Snes::server_flags::NONE, data1, data2);
 }
 
 void SD2SnesDevice::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> >& args)
 {
-    responseSizeExpected = 512;
     sendVCommand(SD2Snes::opcode::VPUT, space, SD2Snes::server_flags::NONE, args);
 }
 
 void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
 {
-    responseSizeExpected = 512;
     QByteArray data1 = int32ToData(addr);
     QByteArray data2 = int32ToData(size);
     sendCommand(SD2Snes::opcode::PUT, space, flags, data1, data2);
@@ -502,8 +507,9 @@ void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, un
 // Why we send the whole response?
 QList<ADevice::FileInfos> SD2SnesDevice::parseLSCommand(QByteArray& dataI)
 {
+    Q_UNUSED(dataI)
     QList<FileInfos>  infos;
-    QByteArray data = dataI.mid(512);
+    QByteArray& data = lsData;
     int cpt = 0;
     unsigned char type;
     while (true)
@@ -529,6 +535,7 @@ QList<ADevice::FileInfos> SD2SnesDevice::parseLSCommand(QByteArray& dataI)
         fi.name = name;
         infos.append(fi);
     }
+    lsData.clear();
     return infos;
 }
 

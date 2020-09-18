@@ -156,16 +156,18 @@ void    WSServer::executeRequest(MRequest *req)
             device->getAddrCommand(req->space, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
         } else {
 
-            QList<QPair<unsigned int, unsigned int> > pairs;
+            QList<QPair<unsigned int, quint8> > pairs;
             for (int i = 0; i < req->arguments.size(); i += 2)
             {
-                pairs.append(QPair<unsigned int, unsigned int>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUInt(&ok, 16)));
+                pairs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUInt(&ok, 16)));
             }
-            //device->getAddrCommand(req->space, pairs);*/
-            // FIXME this is a meh workaround, but it works I guess?
-            device->getAddrCommand(req->space, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
-            for (int i = 1; i < pairs.size(); i++)
+            if (device->hasVariaditeCommands())
             {
+                device->getAddrCommand(req->space, pairs);
+            } else {
+                device->getAddrCommand(req->space, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
+                for (int i = 1; i < pairs.size(); i++)
+                {
                     MRequest* newReq = new MRequest();
                     newReq->owner = ws;
                     newReq->state = RequestState::NEW;
@@ -176,6 +178,7 @@ void    WSServer::executeRequest(MRequest *req)
                     newReq->arguments.append(QString::number(pairs.at(i).first, 16));
                     newReq->arguments.append(QString::number(pairs.at(i).second, 16));
                     pendingRequests[device].append(newReq);
+                }
             }
         }
         req->state = RequestState::WAITINGREPLY;
@@ -189,10 +192,12 @@ void    WSServer::executeRequest(MRequest *req)
             return ;
         }
         bool ok;
+        unsigned int  putSize = 0;
         // Basic usage of PutAddress
         // FIXME add flags in VPUT
         if (req->arguments.size() == 2)
         {
+            putSize = req->arguments.at(1).toUInt(&ok, 16);
             if (req->flags.isEmpty())
                 device->putAddrCommand(req->space, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
             else {
@@ -208,13 +213,14 @@ void    WSServer::executeRequest(MRequest *req)
            for (int i = 0; i < req->arguments.size(); i += 2)
            {
                pairs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUShort(&ok, 16)));
+               putSize += req->arguments.at(i + 1).toUShort(&ok, 16);
            }
            device->putAddrCommand(req->space, pairs);
         }
         req->state = RequestState::WAITINGREPLY;
         wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
         sDebug() << "Wriging before cps :" << __func__ << wsInfos[ws].currentPutSize;
-        wsInfos[ws].currentPutSize = req->arguments.at(1).toUInt(&ok, 16);
+        wsInfos[ws].currentPutSize = putSize;
         sDebug() << "Writing after cps" << __func__ << wsInfos[ws].currentPutSize;
         break;
     }

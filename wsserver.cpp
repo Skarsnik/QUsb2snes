@@ -253,7 +253,7 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
     infos.recvData.append(data);
     infos.byteReceived += data.size();
     ADevice* dev = wsInfos.value(ws).attachedTo;
-    sDebug() << infos.name << "Received binary data" << data.size() << data.toHex() << "Pending size: " << infos.pendingPutSizes;
+    sDebug() << infos.name << "Received binary data" << data.size() << "Pending size: " << infos.pendingPutSizes;
     if (infos.commandState != ClientCommandState::WAITINGBDATAREPLY && infos.pendingPutSizes.empty())
     {
         setError(ErrorType::ProtocolError, "Sending binary data when nothing waiting for it");
