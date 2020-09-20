@@ -35,7 +35,9 @@ bool SD2SnesDevice::open()
     sDebug() << "FlowControl : " << m_port.flowControl();
     sDebug() << "Stop bits : " << m_port.stopBits();
     if (toret)
+    {
         m_state = READY;
+    }
     return toret;
 }
 
@@ -43,14 +45,18 @@ void SD2SnesDevice::close()
 {
     m_port.setDataTerminalReady(false);
     if (m_state != CLOSED)
+    {
         m_port.close();
+    }
     m_state = CLOSED;
 }
 
 void SD2SnesDevice::spReadyRead()
 {
     while (m_port.bytesAvailable() >= blockSize)
+    {
         readPacket(m_port.read(blockSize));
+    }
 }
 
 void SD2SnesDevice::readPacket(const QByteArray& packetData)
@@ -148,14 +154,15 @@ void SD2SnesDevice::readPacket(const QByteArray& packetData)
     dataSent = 0;
     sDebug() << "Command finished";
     emit commandFinished();
-
 }
 
 void SD2SnesDevice::spErrorOccurred(QSerialPort::SerialPortError err)
 {
     sDebug() << "Error " << err << m_port.errorString();
     if (err == QSerialPort::NoError)
-        return ;
+    {
+        return;
+    }
     if (m_state != CLOSED)
     {
         m_state = CLOSED;
@@ -163,7 +170,7 @@ void SD2SnesDevice::spErrorOccurred(QSerialPort::SerialPortError err)
     }
 }
 
-void    SD2SnesDevice::onRTSChanged(bool set)
+void SD2SnesDevice::onRTSChanged(bool set)
 {
     sDebug() << "RTS changed : " << set;
 }
@@ -176,7 +183,9 @@ void SD2SnesDevice::onDTRChanged(bool set)
 bool SD2SnesDevice::checkEndForLs()
 {
     if (dataReceived.size() == 512)
+    {
         return false;
+    }
     QByteArray data = dataReceived.mid(512);
     int cpt = 0;
     unsigned char type;
@@ -184,32 +193,40 @@ bool SD2SnesDevice::checkEndForLs()
     {
         type = static_cast<unsigned char>(data.at(cpt));
         if (type == 0xFF)
+        {
             break;
+        }
         cpt++;
         while (cpt < data.size() && data.at(cpt) != 0)
+        {
             cpt++;
+        }
         cpt++;
     }
-    if (cpt >= data.size())
-        return false;
-    return true;
+    return cpt < data.size();
 }
 
 bool    SD2SnesDevice::checkEndForGet()
 {
     int cmp_size = m_getSize;
     if (m_getSize % blockSize != 0)
+    {
         cmp_size = (m_getSize / blockSize) * blockSize + blockSize;
+    }
     //sDebug() << cmp_size;
     if (m_commandFlags & SD2Snes::server_flags::NORESP)
+    {
         return bytesReceived == cmp_size;
+    }
     else
+    {
         return bytesReceived == cmp_size + blockSize;
+    }
 }
 
 void    SD2SnesDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray& arg, const QByteArray arg2 = QByteArray())
 {
-    int filer_size = 512 - 7;
+    int padding_size = 512 - 7;
     blockSize = 512;
     m_commandFlags = flags;
     sDebug() << "CMD : " << opcode << space << flags << arg;
@@ -217,12 +234,20 @@ void    SD2SnesDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space,
     data.append(static_cast<char>(opcode));
     data.append(static_cast<char>(space));
     data.append(static_cast<char>(flags));
-    data.append(QByteArray().fill(0, filer_size));
+    data.append(QByteArray().fill(0, padding_size));
     data.replace(256, arg.size(), arg);
-    if (!arg2.isEmpty() && opcode != SD2Snes::opcode::MV)
-        data.replace(252, arg2.size(), arg2);
-    if (!arg2.isEmpty() && opcode == SD2Snes::opcode::MV)
-        data.replace(8, arg2.size(), arg2);
+    if (!arg2.isEmpty())
+    {
+        if(opcode == SD2Snes::opcode::MV)
+        {
+            data.replace(8, arg2.size(), arg2);
+        }
+        else
+        {
+            data.replace(252, arg2.size(), arg2);
+        }
+    }
+
     sDebug() << ">>" << data.left(8).toHex() << "- 252-272 : " << data.mid(252, 20).toHex();
     m_state = BUSY;
     m_currentCommand = opcode;
@@ -232,7 +257,7 @@ void    SD2SnesDevice::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space,
 void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags,
                                     const QList<QPair<unsigned int, quint8> >& args)
 {
-    int filer_size = 64 - 7;
+    int padding_size = 64 - 7;
     // SD2Snes expect this flags for vget and vput
     flags |= SD2Snes::server_flags::DATA64B | SD2Snes::server_flags::NORESP;
     blockSize = 64;
@@ -242,7 +267,7 @@ void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space
     data.append(static_cast<char>(opcode));
     data.append(static_cast<char>(space));
     data.append(static_cast<char>(flags));
-    data.append(QByteArray().fill(0, filer_size));
+    data.append(QByteArray().fill(0, padding_size));
     int i = 0;
     int tsize = 0;
     foreach (auto infos, args) {
@@ -255,9 +280,13 @@ void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space
     }
     sDebug() << "VCMD Sending : " << data;
     if (opcode == SD2Snes::opcode::VGET)
+    {
         m_getSize = tsize;
+    }
     if (opcode == SD2Snes::opcode::VPUT)
+    {
         m_putSize = tsize + blockSize;
+    }
     m_state = BUSY;
     m_currentCommand = opcode;
     writeData(data);
@@ -281,7 +310,9 @@ void SD2SnesDevice::writeData(QByteArray data)
     auto sendSize = data.size();
 
     if (data.size() < blockSize)
+    {
         data.append(QByteArray().fill(0, blockSize - data.size()));
+    }
     if (data.size() % blockSize != 0)
     {
         data.resize((data.size() / blockSize) * blockSize + blockSize);
@@ -311,7 +342,9 @@ void SD2SnesDevice::writeData(QByteArray data)
         sDebug() << "Putsize: " << m_putSize << " sendSize:" << sendSize;
         m_putSize -= sendSize;
         if (m_putSize != 0)
-            return ;
+        {
+            return;
+        }
 
         m_state = READY;
         dataRead = dataReceived;
@@ -339,8 +372,7 @@ bool SD2SnesDevice::hasControlCommands()
     return true;
 }
 
-
-void    SD2SnesDevice::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
+void SD2SnesDevice::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
 {
     responseSizeExpected = 512;
     if (op == SD2Snes::opcode::LS)
@@ -355,10 +387,14 @@ void    SD2SnesDevice::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
         fileGetCmd = true;
         checkCommandEnd = &SD2SnesDevice::checkEndForGet;
     }
-    if (args.size() != 2)
+    if (args.size() != 2)   
+    {
         sendCommand(op, SD2Snes::space::FILE, SD2Snes::server_flags::NONE, args[0]);
+    }
     else
+    {
         sendCommand(op, SD2Snes::space::FILE, SD2Snes::server_flags::NONE, args[0], args[1]);
+    }
 }
 
 void SD2SnesDevice::fileCommand(SD2Snes::opcode op, QByteArray args)
@@ -374,34 +410,18 @@ void SD2SnesDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
     sendCommand(op, SD2Snes::space::SNES, SD2Snes::server_flags::NONE, args);
 }
 
-static QByteArray   int24ToData(quint32 number)
+static QByteArray intToData(quint32 number)
 {
-    QByteArray data;
-    data.append(static_cast<char>((number >> 24) & 0xFF));
-    data.append(static_cast<char>((number >> 16) & 0xFF));
-    data.append(static_cast<char>((number >> 8) & 0xFF));
-    data.append(static_cast<char>(number & 0xFF));
-    //sDebug() << "convertir numnber" << number << "to bitarray : " << data.toHex();
-    return data;
-
+    return QByteArray::number(number);
 }
-
 
 void SD2SnesDevice::putFile(QByteArray name, unsigned int size)
 {
-    QByteArray data = int24ToData(size);
+    QByteArray data = intToData(size);
     responseSizeExpected = 512;
     m_currentCommand = SD2Snes::opcode::PUT;
     m_commandFlags = 0;
     sendCommand(SD2Snes::opcode::PUT, SD2Snes::space::FILE, SD2Snes::server_flags::NONE, name, data);
-}
-
-
-void SD2SnesDevice::getSetAddrCommand(SD2Snes::opcode op, unsigned int addr, unsigned int size)
-{
-    Q_UNUSED(op);
-    Q_UNUSED(addr);
-    Q_UNUSED(size);
 }
 
 void SD2SnesDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
@@ -410,8 +430,8 @@ void SD2SnesDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsi
     m_getSize = 0;
     m_get_expected_size = static_cast<int>(size);
     checkCommandEnd = &SD2SnesDevice::checkEndForGet;
-    QByteArray data1 = int24ToData(addr);
-    QByteArray data2 = int24ToData(size);
+    QByteArray data1 = intToData(addr);
+    QByteArray data2 = intToData(size);
     sendCommand(SD2Snes::opcode::GET, space, SD2Snes::server_flags::NONE, data1, data2);
 }
 
@@ -422,31 +442,30 @@ void SD2SnesDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned in
     m_getSize = 0;
     m_get_expected_size = 0;
     foreach (auto p, args)
+    {
         m_get_expected_size += p.second;
+    }
     checkCommandEnd = &SD2SnesDevice::checkEndForGet;
     sendVCommand(SD2Snes::opcode::VGET, space, SD2Snes::server_flags::NONE, args);
 }
 
 void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
+    return putAddrCommand(space, SD2Snes::server_flags::NONE, addr, size);
+}
+
+void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
+{
     responseSizeExpected = 512;
-    QByteArray data1 = int24ToData(addr);
-    QByteArray data2 = int24ToData(size);
-    sendCommand(SD2Snes::opcode::PUT, space, SD2Snes::server_flags::NONE, data1, data2);
+    QByteArray data1 = intToData(addr);
+    QByteArray data2 = intToData(size);
+    sendCommand(SD2Snes::opcode::PUT, space, flags, data1, data2);
 }
 
 void SD2SnesDevice::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> >& args)
 {
     responseSizeExpected = 512;
     sendVCommand(SD2Snes::opcode::VPUT, space, SD2Snes::server_flags::NONE, args);
-}
-
-void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
-{
-    responseSizeExpected = 512;
-    QByteArray data1 = int24ToData(addr);
-    QByteArray data2 = int24ToData(size);
-    sendCommand(SD2Snes::opcode::PUT, space, flags, data1, data2);
 }
 
 QList<ADevice::FileInfos> SD2SnesDevice::parseLSCommand(QByteArray& dataI)
@@ -459,11 +478,15 @@ QList<ADevice::FileInfos> SD2SnesDevice::parseLSCommand(QByteArray& dataI)
     {
         type = static_cast<unsigned char>(data.at(cpt));
         if (type == 0xFF)
+        {
             break;
+        }
         if (type == 0x02)
         {
             while (cpt % 512)
+            {
                 cpt++;
+            }
         }
         QString name;
         cpt++;
