@@ -520,7 +520,8 @@ bool WSServer::isValidUnAttached(const USB2SnesWS::opcode opcode)
     if (opcode == USB2SnesWS::Attach ||
         opcode == USB2SnesWS::AppVersion ||
         opcode == USB2SnesWS::Name ||
-        opcode == USB2SnesWS::DeviceList)
+        opcode == USB2SnesWS::DeviceList ||
+        opcode == USB2SnesWS::Close)
         return true;
     return false;
 }

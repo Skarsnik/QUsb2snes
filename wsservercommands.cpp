@@ -53,6 +53,11 @@ void    WSServer::executeRequest(MRequest *req)
         wsInfos[ws].name = req->arguments.at(0);
         goto endServerRequest;
     }
+    case USB2SnesWS::Close : {
+        ws->close();
+        cleanUpSocket(ws);
+        goto endServerRequest;
+    }
     case USB2SnesWS::Info : {
         device->infoCommand();
         req->state = RequestState::WAITINGREPLY;
