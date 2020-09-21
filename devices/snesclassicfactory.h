@@ -22,13 +22,13 @@ public:
     QString status();
     QString name() const;
 private:
-    QTcpSocket*         socket;
+    QTcpSocket*         socket = nullptr;
     QByteArray          canoePid;
-    SNESClassic*        device;
+    SNESClassic*        device = nullptr;
     QTimer              checkAliveTimer;
-    unsigned int        romLocation;
-    unsigned int        sramLocation;
-    unsigned int        ramLocation;
+    unsigned int        romLocation = 0;
+    unsigned int        sramLocation = 0;
+    unsigned int        ramLocation = 0;
     QString             snesclassicIP;
 
     void executeCommand(QByteArray toExec);
@@ -39,6 +39,9 @@ private:
     void findMemoryLocations();
     bool checkStuff();
     void aliveCheck();
+
+    bool hasValidMemory();
+    void resetMemoryAddresses();
 };
 
 #endif // SNESCLASSICFACTORY_H
