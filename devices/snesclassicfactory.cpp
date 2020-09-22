@@ -1,5 +1,6 @@
 #include <QLoggingCategory>
 #include <QSettings>
+#include <QtEndian>
 
 Q_LOGGING_CATEGORY(log_snesclassicfact, "SNESClassic Factory")
 #define sDebug() qCDebug(log_snesclassicfact)
@@ -67,8 +68,6 @@ QByteArray SNESClassicFactory::readSocketReturns(QTcpSocket* msocket)
     }
     return toret;
 }
-
-#include <QtEndian>
 
 void SNESClassicFactory::findMemoryLocations()
 {
