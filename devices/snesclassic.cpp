@@ -43,19 +43,11 @@ void SNESClassic::socketCommandError()
     sDebug() << "socketerr";
     socket->disconnectFromHost();
     alive_timer.stop();
-    //lastCommandType = SD2Snes::opcode::OPCODE_NONE;
     setCommand(SD2Snes::opcode::OPCODE_NONE);
-
 }
 
 void SNESClassic::onSocketReadReady()
 {
-    std::stringstream ss;
-    ss << std::this_thread::get_id();
-    uint64_t id = std::stoull(ss.str());
-
-    sDebug() << "socketReadReadyId" << id;
-
     if (m_state == CLOSED)
     {
         return;
@@ -85,10 +77,6 @@ void SNESClassic::onSocketReadReady()
         }
         case SD2Snes::opcode::OPCODE_NONE:
         {
-
-            sDebug() << "about to die? " << data.size();
-            // TODO: this fails in the case that there's a disconnect :'(
-            // TODO: this fails a lot
             assert(data.size() == 0);
             return;
         }
@@ -98,23 +86,22 @@ void SNESClassic::onSocketReadReady()
         }
     }
 
-
     switch(commandState)
     {
         case CommandState::ERROR:
         {
-        qDebug() << "ERROR";
+            qDebug() << "ERROR";
             socketCommandError();
             break;
         }
         case CommandState::IN_PROGRESS:
         {
-        qDebug() << "IN_PROG";
+            qDebug() << "IN_PROG";
             break;
         }
         case CommandState::FINISHED:
         {
-        qDebug() << "FIN!";
+            qDebug() << "FIN!";
             socketCommandFinished();
             break;
         }
@@ -283,9 +270,6 @@ void SNESClassic::infoCommand()
 
 void SNESClassic::writeData(QByteArray data)
 {
-    sDebug() << "WRITEDATA!!!!";
-    // uhhh
-    assert(false);
     lastPutWrite += data;
     sDebug() << ">>" << data;
     socket->write(data);
@@ -359,18 +343,19 @@ void SNESClassic::onAliveTimeout()
     disconnect(socket, &QTcpSocket::connected, this, &SNESClassic::onSocketConnected);
     connect(socket, &QTcpSocket::disconnected, this, &SNESClassic::onSocketDisconnected);
     socket->connectToHost(myIp, 1042);
-    // TODO: don't do this, replay the last command
+
     // TODO: introduce command index to serverstuff so that it can discard already used commands?
+    // TODO: this can fail
     if (socket->waitForConnected(100))
     {
-
         if(lastCommandType != SD2Snes::opcode::OPCODE_NONE)
         {
+            // don't bypass in this case, we need to reset the last written timer
             writeSocket(lastCmdWrite);
-            // this is suspicious
-            if (lastCommandType != SD2Snes::opcode::GET)
+            if (lastCommandType == SD2Snes::opcode::PUT)
             {
-                writeSocket(lastPutWrite);
+                // bypass writeSocket and writeData, we don't want to mess with that state
+                socket->write(lastPutWrite);
             }
         }
     }
