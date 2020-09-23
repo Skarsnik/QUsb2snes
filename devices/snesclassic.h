@@ -3,9 +3,19 @@
 
 #include "../adevice.h"
 
+#include "sd2snesdevice.h"
+#include "../rommapping/rominfo.h"
+
 #include <QObject>
 #include <QTcpSocket>
 #include <QTimer>
+
+enum class CommandState
+{
+    ERROR,
+    IN_PROGRESS,
+    FINISHED,
+};
 
 class SNESClassic : public ADevice
 {
@@ -25,12 +35,11 @@ public:
     void putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args) override;
     void putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size) override;
     void infoCommand() override;
-    void setState(ADevice::State state);
     void writeData(QByteArray data) override;
     QString name() const override;
     bool hasFileCommands() override;
     bool hasControlCommands() override;
-    bool canAttach();
+
     void sockConnect(QString ip);
     USB2SnesInfo parseInfo(const QByteArray &data) override;
     QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI) override;
@@ -41,35 +50,43 @@ public slots:
     void close() override;
 
 private slots:
-    void    onTimerOut();
     void    onSocketReadReady();
     void    onSocketDisconnected();
     void    onAliveTimeout();
 
     void onSocketConnected();
 private:
-    QTimer              m_timer;
     QTimer              alive_timer;
     QTcpSocket*         socket;
     QString             myIp;
 
-    unsigned int        putAddr;
-    unsigned int        putSize;
     unsigned int        romLocation;
     unsigned int        sramLocation;
     unsigned int        ramLocation;
-    bool                cmdWasGet;
     unsigned int        getSize;
     QByteArray          getData;
-    bool                requestInfo;
     QByteArray          lastCmdWrite;
     QByteArray          lastPutWrite;
     struct rom_infos*   c_rom_infos;
+    rom_type            infoRequestType = LoROM;
 
-    void                findMemoryLocations();
     void                executeCommand(QByteArray toExec);
     void                writeSocket(QByteArray toWrite);
     QByteArray          readCommandReturns(QTcpSocket *msocket);
+
+    //new API
+    void socketCommandFinished();
+    void socketCommandError();
+
+    CommandState handlePutDataResponse(const QByteArray& data);
+    CommandState handleGetDataResponse(const QByteArray& data);
+    CommandState handleRequestInfoResponse(const QByteArray& data);
+
+    SD2Snes::opcode lastCommandType = SD2Snes::opcode::OPCODE_NONE;
+
+    void setCommand(SD2Snes::opcode command);
+
+    QByteArray getInfoCommand(rom_type);
 };
 
 #endif // SNESCLASSIC_H

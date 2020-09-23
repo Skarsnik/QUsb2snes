@@ -380,7 +380,7 @@ void        WSServer::processCommandQueue(ADevice* device)
         sDebug() << cmdQueue.size() << " requests in queue, processing the first";
         MRequest* req = cmdQueue.takeFirst();
         currentRequests[device] = req;
-        devicesInfos[device].currentCommand = req->opcode;
+        devicesInfos[device].currentCommand = req->opcode; // TODO: put on the device
         devicesInfos[device].currentWS = req->owner;
         req->wasPending = true;
         // Request is no longer in queue, so expected data need to not go in queue
