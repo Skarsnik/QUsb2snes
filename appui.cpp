@@ -20,9 +20,11 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #define sDebug() qCDebug(log_appUi)
 #define sInfo() qCInfo(log_appUi)
 
+#include "usb2snes.h"
 #include "appui.h"
 #include "devices/snesclassic.h"
 #include "wsserver.h"
+#include "tempdeviceselector.h"
 
 const  QString             applicationJsonFileName = "qusb2snesapp.json";
 
@@ -34,12 +36,6 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     sysTray = new QSystemTrayIcon(QIcon(":/img/icon64x64.ico"));
     qApp->setQuitOnLastWindowClosed(false);
 
-    QObject::connect(&wsServer, &WSServer::listenFailed, [=](const QString& err) {
-        QMessageBox::critical(nullptr, tr("Error starting the websocket server"),
-                              QString(tr("There was an error starting the core of the application : %1.\n"
-                                         "Make sure you don't have another software running that use the same port (8080). This can be the old Usb2Snes application or Crowd Control for example.")).arg(err));
-        qApp->exit(1);
-    });
     retroarchFactory = nullptr;
     sd2snesFactory = nullptr;
     luaBridge = nullptr;
@@ -73,7 +69,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
 
 void AppUi::init()
 {
-    sd2snesAction = new QAction(QIcon(":/img/sd2snes.png"), tr("Enable SD2SNES Support"));
+    sd2snesAction = new QAction(QIcon(":/img/ikari.ico"), tr("Enable SD2SNES Support"));
     sd2snesAction->setCheckable(true);
     connect(sd2snesAction, SIGNAL(triggered(bool)), this, SLOT(onSD2SnesTriggered(bool)));
 
@@ -141,6 +137,7 @@ void AppUi::init()
                      &QAction::triggered, this, &AppUi::addWindowsSendToEntry);
     if (!globalSettings->contains("SendToSet"))
     {
+        globalSettings->setValue("SendToSet", true);
         QMessageBox msg;
         msg.setText(tr("Do you want to create a entry in the 'Send To' menu of Windows to upload file to the sd2snes?"));
         msg.setInformativeText(tr("This will only be asked once, if you want to add it later go into the Misc menu."));
@@ -149,8 +146,7 @@ void AppUi::init()
         msg.setDefaultButton(QMessageBox::Ok);
         int ret = msg.exec();
         if (ret == QMessageBox::Ok)
-            addWindowsSendToEntry();
-        globalSettings->setValue("SendToSet", true);
+            addWindowsSendToEntry();        
     }
     if (!globalSettings->contains("checkUpdateCounter") || globalSettings->value("checkUpdateCounter").toInt() == 5)
     {
@@ -199,7 +195,64 @@ void AppUi::init()
     connect(qApp, &QCoreApplication::aboutToQuit, [=]() {
       sysTray->hide();
     });
+    if (!globalSettings->contains("FirstTime"))
+    {
+        globalSettings->setValue("FirstTime", true);
+        TempDeviceSelector selector;
+        if (selector.exec() == QDialog::Accepted)
+        {
+            if (selector.devices.contains("SD2SNES"))
+                onSD2SnesTriggered(true);
+            if (selector.devices.contains("LUA"))
+                onLuaBridgeTriggered(true);
+            if (selector.devices.contains("RETROARCH"))
+                onRetroarchTriggered(true);
+            if (selector.devices.contains("CLASSIC"))
+                onSNESClassicTriggered(true);
+        }
+    }
+    startWServer();
 }
+
+void   AppUi::startWServer()
+{
+    quint16 port = 0;
+    QHostAddress addr(QHostAddress::Any);
+    if (globalSettings->contains("listen"))
+        addr = QHostInfo::fromName(globalSettings->value("listen").toString()).addresses().first();
+    if (globalSettings->contains("port"))
+        port = globalSettings->value("port").toUInt();
+    QString status;
+    // If the port is changed manually
+    if (port != 0)
+    {
+        status = wsServer.start(addr, port);
+        if (!status.isEmpty())
+        {
+            QMessageBox::critical(nullptr, tr("Error starting the application"), QString(tr("Error starting the core of the application\n Error listening on %1:%2 : %3\nMake sure nothing else is using this port").arg(addr.toString()).arg(port).arg(status)));
+            qApp->exit(1);
+        }
+        return ;
+    }
+    // Default behavior
+    status = wsServer.start(addr, USB2SNES::legacyPort);
+    if (!status.isEmpty())
+    {
+        QMessageBox::warning(nullptr, tr("Error listening on legacy port"),
+                     QString(tr("There was an error listenning on port 8080 :%1\n"
+                                "This can be that QUsb2Snes is already running, the legacy USB2SNES application or something else.\n\n"
+                                "Old applications would likely not work.")).arg(status));
+    }
+    status = wsServer.start(addr, USB2SNES::defaultPort);
+    if (!status.isEmpty())
+    {
+        QMessageBox::critical(nullptr, tr("Error listenning on normal port"),
+                              QString(tr("There was an error starting the core of the application : %1\n"
+                                         "Make sure there is no other Usb2Snes webserver application running (QUsb2Snes/Crowd Control")));
+        qApp->exit(1);
+    }
+}
+
 
 void AppUi::updated(QString fromVersion)
 {
@@ -293,7 +346,7 @@ void AppUi::checkForNewVersion(bool manual)
         QString body = jArr.at(0).toObject().value("body").toString();
         QString name = jArr.at(0).toObject().value("name").toString();
         sInfo() << "Latest release is " << lastTag;
-        qDebug() << body;
+        sDebug() << body;
         body.replace('\n', "<br/>");
         body.replace('\r', "");
 

@@ -129,6 +129,11 @@ Q_NAMESPACE
     Q_ENUM_NS(extra_info_flags)
 }
 
+namespace USB2SNES {
+    const unsigned int legacyPort = 8080;
+    const unsigned int defaultPort = 23074;
+}
+
 struct USB2SnesInfo {
     QString version;
     QString romPlaying;

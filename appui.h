@@ -84,6 +84,7 @@ private:
     void                addDevicesInfo(DeviceFactory *devFact);
     ApplicationInfo     parseJsonAppInfo(QString fileName);
     void                checkForNewVersion(bool manual = false);
+    void startWServer();
 };
 
 #endif // APPUI_H

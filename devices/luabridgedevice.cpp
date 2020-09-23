@@ -304,8 +304,26 @@ void LuaBridgeDevice::onClientReadyRead()
     sDebug() << "<<" << data;
     if (dataRead.right(1) == "\n")
     {
-        QJsonDocument   jdoc = QJsonDocument::fromJson(dataRead);
+        QJsonParseError jsError;
+        QJsonDocument   jdoc = QJsonDocument::fromJson(dataRead, &jsError);
+        if (jdoc.isNull())
+        {
+            sDebug() << jsError.errorString();
+            setState(READY);
+            emit protocolError();
+            dataRead.clear();
+            return ;
+        }
+
         QJsonObject     job = jdoc.object();
+        if (!job.contains("data"))
+        {
+            sDebug() << "JSON from lua does not contain the data";
+            setState(READY);
+            emit protocolError();
+            dataRead.clear();
+            return ;
+        }
         QJsonArray      aData = job["data"].toArray();
         //sDebug() << aData;
         data.clear();

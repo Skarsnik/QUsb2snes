@@ -83,14 +83,18 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 
 void    startServer()
 {
-    //myTrayIcon->showMessage(QString("Webserver started"), QString("Webserver started"));
     quint16 port = 8080;
     QHostAddress addr(QHostAddress::Any);
     if (globalSettings->contains("listen"))
         addr = QHostInfo::fromName(globalSettings->value("listen").toString()).addresses().first();
     if (globalSettings->contains("port"))
         port = globalSettings->value("port").toUInt();
-    wsServer.start(addr, port);
+    QString status = wsServer.start(addr, port);
+    if (!status.isEmpty())
+    {
+        fprintf(stderr, "Can't listen on localhost:8080 or the host set in the config file: %s\n", status.toLatin1().data());
+        qApp->exit(1);
+    }
 }
 
 int main(int ac, char *ag[])
@@ -164,8 +168,7 @@ int main(int ac, char *ag[])
             wsServer.addDeviceFactory(snesClassic);
         }
         QObject::connect(&wsServer, &WSServer::listenFailed, [=](const QString& err) {
-            fprintf(stderr, "Can't listen on localhost:8080 or the host set in the config file: %s\n", err.toLatin1().data());
-            qApp->exit(1);
+
         });
         QTimer::singleShot(100, &startServer);
         return app.exec();
@@ -175,6 +178,5 @@ int main(int ac, char *ag[])
     if (updatedIndex != -1)
         appUi->updated(app.arguments().at(updatedIndex + 1));
     appUi->sysTray->show();
-    QTimer::singleShot(200, &startServer);
     return app.exec();
 }

@@ -38,6 +38,7 @@ public:
     virtual QString         name() const = 0;
     virtual bool            hasFileCommands() = 0;
     virtual bool            hasControlCommands() = 0;
+    virtual bool            hasVariaditeCommands();
     virtual bool            deleteOnClose();
 
     virtual USB2SnesInfo    parseInfo(const QByteArray &data) = 0;

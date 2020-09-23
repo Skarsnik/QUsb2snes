@@ -32,20 +32,13 @@ public:
 
     bool            hasFileCommands();
     bool            hasControlCommands();
+    bool            hasVariaditeCommands();
 
     USB2SnesInfo    parseInfo(const QByteArray &data);
     QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI);
 
     QByteArray      fileData;
 
-
-
-/*signals:
-    void            commandFinished();
-    void            protocolError();
-    void            closed();
-    void            getDataReceived(QByteArray data);
-    void            sizeGet(unsigned int);*/
 
 public slots:
     bool    open();
@@ -64,10 +57,12 @@ private:
     QSerialPort m_port;
 
     QByteArray  dataReceived;
-    int         responseSizeExpected;
+    QByteArray  lsData;
+    //int         responseSizeExpected;
     int         bytesReceived;
     bool        fileGetCmd;
     bool        isGetCmd;
+    bool        skipResponse;
     quint16     blockSize;
 
     SD2Snes::opcode m_currentCommand;
@@ -76,12 +71,10 @@ private:
     int             m_putSize;
     int             m_get_expected_size;
 
-
-    bool    (SD2SnesDevice::*checkCommandEnd)();
-
     bool    checkEndForLs();
 
-    bool checkEndForGet();
+    void writeToDevice(const QByteArray &data);
+    void beNiceToFirmWare(const QByteArray &data);
 };
 
 #endif // USBCONNECTION_H

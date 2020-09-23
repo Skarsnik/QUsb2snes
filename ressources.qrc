@@ -13,6 +13,7 @@
         <file>updateicon.svg</file>
         <file>microsoft-windows-logo.svg</file>
         <file>BK small.png</file>
+        <file>ikari.ico</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

@@ -7,6 +7,11 @@ ADevice::ADevice(QObject *parent) : QObject(parent)
     m_attachError = "This device does not provide attach errors";
 }
 
+bool ADevice::hasVariaditeCommands()
+{
+    return false;
+}
+
 bool ADevice::deleteOnClose()
 {
     return false;

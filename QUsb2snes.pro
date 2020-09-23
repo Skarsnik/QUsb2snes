@@ -7,6 +7,9 @@ TEMPLATE = app
 GIT_TAG_VERSION=$$system(git describe --always --tags)
 DEFINES += GIT_TAG_VERSION=\\\"$$GIT_TAG_VERSION\\\"
 
+
+FORMS =  tempdeviceselector.ui
+
 SOURCES = adevice.cpp \
           appui.cpp \
           devicefactory.cpp \
@@ -25,7 +28,8 @@ SOURCES = adevice.cpp \
           devices/sd2snesdevice.cpp \
           devices/snesclassic.cpp \
           wsserver.cpp \
-          wsservercommands.cpp
+          wsservercommands.cpp \
+          tempdeviceselector.cpp
 
 HEADERS = adevice.h \
           appui.h \
@@ -42,7 +46,8 @@ HEADERS = adevice.h \
           devices/sd2snesdevice.h \
           devices/snesclassic.h \
           usb2snes.h \
-          wsserver.h
+          wsserver.h \
+          tempdeviceselector.h
 
 macx: {
 	SOURCES += osx/appnap.mm
