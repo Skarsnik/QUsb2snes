@@ -24,17 +24,12 @@ bool    WSServer::isControlCommand(USB2SnesWS::opcode opcode)
     clientError(ws); \
     return ; \
 }
-#include <thread>
-#include <sstream>
+
 void    WSServer::executeRequest(MRequest *req)
 {
-    std::stringstream ss;
-    ss << std::this_thread::get_id();
-    uint64_t id = std::stoull(ss.str());
-
     ADevice*  device = nullptr;
     QWebSocket*     ws = req->owner;
-    sInfo() << id << "Executing request : " << *req << "for" << wsInfos.value(ws).name;
+    sInfo() << "Executing request : " << *req << "for" << wsInfos.value(ws).name;
     if (wsInfos.value(ws).attached)
         device = wsInfos.value(ws).attachedTo;
     switch (req->opcode)
