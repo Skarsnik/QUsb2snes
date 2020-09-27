@@ -15,31 +15,30 @@ public:
 
     // ADevice interface
 public:
-    void fileCommand(SD2Snes::opcode op, QVector<QByteArray> args);
-    void fileCommand(SD2Snes::opcode op, QByteArray args);
-    void controlCommand(SD2Snes::opcode op, QByteArray args);
-    void putFile(QByteArray name, unsigned int size);
-    void getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size);
-    void getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args);
-    void putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size);
-    void putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args);
-    void putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size);
-    void sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray &arg, const QByteArray arg2);
-    void infoCommand();
+    void fileCommand(SD2Snes::opcode op, QVector<QByteArray> args) override;
+    void fileCommand(SD2Snes::opcode op, QByteArray args) override;
+    void controlCommand(SD2Snes::opcode op, QByteArray args)  override;
+    void putFile(QByteArray name, unsigned int size) override;
+    void getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size) override;
+    void getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args) override;
+    void putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size) override;
+    void putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args) override;
+    void putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size) override;
+    void infoCommand() override;
     void setState(ADevice::State state);
-    void writeData(QByteArray data);
-    QString name() const;
-    bool hasFileCommands();
-    bool hasControlCommands();
+    void writeData(QByteArray data) override;
+    QString name() const override;
+    bool hasFileCommands() override;
+    bool hasControlCommands() override;
     bool canAttach();
     void sockConnect(QString ip);
-    USB2SnesInfo parseInfo(const QByteArray &data);
-    QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI);
+    USB2SnesInfo parseInfo(const QByteArray &data) override;
+    QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI) override;
     void    setMemoryLocation(unsigned int ramLoc, unsigned int sramLoc, unsigned int romLoc);
     QByteArray          canoePid;
 public slots:
-    bool open();
-    void close();
+    bool open() override;
+    void close() override;
 
 private slots:
     void    onTimerOut();

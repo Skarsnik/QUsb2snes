@@ -31,10 +31,6 @@ SNESClassic::SNESClassic()
     c_rom_infos = nullptr;
 }
 
-//5757524954455F4D454D20373333203165343365312032390A201D7029FF
-//5757524954455F4D454D20373333203165343365312032390A201D7029FF
-
-
 void SNESClassic::onSocketReadReady()
 {
     static rom_type infoRequestType = LoROM;
@@ -58,7 +54,7 @@ void SNESClassic::onSocketReadReady()
         // Checking HiROM
         writeSocket("READ_MEM " + canoePid + " " + QByteArray::number(0xFFC0 + romLocation, 16) + " " + QByteArray::number(32) + "\n");
         infoRequestType = HiROM;
-        return ;
+        return;
     }
     if (cmdWasGet)
     {
@@ -82,8 +78,10 @@ void SNESClassic::onSocketReadReady()
     } else { // Should be put command
         sDebug() << data;
         if (data == "OK\n")
+        {
             goto cmdFinished;
-        if (data == "KO\n") // write command fail, let's close
+        }
+        else if (data == "KO\n") // write command fail, let's close
         {
             socket->disconnectFromHost();
             alive_timer.stop();
@@ -94,7 +92,7 @@ cmdFinished:
     m_state = READY;
     alive_timer.stop();
     emit commandFinished();
-    return ;
+    return;
 }
 
 
@@ -139,11 +137,17 @@ void SNESClassic::putAddrCommand(SD2Snes::space space, unsigned int addr, unsign
     m_state = BUSY;
     quint64 memAddr = 0;
     if (addr >= 0xF50000 && addr < 0xF70000)
+    {
         memAddr = addr - 0xF50000 + ramLocation;
+    }
     if (addr >= 0xE00000 && addr < 0xF50000)
+    {
         memAddr = addr - 0xE00000 + sramLocation;
+    }
     if (addr < 0xE00000)
+    {
         memAddr = addr + romLocation;
+    }
     cmdWasGet = false;
     lastPutWrite.clear();
     sDebug() << "Put address" << QString::number(addr, 16) << QString::number(memAddr, 16);
@@ -161,15 +165,6 @@ void SNESClassic::putAddrCommand(SD2Snes::space space, unsigned char flags, unsi
 {
     Q_UNUSED(flags)
     putAddrCommand(space, addr, size);
-}
-
-void SNESClassic::sendCommand(SD2Snes::opcode opcode, SD2Snes::space space, unsigned char flags, const QByteArray &arg, const QByteArray arg2)
-{
-    Q_UNUSED(opcode)
-    Q_UNUSED(space)
-    Q_UNUSED(flags)
-    Q_UNUSED(arg)
-    Q_UNUSED(arg2)
 }
 
 void SNESClassic::infoCommand()
@@ -251,7 +246,7 @@ void SNESClassic::onTimerOut()
     emit commandFinished();
 }
 
-void    SNESClassic::onAliveTimeout()
+void SNESClassic::onAliveTimeout()
 {
     alive_timer.stop();
     sDebug() << "An operation timeout, ServerStuff has an issue";
@@ -268,7 +263,9 @@ void    SNESClassic::onAliveTimeout()
     {
         writeSocket(lastCmdWrite);
         if (!cmdWasGet)
+        {
             writeSocket(lastPutWrite);
+        }
     }
     connect(socket, &QTcpSocket::connected, this, &SNESClassic::onSocketConnected);
 }
