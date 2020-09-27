@@ -243,8 +243,14 @@ void    WSServer::addToPendingRequest(ADevice* device, MRequest *req)
     if (req->opcode == USB2SnesWS::PutAddress || req->opcode == USB2SnesWS::PutIPS || req->opcode == USB2SnesWS::PutFile)
     {
         bool ok;
-        wsInfos[req->owner].pendingPutSizes.append(req->arguments.at(1).toInt(&ok, 16));
-        //wsInfos[req->owner].pendingPutReqWithNoData.append(req);
+        unsigned putSize = req->arguments.at(1).toUInt(&ok, 16);
+        if (req->opcode == USB2SnesWS::PutAddress && req->arguments.size() > 3)
+        {
+            putSize = 0;
+            for (int i = 0; i < req->arguments.size(); i += 2)
+                putSize += req->arguments.at(i + 1).toUShort(&ok, 16);
+        }
+        wsInfos[req->owner].pendingPutSizes.append(putSize);
         sDebug() << "Adding a Put command in queue, adding size" << wsInfos[req->owner].pendingPutSizes.last();
     }
 }
@@ -276,14 +282,14 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
             return ;
         }
         QList<unsigned int>& pend = infos.pendingPutSizes;
-        sDebug() << pend.isEmpty() << infos.currentPutSize;
+        sDebug() << "Pend empty : " << pend.isEmpty() << "Current PUT" << infos.currentPutSize;
         if (pend.isEmpty() || infos.currentPutSize != 0) {
             infos.byteReceived = 0;
             infos.recvData.clear();
             if (data.size() == infos.currentPutSize)
             {
+                infos.currentPutSize = 0; // the call to write data can trigger other signal.
                 dev->writeData(data);
-                infos.currentPutSize = 0;
                 return ;
             }
             if (data.size() < infos.currentPutSize) // We need two case since the previous one can
@@ -293,8 +299,38 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
                 infos.currentPutSize -= data.size();
                 return ;
             } else {
-                dev->writeData(data.left(infos.currentPutSize));
-                data = data.mid(infos.currentPutSize - 1);
+                QByteArray toWrite = data.left(infos.currentPutSize);
+                data = data.mid(infos.currentPutSize);
+                infos.currentPutSize = 0;
+                dev->writeData(toWrite);
+                if (!data.isEmpty()) // This is probably data for the next cmd
+                {
+                    if (infos.pendingPutSizes.isEmpty() && infos.currentPutSize == 0)
+                    {
+                        sDebug() << "Sending too much data to Websocket";
+                        ws->close();
+                        cleanUpSocket(ws);
+                        return ;
+                    }
+                    while (infos.currentPutSize != 0 && !data.isEmpty()) // the previous writeData triggered a request in queue
+                    {
+                        toWrite = data.left(infos.currentPutSize);
+                        data = data.mid(infos.currentPutSize);
+                        infos.currentPutSize = 0;
+                        dev->writeData(toWrite);
+                    }
+                    if (!data.isEmpty()) // we should probably move that highter
+                    {
+                        QByteArray nextData = data.left(infos.pendingPutSizes.first());
+                        qDebug() << "Next data : "<< nextData.size();
+                        while (!nextData.isEmpty() && !infos.pendingPutSizes.isEmpty() &&
+                                nextData.size() == infos.pendingPutSizes.first())
+                        {
+                            infos.pendingPutDatas.append(nextData);
+                            nextData = data.left(infos.pendingPutSizes.first());
+                        }
+                    }
+                }
                 //sDebug() << "Wriging before cps :" << __func__ << infos.currentPutSize;
                 infos.currentPutSize = 0;
                 //sDebug() << "Wriging after cps :" << __func__ << infos.currentPutSize;

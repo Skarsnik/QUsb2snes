@@ -186,7 +186,7 @@ void    WSServer::executeRequest(MRequest *req)
                     newReq->opcode = USB2SnesWS::GetAddress;
                     newReq->arguments.append(QString::number(pairs.at(i).first, 16));
                     newReq->arguments.append(QString::number(pairs.at(i).second, 16));
-                    pendingRequests[device].append(newReq);
+                    pendingRequests[device].insert(i - 1, newReq);
                 }
             }
         }
@@ -218,17 +218,56 @@ void    WSServer::executeRequest(MRequest *req)
                 device->putAddrCommand(req->space, flags, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
             }
         } else {
-           QList<QPair<unsigned int, quint8> > pairs;
-           for (int i = 0; i < req->arguments.size(); i += 2)
-           {
-               pairs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUShort(&ok, 16)));
-               putSize += req->arguments.at(i + 1).toUShort(&ok, 16);
-           }
-           device->putAddrCommand(req->space, pairs);
+            QList<QPair<unsigned int, quint8> > vputArgs;
+            for (int i = 0; i < req->arguments.size(); i += 2)
+            {
+                vputArgs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUShort(&ok, 16)));
+                putSize += req->arguments.at(i + 1).toUShort(&ok, 16);
+            }
+            if (device->hasVariaditeCommands())
+            {
+                device->putAddrCommand(req->space, vputArgs);
+            } else { // Please don't use VPUT
+                device->putAddrCommand(req->space, vputArgs.at(0).first, vputArgs.at(0).second);
+                putSize = vputArgs.at(0).second;
+                vputArgs.removeFirst();
+                QListIterator<QPair<unsigned int, quint8> > argsIt(vputArgs);
+                int cpt = 0;
+                // We should probably handle incomplete queued data, but who mad
+                // people will not send all bytes at once.
+                bool pendingData = req->wasPending && !wsInfos[ws].pendingPutDatas.isEmpty();
+                QByteArray reqData;
+                if (pendingData)
+                {
+                    reqData = wsInfos[ws].pendingPutDatas.takeFirst();
+                    wsInfos[ws].pendingPutDatas.prepend(reqData.remove(0, vputArgs.at(0).second));
+                }
+                while (argsIt.hasNext())
+                {
+                    auto pair = argsIt.next();
+                    MRequest* newReq = new MRequest();
+                    newReq->owner = ws;
+                    newReq->state = RequestState::NEW;
+                    newReq->space = SD2Snes::space::SNES;
+                    newReq->timeCreated = QTime::currentTime();
+                    newReq->wasPending = false;
+                    newReq->opcode = USB2SnesWS::PutAddress;
+                    newReq->arguments.append(QString::number(pair.first, 16));
+                    newReq->arguments.append(QString::number(pair.second, 16));
+                    pendingRequests[device].insert(cpt, newReq);
+                    if (pendingData)
+                    {
+                        wsInfos[ws].pendingPutDatas.append(reqData.remove(0, pair.second));
+                    } else {
+                        wsInfos[ws].pendingPutSizes.insert(cpt, pair.second);
+                    }
+                    cpt++;
+                }
+            }
         }
         req->state = RequestState::WAITINGREPLY;
         wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
-        sDebug() << "Wriging before cps :" << __func__ << wsInfos[ws].currentPutSize;
+        sDebug() << "Writing before cps :" << __func__ << wsInfos[ws].currentPutSize;
         wsInfos[ws].currentPutSize = putSize;
         sDebug() << "Writing after cps" << __func__ << wsInfos[ws].currentPutSize;
         break;
