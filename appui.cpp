@@ -235,7 +235,7 @@ void   AppUi::startWServer()
         return ;
     }
     // Default behavior
-    status = wsServer.start(addr, USB2SNES::legacyPort);
+    status = wsServer.start(addr, USB2SnesWS::legacyPort);
     if (!status.isEmpty())
     {
         QMessageBox::warning(nullptr, tr("Error listening on legacy port"),
@@ -243,7 +243,7 @@ void   AppUi::startWServer()
                                 "This can be that QUsb2Snes is already running, the legacy USB2SNES application or something else.\n\n"
                                 "Old applications would likely not work.")).arg(status));
     }
-    status = wsServer.start(addr, USB2SNES::defaultPort);
+    status = wsServer.start(addr, USB2SnesWS::defaultPort);
     if (!status.isEmpty())
     {
         QMessageBox::critical(nullptr, tr("Error listenning on normal port"),

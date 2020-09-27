@@ -45,7 +45,8 @@ QString WSServer::start(QHostAddress lAddress, quint16 port)
 
 void WSServer::onNewConnection()
 { 
-    QWebSocket* newSocket = qobject_cast<QWebSocketServer*>(sender())->nextPendingConnection();
+    QWebSocketServer* server = qobject_cast<QWebSocketServer*>(sender());
+    QWebSocket* newSocket = server->nextPendingConnection();
     sInfo() << "New connection from " << newSocket->origin();
     if (!trustedOrigin.contains(newSocket->origin()))
     {
@@ -70,6 +71,8 @@ void WSServer::onNewConnection()
     wi.pendingAttach = false;
     wi.recvData.clear();
     wi.ipsSize = 0;
+    wi.legacy = server->serverPort() == USB2SnesWS::legacyPort;
+
     wsInfos[newSocket] = wi;
     sInfo() << "New connection accepted " << wi.name << newSocket->origin() << newSocket->peerAddress();
 }

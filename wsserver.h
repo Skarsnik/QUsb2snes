@@ -79,6 +79,7 @@ private:
         unsigned int            ipsSize;
         unsigned int            byteReceived;
         bool                    pendingAttach;
+        bool                    legacy;
     };
 
     struct DeviceInfos {

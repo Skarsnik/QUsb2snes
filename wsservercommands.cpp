@@ -2,6 +2,7 @@
 #include "wsserver.h"
 #include <QLoggingCategory>
 #include <QSerialPortInfo>
+#include <QApplication>
 
 bool    WSServer::isFileCommand(USB2SnesWS::opcode opcode)
 {
@@ -45,7 +46,10 @@ void    WSServer::executeRequest(MRequest *req)
         goto endServerRequest;
     }
     case USB2SnesWS::AppVersion : {
-        sendReply(ws, "7.42.0");
+        if (wsInfos.value(ws).legacy)
+            sendReply(ws, "7.42.0");
+        else
+            sendReply(ws, "QUsb2Snes-" + qApp->applicationVersion());
         goto endServerRequest;
     }
     case USB2SnesWS::Name : {
