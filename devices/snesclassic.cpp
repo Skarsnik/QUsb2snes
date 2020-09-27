@@ -15,7 +15,7 @@ SNESClassic::SNESClassic()
     m_timer.setSingleShot(true);
     m_timer.setInterval(3);
     alive_timer.setInterval(200);
-    socket = new QTcpSocket();
+    socket = new QTcpSocket(this);
     connect(&alive_timer, &QTimer::timeout, this, &SNESClassic::onAliveTimeout);
     connect(&m_timer, &QTimer::timeout, this, &SNESClassic::onTimerOut);
     connect(socket, &QIODevice::readyRead, this, &SNESClassic::onSocketReadReady);

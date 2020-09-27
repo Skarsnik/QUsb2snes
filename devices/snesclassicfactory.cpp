@@ -47,6 +47,8 @@ QByteArray SNESClassicFactory::readCommandReturns(QTcpSocket* msocket)
         sDebug() << "Reading" << data;
         if (data.isEmpty())
             break;
+        if (toret.isEmpty() && data.left(4) == QByteArray(4, 0))
+            data = data.mid(4);
         toret += data;
         if (!msocket->waitForReadyRead(100))
             break;
