@@ -77,7 +77,8 @@ QStringList RetroArchFactory::listDevices()
         {
             if (tryNewRetroArchHost(host))
             {
-                toret << host.device->name();
+                if (host.device != nullptr)
+                    toret << host.device->name();
             }
         } else {
             disconnect(host.sock, &QUdpSocket::readyRead, host.device, nullptr);
