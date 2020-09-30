@@ -314,6 +314,7 @@ void    WSServer::executeRequest(MRequest *req)
         {                                           // Only imcomplete data can be for later requests if this is not empty
             sDebug() << "Pending 1A & 2A";
             device->writeData(wsInfos[ws].pendingPutDatas.takeFirst());
+            wsInfos[ws].currentPutSize = 0;
             wsInfos[ws].commandState = ClientCommandState::WAITINGREPLY;
         } else {
             if (!wsInfos[ws].recvData.isEmpty()) // This cover 1C and 2C
@@ -460,7 +461,8 @@ void WSServer::cmdAttach(MRequest *req)
         wsInfos[req->owner].attached = true;
         wsInfos[req->owner].attachedTo = devGet;
         wsInfos[req->owner].pendingAttach = false;
-        processCommandQueue(devGet);
+        if (devGet->state() == ADevice::READY)
+            processCommandQueue(devGet);
         return ;
     } else {
         setError(ErrorType::CommandError, "Trying to Attach to an unknow device");
