@@ -214,18 +214,22 @@ void SD2SnesDevice::spReadyRead()
                 goto cmdFinished;
             return;
         }
-        if (!responseBlock.isEmpty())
+        if (bytesGetSent == 0) // before sending get data
         {
-            m_getSize =  ((responseBlock.at(252)&0xFF) << 24);
-            m_getSize += ((responseBlock.at(253)&0xFF) << 16);
-            m_getSize += ((responseBlock.at(254)&0xFF) << 8);
-            m_getSize += ((responseBlock.at(255)&0xFF));
-            sDebug() << "Received block size:" << m_getSize;
-        } else {
-            m_getSize = m_get_expected_size;
+            if (!responseBlock.isEmpty())
+            {
+                m_getSize =  ((responseBlock.at(252)&0xFF) << 24);
+                m_getSize += ((responseBlock.at(253)&0xFF) << 16);
+                m_getSize += ((responseBlock.at(254)&0xFF) << 8);
+                m_getSize += ((responseBlock.at(255)&0xFF));
+                sDebug() << "Received block size:" << m_getSize;
+            } else {
+                m_getSize = m_get_expected_size;
+            }
+            if (fileGetCmd)
+                emit sizeGet(m_getSize);
         }
-        if (fileGetCmd)
-            emit sizeGet(m_getSize);
+
         // We want to send data ASAP
         /*
          * the issue we receive
@@ -262,6 +266,7 @@ cmdFinished:
     responseBlock.clear();
     bytesGetSent = 0;
     m_getSize = 0;
+    sDebug() << "Command finished";
     emit commandFinished();
 }
 
@@ -292,6 +297,8 @@ bool SD2SnesDevice::checkEndForLs()
 {
     int cpt = 0;
     unsigned char type;
+    if (lsData.size() < blockSize)
+        return false;
     while (cpt < lsData.size())
     {
         type = static_cast<unsigned char>(lsData.at(cpt));
