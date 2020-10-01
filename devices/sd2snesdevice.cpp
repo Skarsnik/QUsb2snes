@@ -160,8 +160,10 @@ void SD2SnesDevice::spReadyRead()
 {
     static QByteArray   responseBlock = QByteArray();
     static int          bytesGetSent = 0;
-    bytesReceived += m_port.bytesAvailable();
+    static bool         fileGetSizeSent = false; // This avoid sending it twice
+
     QByteArray data = m_port.readAll();
+    bytesReceived += data.size();
     dataReceived += data;
 
     sDebug() << "SP Received: " << data.size() << " (" << bytesReceived << ")";
@@ -209,7 +211,7 @@ void SD2SnesDevice::spReadyRead()
     } else {
         if (m_currentCommand == SD2Snes::opcode::LS)
         {
-            lsData.append(dataReceived);
+            lsData.append(data);
             if (checkEndForLs())
                 goto cmdFinished;
             return;
@@ -226,8 +228,11 @@ void SD2SnesDevice::spReadyRead()
             } else {
                 m_getSize = m_get_expected_size;
             }
-            if (fileGetCmd)
+            if (fileGetCmd && !fileGetSizeSent)
+            {
                 emit sizeGet(m_getSize);
+                fileGetSizeSent = true;
+            }
         }
 
         // We want to send data ASAP
@@ -239,7 +244,7 @@ void SD2SnesDevice::spReadyRead()
         if (m_getSize % blockSize)
             firmwareBytesExpected = m_getSize + (blockSize - (m_getSize % blockSize));
         // We are fine, not dealing with the padding yet.
-        if (bytesReceived <= m_getSize)
+        if (bytesReceived != 0 && bytesReceived <= m_getSize)
         {
             bytesGetSent += data.size();
             emit getDataReceived(data);
@@ -260,6 +265,7 @@ void SD2SnesDevice::spReadyRead()
     }
     return;
 cmdFinished:
+    fileGetSizeSent = false;
     m_state = READY;
     bytesReceived = 0;
     dataReceived.clear();
@@ -297,8 +303,12 @@ bool SD2SnesDevice::checkEndForLs()
 {
     int cpt = 0;
     unsigned char type;
-    if (lsData.size() < blockSize)
+    sDebug() << lsData.size() << blockSize << lsData.size() % blockSize;
+    if (lsData.size() < blockSize || lsData.size() % blockSize)
+    {
+        sDebug() << "Not reached the end of ls data";
         return false;
+    }
     while (cpt < lsData.size())
     {
         type = static_cast<unsigned char>(lsData.at(cpt));
@@ -336,10 +346,12 @@ void SD2SnesDevice::writeToDevice(const QByteArray& data)
     // Prevents a QSerialPort::ResourceError "Resource temporarily unavailable" error when uploading files to sd2snes.
         m_port.waitForBytesWritten();
 #else
-    m_port.waitForBytesWritten();
+    //m_port.waitForBytesWritten();
     m_port.flush();
 #endif
 }
+
+/* This is dumb and shoud not be needed */
 
 void    SD2SnesDevice::beNiceToFirmWare(const QByteArray& data)
 {
@@ -363,14 +375,14 @@ void SD2SnesDevice::writeData(QByteArray data)
     {
         dataSent += toWriteSize;
         if (m_putSize % blockSize == 0)
-            beNiceToFirmWare(data);
+            writeToDevice(data);
         else {
             sDebug() << "Adding padding to the write" << blockSize - (m_putSize % blockSize);
-            beNiceToFirmWare(data + QByteArray(blockSize - (m_putSize % blockSize), 0));
+            writeToDevice(data + QByteArray(blockSize - (m_putSize % blockSize), 0));
         }
     } else {
         dataSent += data.size();
-        beNiceToFirmWare(data);
+        writeToDevice(data);
     }
     sDebug() << "Putsize: " << m_putSize << " sendSize:" << toWriteSize;
     if (m_putSize != dataSent)
