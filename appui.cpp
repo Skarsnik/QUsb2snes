@@ -135,19 +135,6 @@ void AppUi::init()
     miscMenu->addSeparator();
     QObject::connect(miscMenu->addAction(QIcon(":/img/microsoft-windows-logo.svg"), tr("Add a 'Send To' entry in the Windows menu")),
                      &QAction::triggered, this, &AppUi::addWindowsSendToEntry);
-    if (!globalSettings->contains("SendToSet"))
-    {
-        globalSettings->setValue("SendToSet", true);
-        QMessageBox msg;
-        msg.setText(tr("Do you want to create a entry in the 'Send To' menu of Windows to upload file to the sd2snes?"));
-        msg.setInformativeText(tr("This will only be asked once, if you want to add it later go into the Misc menu."));
-        msg.setWindowTitle("QUsb2Snes");
-        msg.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-        msg.setDefaultButton(QMessageBox::Ok);
-        int ret = msg.exec();
-        if (ret == QMessageBox::Ok)
-            addWindowsSendToEntry();        
-    }
     if (!globalSettings->contains("checkUpdateCounter") || globalSettings->value("checkUpdateCounter").toInt() == 5)
     {
         globalSettings->setValue("checkUpdateCounter", 0);
@@ -202,7 +189,20 @@ void AppUi::init()
         if (selector.exec() == QDialog::Accepted)
         {
             if (selector.devices.contains("SD2SNES"))
+            {
                 onSD2SnesTriggered(true);
+#ifdef Q_OS_WIN
+                QMessageBox msg;
+                msg.setText(tr("Do you want to create a entry in the 'Send To' menu of Windows to upload file to the sd2snes?"));
+                msg.setInformativeText(tr("This will only be asked once, if you want to add it later go into the Misc menu."));
+                msg.setWindowTitle("QUsb2Snes");
+                msg.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+                msg.setDefaultButton(QMessageBox::Ok);
+                int ret = msg.exec();
+                if (ret == QMessageBox::Ok)
+                    addWindowsSendToEntry();
+#endif
+            }
             if (selector.devices.contains("LUA"))
                 onLuaBridgeTriggered(true);
             if (selector.devices.contains("RETROARCH"))
