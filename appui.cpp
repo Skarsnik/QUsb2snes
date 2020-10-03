@@ -50,9 +50,9 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     // Main menu creation is here
     menu = new QMenu();
     menu->addAction(QIcon(":/img/icon64x64.ico"), "QUsb2Snes v" + QApplication::applicationVersion());
-    connect(menu->addAction("Summer is here, yay"), &QAction::triggered, [=]()
+    connect(menu->addAction("Joins us on Discord!"), &QAction::triggered, [=]()
     {
-        QDesktopServices::openUrl(QUrl("https://github.com/sponsors/Skarsnik"));
+        QDesktopServices::openUrl(QUrl("https://discord.gg/2JgefTX"));
     });
     menu->addSeparator();
 
