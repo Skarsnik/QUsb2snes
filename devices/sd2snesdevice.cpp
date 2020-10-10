@@ -175,7 +175,7 @@ void SD2SnesDevice::spReadyRead()
         {
             responseBlock = dataReceived.left(blockSize);
             dataReceived.remove(0, blockSize);
-            data.remove(0, blockSize);
+            data = dataReceived;
             bytesReceived -= blockSize;
             if(responseBlock.left(5) != (QByteArray("USBA").append(SD2Snes::opcode::RESPONSE)) || responseBlock.at(5) == 1)
             {
