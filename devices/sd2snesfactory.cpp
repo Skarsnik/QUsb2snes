@@ -68,6 +68,7 @@ bool SD2SnesFactory::deleteDevice(ADevice *dev)
 {
     sDebug() << "Delete " << dev->name();
     mapPortDev.remove(dev->name());
+    m_devices.removeAll(dev);
     dev->deleteLater();
     return true;
 }

@@ -517,6 +517,7 @@ void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, un
 {
     QByteArray data1 = int32ToData(addr);
     QByteArray data2 = int32ToData(size);
+    m_putSize = size;
     sendCommand(SD2Snes::opcode::PUT, space, flags, data1, data2);
 }
 
