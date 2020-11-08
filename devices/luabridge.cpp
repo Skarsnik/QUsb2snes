@@ -67,6 +67,11 @@ void LuaBridge::onNewConnection()
     QStringList names;
     names << "Cloudchaser" << "Flitter" << "Bonbon" << "Thunderlane" << "Cloud Kicker"
           << "Derpy Hooves" << "Roseluck" << "Octavia Melody" << "Dj-Pon3" << "Berrypunch";
+    if (allocatedNames.size() == names.size())
+    {
+        newclient->close();
+        return ;
+    }
 //#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     QString devName = names.at(rng->bounded(10));
     while (allocatedNames.contains(devName))
