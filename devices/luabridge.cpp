@@ -22,9 +22,13 @@ LuaBridge::LuaBridge()
     }
     rng = new QRandomGenerator(rngSeed);
     connect(server, &QTcpServer::newConnection, this, &LuaBridge::onNewConnection);
-    server->listen(QHostAddress("127.0.0.1"), 65398);
-    sDebug() << "Lua bridge created";
-    sDebug() << "Seed is " << rngSeed;
+    if (!server->listen(QHostAddress("127.0.0.1"), 65398))
+    {
+        sInfo() << "Error listening of port 65398" << server->errorString();
+    } else {
+        sInfo() << "Lua bridge started, listenning on 65398";
+        sDebug() << "Seed is " << rngSeed;
+    }
 
 }
 
