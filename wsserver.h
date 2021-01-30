@@ -133,7 +133,7 @@ private:
     QList<QWebSocketServer*>            wsServers;
     //QWebSocketServer*                   wsServer;
     QMap<QWebSocket*, WSInfos>          wsInfos;
-    QList<ADevice*>                     devices;
+    QList<ADevice*>                     devices; // Mostly used to keep tracks of signal/slots connection
     QList<DeviceFactory*>               deviceFactories;
     QMap<ADevice*, DeviceFactory*>      mapDevFact;
     QMap<ADevice*, DeviceInfos>         devicesInfos;

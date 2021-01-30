@@ -520,6 +520,8 @@ void    WSServer::cleanUpDevice(ADevice* device)
         devInfo.currentWS = nullptr;
     DeviceFactory* devFact = mapDevFact[device];
     mapDevFact.remove(device);
+    disconnect(device, nullptr, this, nullptr);
+    devices.removeAll(device);
     devFact->deleteDevice(device);
 }
 
