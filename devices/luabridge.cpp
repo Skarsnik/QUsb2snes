@@ -5,6 +5,7 @@
 
 Q_LOGGING_CATEGORY(log_luaBridge, "LUABridge")
 #define sDebug() qCDebug(log_luaBridge)
+#define sInfo() qCInfo(log_luaBridge)
 
 
 extern QSettings* globalSettings;

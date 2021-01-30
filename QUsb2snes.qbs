@@ -14,6 +14,8 @@ Project {
             "appui.h",
             "devicefactory.cpp",
             "devicefactory.h",
+            "devices/emunetworkaccessfactory.cpp",
+            "devices/emunetworkaccessfactory.h",
             "devices/retroarchfactory.cpp",
             "devices/retroarchfactory.h",
             "devices/sd2snesfactory.cpp",
