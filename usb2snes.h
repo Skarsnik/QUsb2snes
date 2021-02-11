@@ -7,6 +7,7 @@
 namespace SD2Snes {
 Q_NAMESPACE
 
+// TODO: enum class
 enum opcode {
     GET = 0,
     PUT,
@@ -25,7 +26,9 @@ enum opcode {
     MENU_RESET,
     STREAM,
     TIME,
-    RESPONSE
+    RESPONSE,
+
+    OPCODE_NONE = -1,
 };
 
 Q_ENUM_NS(opcode)
