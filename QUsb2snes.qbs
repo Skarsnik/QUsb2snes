@@ -12,6 +12,7 @@ Project {
             "adevice.h",
             "appui.cpp",
             "appui.h",
+            "backward.hpp",
             "devicefactory.cpp",
             "devicefactory.h",
             "devices/emunetworkaccessfactory.cpp",

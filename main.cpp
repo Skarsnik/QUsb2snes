@@ -20,17 +20,44 @@
 #include <QVersionNumber>
 #include <QStandardPaths>
 #include <QDir>
+#include <ostream>
+
+std::ostream* stdLogStream = nullptr;
 
 WSServer    wsServer;
 QSettings*  globalSettings;
 
 
+/*
+#include "backward.hpp"
+namespace backward {
+
+backward::SignalHandling sh;
+
+} // namespace backward*/
+
 static QTextStream logfile;
 static QTextStream debugLogFile;
 //static QTextStream lowlogfile;
-static QTextStream cout(stdout);
-//bool    dontLogNext = false;
 
+
+// QUSB2SNES_DEVEL is used for special stuff needed when working on qusb code
+// For example it enable outputing all the logs entry on cout also so you see them in
+// your IDE
+
+#if !defined(GIT_TAG_VERSION)
+#define QUSB2SNES_DEVEL
+#endif
+
+#ifdef QUSB2SNES_DEVEL
+
+static QTextStream cout(stdout);
+
+#endif
+
+// Set this to true if you expect lot of flood message
+// It's used for example on the snes classic device that check stuff on a timer
+// and only the relevant information is logged but not the whole snes classic message exchange
 bool    dontLogNext = false;
 
 void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
@@ -76,8 +103,10 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
         *log << "\n";
         log->flush();
     }
+#ifdef QUSB2SNES_DEVEL
     cout << QString("%1 : %2").arg(context.category, 20).arg(msg) << "\n";
     cout.flush();
+#endif
 }
 
 
@@ -103,6 +132,10 @@ int main(int ac, char *ag[])
 #ifdef Q_OS_WIN
     QFile   mlog(qApp->applicationDirPath() + "/log.txt");
     QFile   mDebugLog(qApp->applicationDirPath() + "/log-debug.txt");
+    QString crashFileQPath = qApp->applicationDirPath() + "/crash-log.txt";
+    QByteArray bacf = crashFileQPath.toLocal8Bit();
+    //char* crashFilePath = bacf.data();
+
 #else
     const QString appDataPath = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0);
     if (!QFile::exists(appDataPath))
@@ -111,6 +144,7 @@ int main(int ac, char *ag[])
     QFile   mDebugLog(appDataPath + "/log-debug.txt");
 #endif
 
+    //std::filebuf crashFile;
 #ifndef Q_OS_WIN
     globalSettings = new QSettings("skarsnik.nyo.fr", "QUsb2Snes");
 #else
@@ -120,6 +154,9 @@ int main(int ac, char *ag[])
     {
         mDebugLog.open(QIODevice::WriteOnly | QIODevice::Text);
         debugLogFile.setDevice(&mDebugLog);
+
+        /*crashFile.open(crashFilePath, std::ios::out);
+        stdLogStream = new std::ostream(&crashFile);*/
     }
     if (mlog.open(QIODevice::WriteOnly | QIODevice::Text))
     {
