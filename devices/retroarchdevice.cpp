@@ -129,12 +129,12 @@ void    RetroArchDevice::create(QUdpSocket* sock, QString raVersion, int bSize)
     m_sock = sock;
     m_state = READY;
     sDebug() << "Retroarch device created";
-    m_timer = new QTimer();
-    m_timer->setInterval(5);
-    m_timer->setSingleShot(true);
+    m_timeout_timer = new QTimer();
+    m_timeout_timer->setInterval(3000);
+    m_timeout_timer->setSingleShot(true);
     dataRead = QByteArray();
-    connect(m_timer, SIGNAL(timeout()), this, SLOT(timedCommandDone()));
-    connect(m_sock, SIGNAL(readyRead()), this, SLOT(onUdpReadyRead()));
+    connect(m_timeout_timer, &QTimer::timeout, this, &RetroArchDevice::commandTimeout);
+    connect(m_sock, &QUdpSocket::readyRead, this, &RetroArchDevice::onUdpReadyRead);
     bigGet = false;
     checkingRetroarch = false;
     checkingInfo = false;
@@ -206,6 +206,8 @@ void RetroArchDevice::onUdpReadyRead()
     sDebug() << "<<" << data;
     if (data.isEmpty())
     {
+        close();
+        m_timeout_timer->stop();
         emit closed();
         return ;
     }
@@ -220,6 +222,7 @@ void RetroArchDevice::onUdpReadyRead()
             c_rom_infos = nullptr;
             hasRomAccess = false;
             m_state = READY;
+            m_timeout_timer->stop();
             emit commandFinished();
             return ;
         } else {
@@ -230,17 +233,18 @@ void RetroArchDevice::onUdpReadyRead()
             hasRomAccess = true;
             romType = c_rom_infos->type;
             m_state = READY;
+            m_timeout_timer->stop();
             emit commandFinished();
             return ;
         }
     }
-
     if (tList.at(2) != "-1")
     {
         tList = tList.mid(2);
         data = tList.join();
         emit getDataReceived(QByteArray::fromHex(data));
     } else {
+        m_timeout_timer->stop();
         emit protocolError();
         return ;
     }
@@ -254,6 +258,7 @@ void RetroArchDevice::onUdpReadyRead()
             sizeRequested = 0;
             addrBigGet = 0;
             m_state  = READY;
+            m_timeout_timer->stop();
             emit commandFinished();
         } else {
             unsigned int mSize = 0;
@@ -285,6 +290,7 @@ void RetroArchDevice::onUdpReadyRead()
          return;
     }
     m_state = READY;
+    m_timeout_timer->stop();
     emit commandFinished();
 }
 
@@ -301,6 +307,13 @@ void RetroArchDevice::timedCommandDone()
     sDebug() << "Fake cmd finished";
     m_state = READY;
     emit commandFinished();
+}
+
+void RetroArchDevice::commandTimeout()
+{
+    sDebug() << "Command timed out, closing the connection";
+    close();
+    emit closed();
 }
 
 bool RetroArchDevice::hasFileCommands()
@@ -389,6 +402,7 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
     {
         m_state = CLOSED;
         sDebug() << "Error, address or space incorect";
+        close();
         emit protocolError();
         return ;
     }
@@ -419,7 +433,7 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
             addrBigGet = static_cast<unsigned int>(newAddr);
         }
     }*/
-
+    m_timeout_timer->start();
     read_core_ram(static_cast<unsigned int>(newAddr), size);
 }
 
@@ -445,6 +459,7 @@ void RetroArchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, u
     }
     sDebug() << "WRITING TO RAM/SRAM" << newAddr;
     dataToWrite = "WRITE_CORE_RAM " + QByteArray::number(newAddr, 16) + " ";
+    m_timeout_timer->start();
 }
 
 void RetroArchDevice::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
@@ -474,6 +489,7 @@ void RetroArchDevice::infoCommand()
     sDebug() << "Info command: Checking core memory map status";
     auto tmpData = "READ_CORE_RAM 40FFC0 32";
     sDebug() << ">> " << tmpData;
+    m_timeout_timer->start();
     m_sock->write(tmpData);
     checkingInfo = true;
 }
@@ -489,6 +505,7 @@ void RetroArchDevice::writeData(QByteArray data)
         m_sock->waitForBytesWritten(20);
         sDebug() << "Write finished";
         m_state = READY;
+        m_timeout_timer->stop();
         emit commandFinished();
     }
 }

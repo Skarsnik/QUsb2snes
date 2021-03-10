@@ -341,7 +341,7 @@ void SD2SnesDevice::writeToDevice(const QByteArray& data)
     QThread::msleep(10);
 #endif
     auto written = m_port.write(data);
-    sDebug() << "Written : " << written << " bytes - " "Write count" << writeCount++;
+    sDebug() << "Written : " << data.toHex() << " || " << written << " bytes - " "Write count" << writeCount++;
 #ifdef Q_OS_LINUX
     // Prevents a QSerialPort::ResourceError "Resource temporarily unavailable" error when uploading files to sd2snes.
     // This cause some other weird issue, need more testing?

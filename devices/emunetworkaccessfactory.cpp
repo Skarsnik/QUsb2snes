@@ -83,18 +83,22 @@ QStringList EmuNetworkAccessFactory::listDevices()
         }
         newDev = new EmuNetworkAccessDevice(socket);
     }*/
+    return QStringList();
 }
 
 ADevice *EmuNetworkAccessFactory::attach(QString deviceName)
 {
+    return nullptr;
 }
 
 bool EmuNetworkAccessFactory::deleteDevice(ADevice *)
 {
+    return false;
 }
 
 QString EmuNetworkAccessFactory::status()
 {
+    return QString();
 }
 
 QString EmuNetworkAccessFactory::name() const

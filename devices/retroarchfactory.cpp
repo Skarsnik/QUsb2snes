@@ -73,6 +73,7 @@ QStringList RetroArchFactory::listDevices()
     {
         i.next();
         RAHost& host = i.value();
+        sDebug() << "Checking : " << host.name;
         if (host.sock == nullptr || host.device == nullptr)
         {
             if (tryNewRetroArchHost(host))
@@ -81,6 +82,12 @@ QStringList RetroArchFactory::listDevices()
                     toret << host.device->name();
             }
         } else {
+            // We don't want to interupt something
+            if (host.device->state() == ADevice::BUSY)
+            {
+                toret << host.device->name();
+                continue;
+            }
             disconnect(host.sock, &QUdpSocket::readyRead, host.device, nullptr);
             RetroArchInfos info = RetroArchDevice::getRetroArchInfos(host.sock);
             if (info.error.isEmpty())
@@ -100,10 +107,11 @@ bool RetroArchFactory::deleteDevice(ADevice *dev)
     {
         i.next();
         if (i.value().device == raDev)
+        {
             i.value().device = nullptr;
+        }
     }
     raDev->deleteLater();
-    //m_devices.removeAt(m_devices.indexOf(dev));
     return true;
 }
 
@@ -149,11 +157,12 @@ void RetroArchFactory::onUdpDisconnected()
 
 bool RetroArchFactory::tryNewRetroArchHost(RAHost& host)
 {
-    QUdpSocket* sock;
+    QUdpSocket* sock = nullptr;
     sDebug() << "Trying to connect to New RetroArch" << host.name << host.addr;
-    if (host.sock == nullptr)
+    if (host.sock == nullptr || !host.sock->isOpen())
     {
-        host.sock = new QUdpSocket(this);
+        if (host.sock == nullptr)
+            host.sock = new QUdpSocket(this);
         host.sock->connectToHost(host.addr, host.port);
         if (!host.sock->waitForConnected(200))
         {

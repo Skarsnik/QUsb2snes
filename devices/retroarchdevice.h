@@ -59,11 +59,12 @@ public slots:
 private slots:
     void    onUdpReadyRead();
     void    timedCommandDone();
+    void    commandTimeout();
 
 private:
     QUdpSocket*  m_sock;
     QByteArray   dataToWrite;
-    QTimer*      m_timer;
+    QTimer*      m_timeout_timer;
     QString      m_raVersion;
     QString      m_gameName;
     QString      hostName;
