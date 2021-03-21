@@ -26,42 +26,70 @@ bool    WSServer::isControlCommand(USB2SnesWS::opcode opcode)
     return ; \
 }
 
-void    WSServer::executeRequest(MRequest *req)
+// TODO, need to delete req when async device list is done
+
+void WSServer::executeServerRequest(MRequest* req)
 {
-    ADevice*  device = nullptr;
     QWebSocket*     ws = req->owner;
-    sInfo() << "Executing request : " << *req << "for" << wsInfos.value(ws).name;
-    if (wsInfos.value(ws).attached)
-        device = wsInfos.value(ws).attachedTo;
+    sInfo() << "Executing server request : " << *req << "for" << wsInfos.value(ws).name;
     switch (req->opcode)
     {
     case USB2SnesWS::DeviceList : {
-        QStringList l = getDevicesList();
-        sendReply(ws, l);
-        goto endServerRequest;
+        if (numberOfAsyncFactory == 0) {
+            QStringList l = getDevicesList();
+            sendReply(ws, l);
+        } else {
+            pendingDeviceListWebsocket.append(ws);
+            pendingDeviceListRequests.append(req);
+            if (pendingDeviceListWebsocket.size() == 1)
+                asyncDeviceList();
+        }
+        break;
     }
     case USB2SnesWS::Attach : {
         CMD_TAKE_ONE_ARG("Attach")
         cmdAttach(req);
-        goto endServerRequest;
+        break;
     }
     case USB2SnesWS::AppVersion : {
         if (wsInfos.value(ws).legacy)
             sendReply(ws, "7.42.0");
         else
             sendReply(ws, "QUsb2Snes-" + qApp->applicationVersion());
-        goto endServerRequest;
+        break;
     }
     case USB2SnesWS::Name : {
         CMD_TAKE_ONE_ARG("Name")
         wsInfos[ws].name = req->arguments.at(0);
-        goto endServerRequest;
+        break;
     }
     case USB2SnesWS::Close : {
         ws->close();
         cleanUpSocket(ws);
-        goto endServerRequest;
+        break;
     }
+    default:
+        break;
+    }
+    if (req->opcode != USB2SnesWS::DeviceList)
+    {
+        sInfo() << "Server request " << *req << " executed in " << req->timeCreated.msecsTo(QTime::currentTime());
+        delete req;
+    }
+}
+
+void    WSServer::executeRequest(MRequest *req)
+{
+    ADevice*  device = nullptr;
+    QWebSocket*     ws = req->owner;
+    if (isValidUnAttached(req->opcode))
+    {
+        executeServerRequest(req);
+        return;
+    }
+    sInfo() << "Executing request : " << *req << "for" << wsInfos.value(ws).name;
+    switch(req->opcode)
+    {
     case USB2SnesWS::Info : {
         device->infoCommand();
         req->state = RequestState::WAITINGREPLY;
@@ -331,9 +359,6 @@ void    WSServer::executeRequest(MRequest *req)
     }
     sDebug() << "Request executed";
     return ;
-endServerRequest:
-    sInfo() << "Server request finished - " << *req << "processed in " << req->timeCreated.msecsTo(QTime::currentTime()) << " ms";
-    delete req;
 }
 
 #undef CMD_TAKE_ONE_ARG
@@ -389,7 +414,7 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
     }
     case USB2SnesWS::GetAddress :
     {
-        disconnect(device, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onDeviceGetDataReceived(QByteArray)));
+        disconnect(device, &ADevice::getDataReceived, this, &WSServer::onDeviceGetDataReceived);
         //disconnect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)));
         break;
     }
@@ -409,6 +434,8 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
  * Attach stuff
  */
 
+// This will be deprecated when all devicefactory are made async
+
 QStringList WSServer::getDevicesList()
 {
     QStringList toret;
@@ -418,6 +445,56 @@ QStringList WSServer::getDevicesList()
         toret.append(devFact->listDevices());
     }
     return toret;
+}
+
+void    WSServer::asyncDeviceList()
+{
+    sDebug() << "Async device list";
+    deviceList.clear();
+    pendingDeviceListQuery = 0;
+    for (auto devFact : deviceFactories)
+    {
+        if (!devFact->hasAsyncListDevices())
+        {
+            deviceList.append(devFact->listDevices());
+        }
+    }
+    for (auto devFact : deviceFactories)
+    {
+        if (devFact->hasAsyncListDevices())
+        {
+            pendingDeviceListQuery++;
+            devFact->asyncListDevices();
+        }
+    }
+}
+
+void    WSServer::onDeviceListDone()
+{
+    sDebug() << qobject_cast<DeviceFactory*>(sender())->name() << " is done doing devicelist";
+    pendingDeviceListQuery--;
+    if (pendingDeviceListQuery != 0)
+            return;
+    for (auto ws : pendingDeviceListWebsocket)
+    {
+        sDebug() << "Sending device list to " << wsInfos[ws].name;
+        sendReply(ws, deviceList);
+    }
+    for (MRequest* req : pendingDeviceListRequests)
+    {
+        sInfo() << "Device request finished - " << *req << "processed in " << req->timeCreated.msecsTo(QTime::currentTime()) << " ms";
+        delete req;
+    }
+    pendingDeviceListQuery = 0;
+    deviceList.clear();
+    pendingDeviceListRequests.clear();
+    pendingDeviceListWebsocket.clear();
+}
+
+void    WSServer::onNewDeviceName(QString name)
+{
+    sDebug() << "Received a device name : " << name;
+    deviceList.append(name);
 }
 
 void WSServer::cmdAttach(MRequest *req)

@@ -26,3 +26,13 @@ QString DeviceFactory::attachError() const
 {
     return m_attachError;
 }
+
+bool DeviceFactory::hasAsyncListDevices()
+{
+    return false;
+}
+
+QStringList DeviceFactory::getDevicesName() const
+{
+    return m_listDeviceNames;
+}

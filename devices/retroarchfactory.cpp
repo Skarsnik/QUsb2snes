@@ -205,3 +205,9 @@ bool RetroArchFactory::tryNewRetroArchHost(RAHost& host)
     host.status = QString("RetroArch %1, running %2").arg(info.version).arg(info.gameName);
     return true;
 }
+
+
+bool RetroArchFactory::asyncListDevices()
+{
+    return false;
+}

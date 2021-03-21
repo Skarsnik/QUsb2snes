@@ -26,6 +26,7 @@ WSServer::WSServer(QObject *parent) : QObject(parent)
     flagsMetaEnum = mo2.enumerator(i);
     trustedOrigin.append("http://localhost");
     trustedOrigin.append("");
+    numberOfAsyncFactory = 0;
 }
 
 QString WSServer::start(QHostAddress lAddress, quint16 port)
@@ -111,7 +112,26 @@ void WSServer::removeDevice(ADevice *device)
 void WSServer::addDeviceFactory(DeviceFactory *devFact)
 {
     sDebug() << "Adding Device Factory " << devFact->name();
+    if (devFact->hasAsyncListDevices())
+    {
+        numberOfAsyncFactory++;
+        connect(devFact, &DeviceFactory::newDeviceName, this, &WSServer::onNewDeviceName);
+        connect(devFact, &DeviceFactory::devicesListDone, this, &WSServer::onDeviceListDone);
+    }
     deviceFactories.append(devFact);
+}
+
+// TODO: this is bad if you do it during a devicelist request x)
+
+void WSServer::removeDeviceFactory(DeviceFactory *devFact)
+{
+    sDebug() << "Removing Device Factory" << devFact->name();
+    if (devFact->hasAsyncListDevices())
+    {
+        numberOfAsyncFactory--;
+    }
+    disconnect(devFact, nullptr, this, nullptr);
+    deviceFactories.removeAll(devFact);
 }
 
 QStringList WSServer::getClientsName(ADevice *dev)
@@ -231,7 +251,7 @@ void WSServer::onTextMessageReceived(QString message)
 
     }
     if (isValidUnAttached(req->opcode))
-        executeRequest(req);
+        executeServerRequest(req);
     return ;
 LError:
     clientError(ws);
@@ -529,6 +549,22 @@ void WSServer::cleanUpSocket(QWebSocket *ws)
 {
     WSInfos wInfo = wsInfos.value(ws);
     sDebug() << "Cleaning up wsocket" << wInfo.name;
+    if (pendingDeviceListWebsocket.contains(ws))
+    {
+        pendingDeviceListQuery -= pendingDeviceListWebsocket.count(ws);
+        pendingDeviceListWebsocket.removeAll(ws);
+        QMutableListIterator<MRequest*> it(pendingDeviceListRequests);
+        while (it.hasNext())
+        {
+            it.next();
+            if (it.value()->owner == ws)
+            {
+                it.value()->owner = nullptr;
+                it.value()->state = RequestState::CANCELLED;
+                it.remove();
+            }
+        }
+    }
     if (wInfo.attached)
     {
         ADevice*    dev = wInfo.attachedTo;

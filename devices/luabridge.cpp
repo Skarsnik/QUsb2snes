@@ -109,3 +109,9 @@ void LuaBridge::onClientDisconnected()
     }
     deleteDevice(ldev);
 }
+
+
+bool LuaBridge::asyncListDevices()
+{
+    return false;
+}

@@ -45,6 +45,10 @@ private:
     bool            checkRetroArchHost(RAHost& host);
 
     bool            tryNewRetroArchHost(RAHost& host);
+
+    // DeviceFactory interface
+public:
+    bool asyncListDevices();
 };
 
 #endif // RETROARCHFACTORY_H

@@ -101,6 +101,7 @@ public:
     void        addDevice(ADevice* device);
     void        removeDevice(ADevice* device);
     void        addDeviceFactory(DeviceFactory* devFact);
+    void        removeDeviceFactory(DeviceFactory* devFact);
     QStringList getClientsName(ADevice* dev);
     QList<MiniDeviceInfos>  getDevicesInfo();
     void        addTrusted(QString origin);
@@ -125,6 +126,8 @@ private slots:
     void    onDeviceClosed();
     void    onDeviceGetDataReceived(QByteArray data);
     void    onDeviceSizeGet(unsigned int size);
+    void    onNewDeviceName(QString name);
+    void    onDeviceListDone();
 
 private:
     QMetaEnum                           cmdMetaEnum;
@@ -140,8 +143,14 @@ private:
     QMap<ADevice*, MRequest*>           currentRequests;
     QString                             m_errorString;
     ErrorType                           m_errorType;
-    QStringList                         deviceList;
     QStringList                         trustedOrigin;
+
+    // Used for the async devicelist stuff
+    unsigned    int                     numberOfAsyncFactory;
+    unsigned    int                     pendingDeviceListQuery;
+    QList<QWebSocket*>                  pendingDeviceListWebsocket;
+    QList<MRequest*>                    pendingDeviceListRequests;
+    QStringList                         deviceList;
 
     QMap<ADevice*, QList<MRequest*> >   pendingRequests;
 
@@ -151,9 +160,11 @@ private:
     void        cleanUpSocket(QWebSocket* ws);
     bool        isValidUnAttached(const USB2SnesWS::opcode opcode);
     void        executeRequest(MRequest* req);
+    void        executeServerRequest(MRequest *req);
     void        processDeviceCommandFinished(ADevice* device);
     void        processCommandQueue(ADevice* device);
 
+    void        asyncDeviceList();
     QStringList getDevicesList();
     void        cmdAttach(MRequest* req);
     void        processIpsData(QWebSocket* ws);

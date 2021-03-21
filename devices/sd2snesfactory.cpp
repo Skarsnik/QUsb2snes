@@ -5,6 +5,7 @@ Q_LOGGING_CATEGORY(log_sd2snesfact, "SD2SNESFactory")
 
 
 #include <QSerialPortInfo>
+#include <QTimer>
 
 #include "sd2snesfactory.h"
 
@@ -70,5 +71,26 @@ bool SD2SnesFactory::deleteDevice(ADevice *dev)
     mapPortDev.remove(dev->name());
     m_devices.removeAll(dev);
     dev->deleteLater();
+    return true;
+}
+
+bool SD2SnesFactory::hasAsyncListDevices()
+{
+    return true;
+}
+
+
+bool SD2SnesFactory::asyncListDevices()
+{
+    QTimer::singleShot(0, this , [=]{
+         QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
+        foreach (QSerialPortInfo usbinfo, sinfos)
+        {
+            sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
+            if (usbinfo.serialNumber() == "DEMO00000000")
+                    emit newDeviceName("SD2SNES " + usbinfo.portName());
+        }
+        emit devicesListDone();
+    });
     return true;
 }

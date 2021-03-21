@@ -42,6 +42,10 @@ private:
 
     bool hasValidMemory();
     void resetMemoryAddresses();
+
+    // DeviceFactory interface
+public:
+    bool asyncListDevices();
 };
 
 #endif // SNESCLASSICFACTORY_H

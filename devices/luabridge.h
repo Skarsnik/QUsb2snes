@@ -31,6 +31,10 @@ private:
     QRandomGenerator*           rng;
     quint32                     rngSeed;
     QMap<QTcpSocket*, LuaBridgeDevice*> mapSockDev;
+
+    // DeviceFactory interface
+public:
+    bool asyncListDevices();
 };
 
 #endif // LUABRIDGE_H

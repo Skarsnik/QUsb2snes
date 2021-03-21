@@ -13,6 +13,11 @@ public:
         ADevice *device;
 
     };*/
+    enum DeviceFactoryState {
+        NONE,
+        BUSYDEVICELIST,
+        BUSYATTACH
+    };
 
     explicit DeviceFactory(QObject *parent = nullptr);
     virtual QStringList listDevices() = 0;
@@ -22,15 +27,22 @@ public:
     QString             attachError() const;
     virtual QString     status() = 0;
     virtual QString     name() const = 0;
+    virtual bool        hasAsyncListDevices();
+    virtual bool        asyncListDevices() = 0;
+    virtual QStringList getDevicesName() const;
     //QList<DeviceInfo>   deviceInfos();
 
 signals:
     void    deviceRemoved(ADevice*);
+    void    newDeviceName(QString name);
+    void    devicesListDone();
 
 
 protected:
     QList<ADevice*> m_devices;
     QString         m_attachError;
+    DeviceFactoryState  m_state;
+    QStringList     m_listDeviceNames;
 };
 
 #endif // DEVICEFACTORY_H

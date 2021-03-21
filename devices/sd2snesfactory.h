@@ -20,9 +20,14 @@ public:
     QString status();
     QString name() const;
     bool deleteDevice(ADevice *);
+    bool    hasAsyncListDevices();
 
 private:
     QMap<QString, SD2SnesDevice*>   mapPortDev;
+
+    // DeviceFactory interface
+public:
+    bool asyncListDevices();
 };
 
 #endif // SD2SNESFACTORY_H

@@ -290,3 +290,9 @@ void SNESClassicFactory::resetMemoryAddresses()
         device->setMemoryLocation(ramLocation, sramLocation, romLocation);
     }
 }
+
+
+bool SNESClassicFactory::asyncListDevices()
+{
+    return false;
+}

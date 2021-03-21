@@ -16,8 +16,8 @@ public:
     bool deleteDevice(ADevice *);
     QString status();
     QString name() const;
-private:
-    QByteArray readSocketReturns(QTcpSocket *msocket);
+    bool hasAsyncListDevices();
+    bool asyncListDevices();
 };
 
 #endif // EMUNETWORKACCESSFACTORY_H
