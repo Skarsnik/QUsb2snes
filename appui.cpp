@@ -40,6 +40,8 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     sd2snesFactory = nullptr;
     luaBridge = nullptr;
     snesClassic = nullptr;
+    emunwacess = new EmuNetworkAccessFactory();
+    wsServer.addDeviceFactory(emunwacess);
     dlManager = nullptr;
 
     QTranslator translator;
@@ -279,6 +281,7 @@ void AppUi::onMenuAboutToshow()
     deviceMenu->addAction(retroarchAction);
     deviceMenu->addAction(luaBridgeAction);
     deviceMenu->addAction(snesClassicAction);
+    //(deviceMenu + 1)->addAction(snesClassicAction);
 }
 
 void AppUi::onAppsMenuTriggered(QAction *action)

@@ -5,6 +5,7 @@
 #include "devices/snesclassicfactory.h"
 #include "devices/sd2snesfactory.h"
 #include "devices/retroarchfactory.h"
+#include "devices/emunetworkaccessfactory.h"
 
 #include <QMenu>
 #include <QObject>
@@ -70,6 +71,7 @@ private:
     SD2SnesFactory*                 sd2snesFactory;
     RetroArchFactory*               retroarchFactory;
     SNESClassicFactory*             snesClassic;
+    EmuNetworkAccessFactory*        emunwacess;
     QMap<QString, ApplicationInfo>  regularApps;
 
     QNetworkAccessManager*          dlManager;

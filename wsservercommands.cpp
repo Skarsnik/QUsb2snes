@@ -88,6 +88,8 @@ void    WSServer::executeRequest(MRequest *req)
         return;
     }
     sInfo() << "Executing request : " << *req << "for" << wsInfos.value(ws).name;
+    if (wsInfos.value(ws).attached)
+        device = wsInfos.value(ws).attachedTo;
     switch(req->opcode)
     {
     case USB2SnesWS::Info : {
