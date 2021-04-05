@@ -35,6 +35,16 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
     sDebug() << rep;
     switch(currentCmd)
     {
+        // This is actually memory access request
+        case USB2SnesWS::Attach:
+        {
+            auto memAccess = rep.toMapList();
+            for (auto& ma : memAccess)
+                memoryAccess[ma["name"]] = ma["access"];
+            afterMemoryAccess();
+            afterMemoryAccess = [](){;};
+            break;
+        }
         case USB2SnesWS::Info:
         {
             if (!emuVersion.isEmpty())
@@ -43,6 +53,7 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
                     if (rep["state"] == "no_game")
                     {
                         whatRunning = "";
+                        m_state = READY;
                         emit commandFinished();
                         return ;
                     } else {
@@ -50,8 +61,9 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
                         emu->cmdGameInfo();
                     }
                 } else {
-                    whatRunning = rep.toMap()["name"];
+                    whatRunning = rep["file"];
                     step = 0;
+                    m_state = READY;
                     emit commandFinished();
                     return;
                 }
@@ -73,6 +85,23 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
             }
             break;
         }
+        case USB2SnesWS::GetAddress:
+        {
+            if (rep.isError)
+            {
+                emit protocolError();
+                return ;
+            }
+            if (rep.binary.size() != getAddressSizeRequested)
+            {
+                emit protocolError();
+                return ;
+            }
+            emit getDataReceived(rep.binary);
+            m_state = READY;
+            emit commandFinished();
+            break;
+        }
         default:
             break;
     }
@@ -80,18 +109,63 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
 
 
 
-
+QPair<QString, unsigned int>    EmuNetworkAccessDevice::sd2snesToDomain(unsigned int sd2snesAddr)
+{
+    QPair<QString, unsigned int> toret;
+    if (sd2snesAddr >= 0xF50000 && sd2snesAddr < 0xF70000)
+    {
+        toret.first = "WRAM";
+        toret.second = sd2snesAddr - 0xF50000;
+        return toret;
+    }
+    if (sd2snesAddr >= 0xE00000)
+    {
+        toret.first = "SRAM";
+        toret.second = sd2snesAddr - 0xE00000;
+        return toret;
+    }
+    toret.first = "CARTROM";
+    toret.second = sd2snesAddr;
+    return toret;
+}
 
 void EmuNetworkAccessDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
 {
+    Q_UNUSED(op)
+    Q_UNUSED(args)
 }
 
 void EmuNetworkAccessDevice::putFile(QByteArray name, unsigned int size)
 {
+    Q_UNUSED(name)
+    Q_UNUSED(size)
 }
 
 void EmuNetworkAccessDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
+    if (space != SD2Snes::SNES)
+        emit protocolError();
+    m_state = BUSY;
+    std::function<void()> F([this, addr, size] {
+        currentCmd = USB2SnesWS::GetAddress;
+        auto newAddr = sd2snesToDomain(addr);
+        sDebug() << "Get address" << newAddr;
+        getAddressSizeRequested = size;
+        if (memoryAccess[newAddr.first].contains("r"))
+        {
+            emu->cmdCoreReadMemory(newAddr.first, newAddr.second, size);
+        } else {
+            emit protocolError();
+        }
+    });
+    if (!memoryAccess.contains("WRAM"))
+    {
+        currentCmd = USB2SnesWS::Attach;
+        emu->cmdCoreMemories();
+        afterMemoryAccess = F;
+    } else {
+        F();
+    }
 }
 
 void EmuNetworkAccessDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
@@ -112,6 +186,7 @@ void EmuNetworkAccessDevice::putAddrCommand(SD2Snes::space space, unsigned char 
 
 void EmuNetworkAccessDevice::infoCommand()
 {
+    m_state = BUSY;
     currentCmd = USB2SnesWS::Info;
     sDebug() << "Info command";
     emu->cmdEmuStatus();

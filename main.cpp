@@ -211,6 +211,7 @@ int main(int ac, char *ag[])
         QTimer::singleShot(100, &startServer);
         return app.exec();
     }
+    QLoggingCategory::setFilterRules(QStringLiteral("EmuNWAccessClient.debug=true"));
     AppUi*  appUi = new AppUi();
     int updatedIndex = app.arguments().indexOf("-updated");
     if (updatedIndex != -1)

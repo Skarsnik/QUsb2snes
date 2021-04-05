@@ -42,8 +42,14 @@ private:
     QString             whatRunning;
     QString             myName;
 
+
+    unsigned int            getAddressSizeRequested;
+    QMap<QString, QString>  memoryAccess;
+    std::function<void()>   afterMemoryAccess;
+
     USB2SnesWS::opcode  currentCmd;
 
+    QPair<QString, unsigned int> sd2snesToDomain(unsigned int sd2snesAddr);
 private slots:
     void onEmuReadyRead();
 };
