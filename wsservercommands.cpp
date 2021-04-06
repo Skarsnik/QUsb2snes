@@ -87,6 +87,7 @@ void    WSServer::executeRequest(MRequest *req)
         executeServerRequest(req);
         return;
     }
+    device = wsInfos.value(ws).attachedTo;
     sInfo() << "Executing request : " << *req << "for" << wsInfos.value(ws).name;
     switch(req->opcode)
     {
@@ -130,8 +131,8 @@ void    WSServer::executeRequest(MRequest *req)
     }
     case USB2SnesWS::GetFile : {
         CMD_TAKE_ONE_ARG("GetFile")
-        connect(device, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onDeviceGetDataReceived(QByteArray)), Qt::UniqueConnection);
-        connect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)), Qt::UniqueConnection);
+        connect(device, &ADevice::getDataReceived, this, &WSServer::onDeviceGetDataReceived, Qt::UniqueConnection);
+        connect(device, &ADevice::sizeGet, this, &WSServer::onDeviceSizeGet, Qt::UniqueConnection);
         device->fileCommand(SD2Snes::opcode::GET, req->arguments.at(0).toLatin1());
         req->state = RequestState::WAITINGREPLY;
         break;
@@ -185,7 +186,7 @@ void    WSServer::executeRequest(MRequest *req)
             clientError(ws);
             return ;
         }
-        connect(device, SIGNAL(getDataReceived(QByteArray)), this, SLOT(onDeviceGetDataReceived(QByteArray)), Qt::UniqueConnection);
+        connect(device, &ADevice::getDataReceived, this, &WSServer::onDeviceGetDataReceived, Qt::UniqueConnection);
         //connect(device, SIGNAL(sizeGet(uint)), this, SLOT(onDeviceSizeGet(uint)));
         bool    ok;
         if (req->arguments.size() == 2)
