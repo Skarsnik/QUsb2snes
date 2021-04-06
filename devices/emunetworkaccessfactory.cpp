@@ -51,7 +51,7 @@ ADevice *EmuNetworkAccessFactory::attach(QString deviceName)
                     ci.client->cmdCoreCurrentInfo();
                     ci.client->waitForReadyRead(100);
                     rep = ci.client->readReply();
-                    if (rep.isValid && rep["plateform"] == "SNES")
+                    if (rep.isValid && rep["platform"].toUpper() == "SNES")
                     {
                        toret = ci.device;
                     } else {
