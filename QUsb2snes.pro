@@ -1,6 +1,6 @@
-QT       += core gui websockets serialport network
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+
+QT       += core websockets serialport network
 
 TARGET = QUsb2Snes
 TEMPLATE = app
@@ -8,10 +8,25 @@ GIT_TAG_VERSION=$$system(git describe --always --tags)
 DEFINES += GIT_TAG_VERSION=\\\"$$GIT_TAG_VERSION\\\"
 
 
-FORMS =  tempdeviceselector.ui
+UISOURCES = appui.cpp \
+            tempdeviceselector.cpp
+UIHEADERS = appui.h \
+            tempdeviceselector.h
 
-SOURCES = adevice.cpp \
-          appui.cpp \
+equals(QUSB2SNES_NOGUI, 1) {
+    message("building QUsb2Snes in NOGUI mode")
+    DEFINES += "QUSB2SNES_NOGUI=1"   
+} else {
+    QT += gui widgets
+    FORMS =  tempdeviceselector.ui
+    SOURCES = $$UISOURCES
+    HEADERS = $$UIHEADERS
+}
+
+
+
+
+SOURCES += adevice.cpp \
           devicefactory.cpp \
           devices/sd2snesfactory.cpp \
           devices/snesclassicfactory.cpp \
@@ -28,11 +43,9 @@ SOURCES = adevice.cpp \
           devices/sd2snesdevice.cpp \
           devices/snesclassic.cpp \
           wsserver.cpp \
-          wsservercommands.cpp \
-          tempdeviceselector.cpp
+          wsservercommands.cpp
 
-HEADERS = adevice.h \
-          appui.h \
+HEADERS += adevice.h \
           devicefactory.h \
           devices/sd2snesfactory.h \
           devices/snesclassicfactory.h \
@@ -46,8 +59,7 @@ HEADERS = adevice.h \
           devices/sd2snesdevice.h \
           devices/snesclassic.h \
           usb2snes.h \
-          wsserver.h \
-          tempdeviceselector.h
+          wsserver.h
 
 macx: {
 	SOURCES += osx/appnap.mm

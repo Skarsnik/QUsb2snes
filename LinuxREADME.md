@@ -13,9 +13,23 @@ make
 
 Then start the QUsb2Snes binary from the `release` directory that is created.
 
+
+If you want to build a version that does not use a Gui (to use it without a XServer)
+
+```
+qmake "QUSB2SNES_NOGUI=1" CONFIG+='release'
+make
+```
+
 # Usage
 
-There is a `-nogui` option if you want to run it without the system tray icon and interface.
+Only the non gui version take arguments, It still use the config file but you can use some arguments to enable the support
+you want.
+
+*  `-sd2snes` : to activate the sd2snes support
+* `-luabridge` : for the lua bridge support
+* `-retroarch` : for the retroarch support
+* `-snesclassic` :  for the snes classic support
 
 # Files
 

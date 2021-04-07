@@ -1,26 +1,34 @@
-#include "appui.h"
-//#include "sd2snesdevice.h"
-#include "wsserver.h"
 
 #ifdef Q_OS_MACOS
 #include "osx/appnap.h"
 #endif
 
-#include <QSerialPortInfo>
 #include <QDebug>
-#include <QApplication>
+
+#ifndef QUSB2SNES_NOGUI
+  #include <QApplication>
+  #include <QMessageBox>
+  #include "appui.h"
+#else
+  #include <QCoreApplication>
+#endif
+
 #include <QTimer>
 #include <QThread>
-#include <QSystemTrayIcon>
 #include <QFile>
-#include <QMessageBox>
-#include <QMenu>
+#include <QSettings>
 #include <QObject>
 #include <QHostInfo>
 #include <QVersionNumber>
 #include <QStandardPaths>
 #include <QDir>
 #include <ostream>
+
+#include "wsserver.h"
+#include "devices/sd2snesfactory.h"
+#include "devices/luabridge.h"
+#include "devices/retroarchfactory.h"
+#include "devices/snesclassicfactory.h"
 
 std::ostream* stdLogStream = nullptr;
 
@@ -85,7 +93,11 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
         case QtFatalMsg:
             *log << logString.arg("Fatal");
             *log<< "\n"; log->flush();
+            #ifndef QUSB2SNES_NOGUI
             QMessageBox::critical(nullptr, QObject::tr("Critical error"), msg);
+            #else
+            fprintf(stderr, "Cristical error :\n", msg.constData());
+            #endif
             qApp->exit(1);
             break;
         case QtInfoMsg:
@@ -128,7 +140,11 @@ void    startServer()
 
 int main(int ac, char *ag[])
 {
+#ifndef QUSB2SNES_NOGUI
     QApplication app(ac, ag);
+#else
+    QCoreApplication app(ac, ag);
+#endif
 #ifdef Q_OS_WIN
     QFile   mlog(qApp->applicationDirPath() + "/log.txt");
     QFile   mDebugLog(qApp->applicationDirPath() + "/log-debug.txt");
@@ -163,21 +179,21 @@ int main(int ac, char *ag[])
         logfile.setDevice(&mlog);
         qInstallMessageHandler(myMessageOutput);
     }
-    QApplication::setApplicationName("QUsb2Snes");
+    app.setApplicationName("QUsb2Snes");
     // This is only defined in the PRO file
 #ifdef GIT_TAG_VERSION
     QString plop(GIT_TAG_VERSION);
     plop.remove(0, 1); // Remove the v
-    QApplication::setApplicationVersion(QVersionNumber::fromString(plop).toString());
+    app.setApplicationVersion(QVersionNumber::fromString(plop).toString());
 #else
-    QApplication::setApplicationVersion("0.8");
+    app.setApplicationVersion("0.8");
 #endif
 
 #ifdef Q_OS_MACOS
     auto appNap = new AppNapSuspender();
     appNap->suspend();
 #endif
-    qInfo() << "Runing QUsb2Snes version " << QApplication::applicationVersion();
+    qInfo() << "Runing QUsb2Snes version " << qApp->applicationVersion();
     qInfo() << "Compiled against Qt" << QT_VERSION_STR << ", running" << qVersion();
     // let set some know trusted domain
     wsServer.addTrusted("http://www.multitroid.com");
@@ -186,35 +202,36 @@ int main(int ac, char *ag[])
     wsServer.addTrusted("http://usb2snes.com");
     wsServer.addTrusted("https://samus.link");
 
-    if (app.arguments().size() == 2 && app.arguments().at(1) == "-nogui")
-    {
-        SD2SnesFactory* sd2snesFactory = new SD2SnesFactory();
-        wsServer.addDeviceFactory(sd2snesFactory);
-        if (globalSettings->value("retroarchdevice").toBool())
-        {
-            RetroArchFactory* retroarchFactory = new RetroArchFactory();
-            wsServer.addDeviceFactory(retroarchFactory);
-        }
-        if (globalSettings->value("luabridge").toBool())
-        {
-            LuaBridge* luaBridge = new LuaBridge();
-            wsServer.addDeviceFactory(luaBridge);
-        }
-        if (globalSettings->value("snesclassic").toBool())
-        {
-            SNESClassicFactory* snesClassic = new SNESClassicFactory();
-            wsServer.addDeviceFactory(snesClassic);
-        }
-        QObject::connect(&wsServer, &WSServer::listenFailed, [=](const QString& err) {
-
-        });
-        QTimer::singleShot(100, &startServer);
-        return app.exec();
-    }
+#ifndef QUSB2SNES_NOGUI
     AppUi*  appUi = new AppUi();
     int updatedIndex = app.arguments().indexOf("-updated");
     if (updatedIndex != -1)
         appUi->updated(app.arguments().at(updatedIndex + 1));
     appUi->sysTray->show();
+#else
+   if (globalSettings->value("sd2snessupport").toBool() || app.arguments().contains("-sd2snes"))
+   {
+       SD2SnesFactory* sd2snesFactory = new SD2SnesFactory();
+       wsServer.addDeviceFactory(sd2snesFactory);
+   }
+   if (globalSettings->value("retroarchdevice").toBool() || app.arguments().contains("-retroarch"))
+   {
+       RetroArchFactory* retroarchFactory = new RetroArchFactory();
+       wsServer.addDeviceFactory(retroarchFactory);
+   }
+   if (globalSettings->value("luabridge").toBool() || app.arguments().contains("-luabridge"))
+   {
+       LuaBridge* luaBridge = new LuaBridge();
+       wsServer.addDeviceFactory(luaBridge);
+   }
+   if (globalSettings->value("snesclassic").toBool() || app.arguments().contains("-snesclassic"))
+   {
+       SNESClassicFactory* snesClassic = new SNESClassicFactory();
+        wsServer.addDeviceFactory(snesClassic);
+   }
+   QObject::connect(&wsServer, &WSServer::listenFailed, [=](const QString& err) {
+   });
+   QTimer::singleShot(100, &startServer);
+#endif
     return app.exec();
 }

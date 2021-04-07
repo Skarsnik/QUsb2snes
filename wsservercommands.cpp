@@ -2,7 +2,12 @@
 #include "wsserver.h"
 #include <QLoggingCategory>
 #include <QSerialPortInfo>
-#include <QApplication>
+#ifndef QUSB2SNES_NOGUI
+  #include <QApplication>
+#else
+  #include <QCoreApplication>
+#endif
+
 
 bool    WSServer::isFileCommand(USB2SnesWS::opcode opcode)
 {
