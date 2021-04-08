@@ -81,11 +81,13 @@ Next command is `Attach` to associate yourself with the device you want.
 }
 ```
 
-You will get no reply if the command succeeded, a failure will be the server closing the connection. It's recommanded to do a `Info` command to be certain you are attached to the device.
+You will get no reply if the command succeeded, a failure will be the server closing the connection. 
+It is recommended to execute an `Info` command to make sure you are attached to the device.
 
 ## Command list
 
-The full command list can be found here in https://github.com/Skarsnik/QUsb2snes/blob/master/usb2snes.h#L84 we will just go over the most basic one.
+The full command list can be found here in https://github.com/Skarsnik/QUsb2snes/blob/master/usb2snes.h#L84.
+We will just go over the most basic one.
 
 ### Name [ApplicationName]
 
@@ -146,19 +148,19 @@ This work like GetAddress for argument. After sending the json request, send you
 
 This are the flags you will get from a sd2snes device.
 
-* FEAT_DSPX 
-* FEAT_ST0010
-* FEAT_SRTC
-* FEAT_MSU1
-* FEAT_213F
-* FEAT_CMD_UNLOCK
-* FEAT_USB1
-* FEAT_DMA1
+* `FEAT_DSPX` 
+* `FEAT_ST0010`
+* `FEAT_SRTC`
+* `FEAT_MSU1`
+* `FEAT_213F`
+* `FEAT_CMD_UNLOCK`
+* `FEAT_USB1`
+* `FEAT_DMA1`
 
 QUsb2Snes add flags to other device since they don't have all the capability of a sd2snes.
 
-* NO_FILE_CMD : The device can't perform file operation
-* NO_CONTROL_CMD : The device can't perform control operation (reset/boot...)
-* NO_ROM_WRITE : The device can't write to ROM
-* NO_ROM_READ : The device can't read to ROM
+* `NO_FILE_CMD` : The device can't perform file operation
+* `NO_CONTROL_CMD` : The device can't perform control operation (reset/boot...)
+* `NO_ROM_WRITE` : The device can't write to ROM
+* `NO_ROM_READ` : The device can't read to ROM
 

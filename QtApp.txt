@@ -1,4 +1,4 @@
-QtApp means the file is a Qt application that requieres the Qt DLLs to run
+QtApp means the file is a Qt application that requires the Qt DLLs to run
 Since providing then for every application add ~10Mb of duplicate files
 QUsb2Snes run the Qt Application directly from its own repository so
 Windows can find the one used by QUsb2Snes and be able to run the application.
