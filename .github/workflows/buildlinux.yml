@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build nogui:
+  build_nogui:
 
     runs-on: ubuntu-latest
 
@@ -26,7 +26,7 @@ jobs:
       - name: check no libQt5Gui.so/libGL.so
         run: ldd QUsb2Snes  | ( ! grep --silent -e "libQt5Gui\.so" -e "libGL\.so" ) 
 
-  build gui:
+  build_gui:
 
     runs-on: ubuntu-latest
 
@@ -45,7 +45,7 @@ jobs:
       - name: check libQt5Gui.so/libGL.so
         run: ldd QUsb2Snes  | grep --silent -e "libQt5Gui\.so" -e "libGL\.so"
 
-  build file2snes:
+  build_file2snes:
       
     runs-on: ubuntu-latest
 
