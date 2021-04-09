@@ -1,0 +1,64 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build nogui:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2
+        
+      - uses: actions/checkout@v2
+      
+      - name: qmake NOGUI
+        run: qmake QUSB2SNES_NOGUI=1 CONFIG+='release'
+        
+      - name: make
+        run: make
+        
+      - name: check no libQt5Gui.so/libGL.so
+        run: ldd QUsb2Snes  | ( ! grep --silent -e "libQt5Gui\.so" -e "libGL\.so" ) 
+
+  build gui:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2
+        
+      - uses: actions/checkout@v2
+      
+      - name: qmake
+        run: qmake CONFIG+='release'
+        
+      - name: make
+        run: make
+        
+      - name: check libQt5Gui.so/libGL.so
+        run: ldd QUsb2Snes  | grep --silent -e "libQt5Gui\.so" -e "libGL\.so"
+
+  build file2snes:
+      
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2
+        
+      - uses: actions/checkout@v2
+      
+      - name: qmake
+        working-directory: QFile2Snes
+        run: qmake CONFIG+='release'
+        
+      - name: make
+        working-directory: QFile2Snes
+        run: make
