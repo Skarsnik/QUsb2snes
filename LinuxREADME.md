@@ -1,10 +1,11 @@
-For now QUsb2Snes Linux integration is not great. It need work on other application detection.
+For now QUsb2Snes Linux integration is not great. 
+It need work on other application detection.
 
-# Compiling
+## Compiling
 
-You need the developpment files for Qt 5.8 or supperior.
-You will need the developplent files for websocket and serialport libraries that goes with your Qt version
-You can etheir use the Qbs build tool or the regular qmake build too to build it. QMake is simpler to use.
+You need the development files for Qt 5.8 or newer.
+You will need the development files for websocket and serialport libraries that goes with your Qt version
+You can either use the Qbs build tool or the regular qmake build too to build it. QMake is simpler to use.
 
 ```
 qmake QUsb2snes.pro CONFIG+='release'
@@ -21,23 +22,23 @@ qmake "QUSB2SNES_NOGUI=1" CONFIG+='release'
 make
 ```
 
-# Usage
+## Usage
 
 Only the non gui version take arguments, It still use the config file but you can use some arguments to enable the support
 you want.
 
-*  `-sd2snes` : to activate the sd2snes support
+* `-sd2snes` : to activate the sd2snes support
 * `-luabridge` : for the lua bridge support
 * `-retroarch` : for the retroarch support
 * `-snesclassic` :  for the snes classic support
 
-# Files
+## Files
 
-Logs are put in the standard path for application data. It should be:
-~/.loca/share/QUsb2Snes
+Logs are put in the standard path for application data.
+It should be: `$HOME/.local/share/QUsb2Snes`
 
 And the settings file is into
-~/.config/skarsnik.nyo.fr/QUsb2Snes.conf
+`$HOME/.config/skarsnik.nyo.fr/QUsb2Snes.conf`
 
 To configure QUsb2snes for RetroArch when using `-nogui` option
 
@@ -47,7 +48,7 @@ Add retroarchdevice to the config under General, for example:
 retroarchdevice=true
 ```
 
-# SD2Snes
+## SD2Snes
 
 To make your sd2snes device work, you will need to set some tty setting 
 
