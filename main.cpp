@@ -96,7 +96,7 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
             #ifndef QUSB2SNES_NOGUI
             QMessageBox::critical(nullptr, QObject::tr("Critical error"), msg);
             #else
-            fprintf(stderr, "Cristical error :\n", msg.constData());
+            fprintf(stderr, "Critical error :%s\n", msg.constData());
             #endif
             qApp->exit(1);
             break;
@@ -209,6 +209,11 @@ int main(int ac, char *ag[])
         appUi->updated(app.arguments().at(updatedIndex + 1));
     appUi->sysTray->show();
 #else
+   if (app.arguments().contains("--version"))
+   {
+        fprintf(stdout, "QUsb2Snes version : %s\n", app.applicationVersion().toLocal8Bit().constData());
+        return 0;
+   }
    if (globalSettings->value("sd2snessupport").toBool() || app.arguments().contains("-sd2snes"))
    {
        SD2SnesFactory* sd2snesFactory = new SD2SnesFactory();

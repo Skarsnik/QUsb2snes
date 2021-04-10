@@ -15,7 +15,8 @@ UIHEADERS = appui.h \
 
 equals(QUSB2SNES_NOGUI, 1) {
     message("building QUsb2Snes in NOGUI mode")
-    DEFINES += "QUSB2SNES_NOGUI=1"   
+    DEFINES += "QUSB2SNES_NOGUI=1"
+    QT -= gui
 } else {
     QT += gui widgets
     FORMS =  tempdeviceselector.ui
