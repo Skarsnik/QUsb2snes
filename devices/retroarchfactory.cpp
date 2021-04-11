@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Sylvain "Skarsnik" Colinet.
+ * Copyright (c) 2018 Sylvain "Skarsnik" Colinet, Greg J Arnold.
  *
  * This file is part of the QUsb2Snes project.
  * (see https://github.com/Skarsnik/QUsb2snes).
