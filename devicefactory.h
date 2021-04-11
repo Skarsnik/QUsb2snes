@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2021 the QUsb2Snes authors.
+ * Copyright (c) 2018 Sylvain "Skarsnik" Colinet.
  *
- * This file is part of QUsb2Snes.
+ * This file is part of the QUsb2Snes project.
  * (see https://github.com/Skarsnik/QUsb2snes).
  *
  * QUsb2Snes is free software: you can redistribute it and/or modify
