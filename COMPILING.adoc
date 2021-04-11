@@ -32,28 +32,8 @@ make
 
 === Prerequisites
 
-* Visual Studio 2017 or newer
-* Qt 5.8 or higher development libraries and binaries (e.g. qmake)
-
-== Compiling the GUI version
-
-[source]
-----
-qmake QUsb2snes.pro -spec win32-msvc "CONFIG+=release"
-nmake
-lrelease QUsb2Snes.pro
-qmake WinUpdater.pro -spec win32-msvc "CONFIG+=release"
-nmake
-
-cd QFile2Snes
-qmake QFile2Snes.pro -spec win32-msvc "CONFIG+=release"
-nmake
-lrelease QFile2Snes.pro
-
-qmake SendToSd2Snes.pro -spec win32-msvc "CONFIG+=release"
-lrelease SendToSd2Snes.pro
-nmake
-----
+* Install Qt 5
+* Open the `.qbs` file with QCreator
 
 == MacOS
 
