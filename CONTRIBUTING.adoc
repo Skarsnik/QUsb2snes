@@ -1,0 +1,57 @@
+= Contributing
+// URIs:
+:uri-repo: https://github.com/Skarsnik/QUsb2snes
+:uri-help-base: https://help.github.com/articles
+:uri-issues: {uri-repo}/issues
+:uri-fork-help: {uri-help-base}/fork-a-repo
+:uri-branch-help: {uri-fork-help}#create-branches
+:uri-pr-help: {uri-help-base}/using-pull-requests
+
+== License Agreement
+
+By contributing changes to this repository, you agree to license your contributions under the GPL v3 (or later).
+This ensures your contributions have the same license as the project and that the community is free to use your contributions.
+You also assert that you are the original author of the work that you are contributing unless otherwise stated.
+
+== Submitting an Issue
+
+We use the {uri-issues}[issue tracker on GitHub] associated with this project to track bugs and features (i.e., issues).
+We very much appreciate the time and effort you take to report an issue.
+
+Before submitting an issue, make sure it hasn't already been submitted by using the {uri-issues}[search feature].
+Please be sure to check closed issues as well as the issue may have been recently fixed.
+
+If you've determined that your issue has not already been reported, please follow these guidelines when submitting an issue:
+
+. Use an actionable title that identifies the behavior you want, such as "`Allow attributes to be defined per list item`".
+. Add a description that explains your use case and why this behavior will help you achieve your goal.
+. If your change involves the protocol, please provide a sample document that can be used to better understand the scenario and for use in testing.
+Also include any details that may help reproduce the bug, including your emulator/sd2snes version and operating system.
+. An ideal bug report would also include a pull request with at least one failing command.
+However, we recognize that not everyone who uses QUsb2Snes is a C++ programmer, or even a programmer.
+So we do not expect you to include a pull request with your issue.
+
+Condescending or disparaging remarks have no place in this issue tracker and will result in your issue being rejected.
+You can be critical, but keep it positive and constructive.
+Stick with actionable language that describes what you would like the software to do.
+
+Be mindful of the fact that this project is maintained by volunteers and built on a foundation of trust.
+Please respect the work of those who have volunteered their time and effort to develop this project, and we will respect the time and effort you have taken to file an issue.
+
+== Submitting a Pull Request
+
+. {uri-fork-help}[Fork the repository].
+. Install dependencies.
+  ** qt5.8 as a development dependency.
+  ** deno for license header checking.
+. {uri-branch-help}[Create a topic branch] (preferably using the pattern `issue-XYZ`, where `XYZ` is the issue number).
+. Add tests for your unimplemented feature or bug fix.
+. (TBD): Run `???` to run the tests.
+. Add documentation for your feature or bug fix.
+. If your changes are not 100% documented, go back to step 6.
+. run `deno run --unstable --allow-read https://deno.land/x/license_checker@v3.1.3/main.ts` to check if you haven’t forgotten to add a license header.
+. Add, commit, and push your changes.
+. {uri-pr-help}[Submit a pull request].
+
+For ideas about how to use pull requests, see the post http://blog.quickpeople.co.uk/2013/07/10/useful-github-patterns[Useful GitHub Patterns].
+
