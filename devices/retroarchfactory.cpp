@@ -59,6 +59,7 @@ RetroArchFactory::RetroArchFactory()
             }
             newHost.name = name;
             raHosts[name] = newHost;
+            sDebug() << "Added RetroArchHost [" << newHost.name << "] with IP [" << newHost.addr << "].";
         }
     }
 }
