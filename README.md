@@ -23,23 +23,6 @@ Installation via other means (homebrew, chocolatey, etc.) is not planned at the 
 
 ## Usage
 
-### Command line options
-
-#### NO GUI
-
-To configure QUsb2snes for RetroArch when using `-nogui` option
-
-#### Emulator choice
-
-This is only available in conjunction with the `-nogui` option.
-
-Only the non gui version take arguments, It still use the config file but you can use some arguments to enable the support you want.
-
-* `-sd2snes` : to activate the sd2snes support
-* `-luabridge` : for the lua bridge support
-* `-retroarch` : for the retroarch support
-* `-snesclassic` :  for the snes classic support
-
 ### Configuration files
 
 Logs are put in the standard path for application data.
@@ -140,6 +123,22 @@ Then now put your copy in place of the original one.
 Activate the `Lua bridge` on the device menu of QUsb2Snes.
 In the `Script` menu of Bsnes-as, select `Load Script` and pick the usb2snes.as file from the included scripts folder.
 
+### Command line options
+
+#### Emulator choice
+
+This is only available in conjunction with the `-nogui` option.
+
+Only the non gui version take arguments, It still use the config file but you can use some arguments to enable the support you want.
+
+* `-sd2snes` : to activate the sd2snes support
+* `-luabridge` : for the lua bridge support
+* `-retroarch` : for the retroarch support
+* `-snesclassic` :  for the snes classic support
+
+#### NO GUI
+
+To configure QUsb2snes for RetroArch when using `-nogui` option
 
 ---
 
