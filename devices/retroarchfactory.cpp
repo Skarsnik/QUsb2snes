@@ -3,6 +3,7 @@
 #include <QTimer>
 #include <QSettings>
 #include <QVersionNumber>
+#include <QHostInfo>
 #include "retroarchfactory.h"
 #include "../rommapping/rominfo.h"
 
@@ -52,10 +53,16 @@ RetroArchFactory::RetroArchFactory()
             RAHost newHost;
             if (host.contains('=')) {
                 name = host.split('=').at(0);
-                newHost.addr = QHostAddress(host.split('=').at(1));
+                // TODO: refactor this blocking call to QHostInfo::fromName
+                QHostInfo info = QHostInfo::fromName(host.split('=').at(1));
+                QHostAddress address = info.addresses()[0];
+                newHost.addr = QHostAddress(address);
             } else {
                 name = host;
-                newHost.addr = QHostAddress(host);
+                // TODO: refactor this blocking call to QHostInfo::fromName
+                QHostInfo info = QHostInfo::fromName(host);
+                QHostAddress address = info.addresses()[0];
+                newHost.addr = QHostAddress(address);
             }
             newHost.name = name;
             raHosts[name] = newHost;
