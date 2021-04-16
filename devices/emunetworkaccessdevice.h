@@ -44,6 +44,8 @@ private:
 
 
     unsigned int            getAddressSizeRequested;
+    unsigned int            putAddressSize;
+    unsigned int            putAddressSizeSent;
     QMap<QString, QString>  memoryAccess;
     std::function<void()>   afterMemoryAccess;
 

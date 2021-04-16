@@ -373,9 +373,9 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
 {
     DeviceInfos&  info = devicesInfos[device];
     sDebug() << "Processing command finished" << info.currentCommand;
-    sDebug() << "Wriging before cps : " << __func__ << wsInfos[info.currentWS].currentPutSize;
+    //sDebug() << "Wriging before cps : " << __func__ << wsInfos[info.currentWS].currentPutSize;
     wsInfos[info.currentWS].currentPutSize = 0;
-    sDebug() << "Wriging after cps :" << __func__ << wsInfos[info.currentWS].currentPutSize;
+    //sDebug() << "Wriging after cps :" << __func__ << wsInfos[info.currentWS].currentPutSize;
     switch (info.currentCommand) {
     case USB2SnesWS::Info :
     {

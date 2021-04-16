@@ -170,14 +170,19 @@ bool EmuNetworkAccessFactory::asyncListDevices()
 
 void EmuNetworkAccessFactory::onClientDisconnected()
 {
+    return ; // this is kinda useless?
     EmuNWAccessClient* client = qobject_cast<EmuNWAccessClient*>(sender());
-    for (auto ci : clientInfos)
+    QMutableListIterator<ClientInfo> it(clientInfos);
+    while (it.hasNext())
     {
-        if (ci.client == client)
+        it.next();
+        if (it.value().client == client)
         {
-            sDebug()  << "Client disconnected, closing " << ci.deviceName;
-            if (ci.device != nullptr)
-                ci.device->close();
+            sDebug()  << "Client disconnected, closing " << it.value().deviceName;
+            if (it.value().device != nullptr)
+                it.value().device->close();
+            client->deleteLater();
+            it.remove();
             return;
         }
     }
