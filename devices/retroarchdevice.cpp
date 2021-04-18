@@ -381,11 +381,12 @@ int RetroArchDevice::addr_to_addr(unsigned int addr2)
             return addr - 0xF50000;
         }
     }
-    if (addr >= 0xE00000 && addr < 0xF70000)
+    // SRAM access
+    if (addr >= 0xE00000 && addr < 0xF00000)
     {
         if (!hasRomAccess)
             return addr - 0xE00000 + 0x20000;
-        if (romType == LoROM)
+        if (romType != LoROM)
             return addr - 0xE00000 + 0x700000;
         return lorom_sram_pc_to_snes(addr2 - 0xE00000);
     }
