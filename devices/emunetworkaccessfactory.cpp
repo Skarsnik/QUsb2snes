@@ -128,9 +128,21 @@ bool EmuNetworkAccessFactory::asyncListDevices()
             m_state = NONE;
         }
     });
+    QTimer::singleShot(200, this, [=] {
+        if (m_state == BUSYDEVICELIST && !client->isConnected())
+        {
+            sDebug() << "Connection timeout triggered";
+            client->deleteLater();
+            emit devicesListDone();
+            m_state = NONE;
+        }
+    });
     sDebug() << "Trying localhost:" << emuNetworkAccessStartPort << QTime::currentTime();
     connect(client, &EmuNWAccessClient::connectError, this, [=] {
-        sDebug() << "Connection error " << client->error();
+        sDebug() << "Connection error " << client->error() << QTime::currentTime();
+        client->deleteLater();
+        emit devicesListDone();
+        m_state = NONE;
     });
     client->connectToHost("127.0.0.1", emuNetworkAccessStartPort);
     connect(client, &EmuNWAccessClient::connected, this, [=] {
