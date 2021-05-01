@@ -1,4 +1,4 @@
-
+include(EmuNWAccess-qt/EmuNWAccess-qt.pri)
 
 QT       += core websockets serialport network
 
@@ -25,8 +25,6 @@ equals(QUSB2SNES_NOGUI, 1) {
 }
 
 
-
-
 SOURCES += adevice.cpp \
           devicefactory.cpp \
           devices/sd2snesfactory.cpp \
@@ -36,6 +34,8 @@ SOURCES += adevice.cpp \
           devices/luabridgedevice.cpp \
           devices/retroarchdevice.cpp \
           devices/retroarchfactory.cpp \
+          devices/emunetworkaccessfactory.cpp \
+          devices/emunetworkaccessdevice.cpp \
           main.cpp \
           rommapping/mapping_hirom.c \
           rommapping/mapping_lorom.c \
@@ -55,6 +55,8 @@ HEADERS += adevice.h \
           devices/luabridge.h \
           devices/luabridgedevice.h \
           devices/retroarchdevice.h \
+          devices/emunetworkaccessfactory.h \
+          devices/emunetworkaccessdevice.h \
           rommapping/rommapping.h \
           rommapping/rominfo.h \
           devices/sd2snesdevice.h \

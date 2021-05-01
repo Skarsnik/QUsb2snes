@@ -29,6 +29,7 @@
 #include "devices/luabridge.h"
 #include "devices/retroarchfactory.h"
 #include "devices/snesclassicfactory.h"
+#include "devices/emunetworkaccessfactory.h"
 
 std::ostream* stdLogStream = nullptr;
 
@@ -96,7 +97,7 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
             #ifndef QUSB2SNES_NOGUI
             QMessageBox::critical(nullptr, QObject::tr("Critical error"), msg);
             #else
-            fprintf(stderr, "Critical error :%s\n", msg.constData());
+            fprintf(stderr, "Critical error :%s\n", msg.toLatin1().constData());
             #endif
             qApp->exit(1);
             break;
@@ -202,36 +203,7 @@ int main(int ac, char *ag[])
     wsServer.addTrusted("http://usb2snes.com");
     wsServer.addTrusted("https://samus.link");
 
-<<<<<<< HEAD
 #ifndef QUSB2SNES_NOGUI
-=======
-    if (app.arguments().size() == 2 && app.arguments().at(1) == "-nogui")
-    {
-        SD2SnesFactory* sd2snesFactory = new SD2SnesFactory();
-        wsServer.addDeviceFactory(sd2snesFactory);
-        if (globalSettings->value("retroarchdevice").toBool())
-        {
-            RetroArchFactory* retroarchFactory = new RetroArchFactory();
-            wsServer.addDeviceFactory(retroarchFactory);
-        }
-        if (globalSettings->value("luabridge").toBool())
-        {
-            LuaBridge* luaBridge = new LuaBridge();
-            wsServer.addDeviceFactory(luaBridge);
-        }
-        if (globalSettings->value("snesclassic").toBool())
-        {
-            SNESClassicFactory* snesClassic = new SNESClassicFactory();
-            wsServer.addDeviceFactory(snesClassic);
-        }
-        QObject::connect(&wsServer, &WSServer::listenFailed, [=](const QString& err) {
-
-        });
-        QTimer::singleShot(100, &startServer);
-        return app.exec();
-    }
-    QLoggingCategory::setFilterRules(QStringLiteral("EmuNWAccessClient.debug=true"));
->>>>>>> emunetwork-device
     AppUi*  appUi = new AppUi();
     int updatedIndex = app.arguments().indexOf("-updated");
     if (updatedIndex != -1)
@@ -261,7 +233,12 @@ int main(int ac, char *ag[])
    if (globalSettings->value("snesclassic").toBool() || app.arguments().contains("-snesclassic"))
    {
        SNESClassicFactory* snesClassic = new SNESClassicFactory();
-        wsServer.addDeviceFactory(snesClassic);
+       wsServer.addDeviceFactory(snesClassic);
+   }
+   if (globalSettings->value("emunwaccess").toBool() || app.arguments().contains("-emunwaccess"))
+   {
+       EmuNetworkAccessFactory* emunwf = new EmuNetworkAccessFactory();
+       wsServer.addDeviceFactory(emunwf);
    }
    QObject::connect(&wsServer, &WSServer::listenFailed, [=](const QString& err) {
    });
