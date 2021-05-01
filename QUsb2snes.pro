@@ -1,5 +1,3 @@
-include(EmuNWAccess-qt/EmuNWAccess-qt.pri)
-
 QT       += core websockets serialport network
 
 TARGET = QUsb2Snes
@@ -24,6 +22,7 @@ equals(QUSB2SNES_NOGUI, 1) {
     HEADERS = $$UIHEADERS
 }
 
+include($$PWD/EmuNWAccess-qt/EmuNWAccess-qt.pri)
 
 SOURCES += adevice.cpp \
           devicefactory.cpp \
