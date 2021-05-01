@@ -1,0 +1,40 @@
+This document will guide you through the compiling process.
+
+== Linux
+
+=== Prerequisites
+
+* You need the development files for Qt 5.8 or newer.
+* You will need the development files for websocket and serialport libraries that goes with your Qt version
+* You can either use the Qbs build tool or the regular qmake build too to build it. QMake is simpler to use.
+
+=== Compiling the GUI version (default)
+
+[source,bash]
+----
+qmake QUsb2snes.pro CONFIG+='release'
+make
+----
+
+Then start the QUsb2Snes binary directory that is created.
+
+=== Compiling without GUI
+
+If you want to build a version that does not use a Gui (to use it without a XServer):
+
+[source,bash]
+----
+qmake "QUSB2SNES_NOGUI=1" CONFIG+='release'
+make
+----
+
+== Windows
+
+=== Prerequisites
+
+* Install Qt 5
+* Open the `.qbs` file with QCreator
+
+== MacOS
+
+TBD
