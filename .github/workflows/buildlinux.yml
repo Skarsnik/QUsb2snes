@@ -13,9 +13,11 @@ jobs:
 
     steps:
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        run: apt-get install qt5-default qt5-qmake libqt5serialbus5-dev libqt5websockets5-dev 
         
       - uses: actions/checkout@v2
+        with:
+          submodules: true
       
       - name: qmake NOGUI
         run: qmake QUSB2SNES_NOGUI=1 CONFIG+='release'
@@ -32,9 +34,12 @@ jobs:
 
     steps:
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        run: apt-get install qt5-default qt5-qmake libqt5serialbus5-dev libqt5websockets5-dev
         
       - uses: actions/checkout@v2
+        with:
+          submodules: true
+          
       
       - name: qmake
         run: qmake CONFIG+='release'
@@ -51,9 +56,11 @@ jobs:
 
     steps:
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        run: apt-get install qt5-default qt5-qmake libqt5serialbus5-dev libqt5websockets5-dev
         
       - uses: actions/checkout@v2
+        with:
+          submodules: true
       
       - name: qmake
         working-directory: QFile2Snes
