@@ -5,6 +5,7 @@
 #include "devices/snesclassicfactory.h"
 #include "devices/sd2snesfactory.h"
 #include "devices/retroarchfactory.h"
+#include "devices/emunetworkaccessfactory.h"
 
 #include <QMenu>
 #include <QObject>
@@ -34,6 +35,7 @@ private slots:
     void    onRetroarchTriggered(bool checked);
     void    onLuaBridgeTriggered(bool checked);
     void    onSNESClassicTriggered(bool checked);
+    void    onEmuNWAccessTriggered(bool checked);
     void    onMenuAboutToshow();
     void    onAppsMenuTriggered(QAction* action);
     void    onMagic2SnesMenuTriggered(QAction*action);
@@ -66,10 +68,13 @@ private:
     QAction*            retroarchAction;
     QAction*            snesClassicAction;
     QAction*            luaBridgeAction;
+    QAction*            emuNWAccessAction;
+
     LuaBridge*                      luaBridge;
     SD2SnesFactory*                 sd2snesFactory;
     RetroArchFactory*               retroarchFactory;
     SNESClassicFactory*             snesClassic;
+    EmuNetworkAccessFactory*        emuNWAccess;
     QMap<QString, ApplicationInfo>  regularApps;
 
     QNetworkAccessManager*          dlManager;

@@ -3,9 +3,20 @@
 
 #include <QObject>
 #include "../devicefactory.h"
+#include "emunetworkaccessdevice.h"
+#include "emunwaccessclient.h"
 
 class EmuNetworkAccessFactory : public DeviceFactory
 {
+    Q_OBJECT
+private:
+    struct ClientInfo {
+        EmuNWAccessClient*      client;
+        EmuNetworkAccessDevice* device;
+        QString                 lastError;
+        QString                 deviceName;
+    };
+
 public:
     EmuNetworkAccessFactory();
 
@@ -18,6 +29,11 @@ public:
     QString name() const;
     bool hasAsyncListDevices();
     bool asyncListDevices();
+
+    QList<ClientInfo>   clientInfos;
+
+ private slots:
+    void    onClientDisconnected();
 };
 
 #endif // EMUNETWORKACCESSFACTORY_H

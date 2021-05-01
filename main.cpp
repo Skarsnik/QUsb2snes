@@ -202,7 +202,36 @@ int main(int ac, char *ag[])
     wsServer.addTrusted("http://usb2snes.com");
     wsServer.addTrusted("https://samus.link");
 
+<<<<<<< HEAD
 #ifndef QUSB2SNES_NOGUI
+=======
+    if (app.arguments().size() == 2 && app.arguments().at(1) == "-nogui")
+    {
+        SD2SnesFactory* sd2snesFactory = new SD2SnesFactory();
+        wsServer.addDeviceFactory(sd2snesFactory);
+        if (globalSettings->value("retroarchdevice").toBool())
+        {
+            RetroArchFactory* retroarchFactory = new RetroArchFactory();
+            wsServer.addDeviceFactory(retroarchFactory);
+        }
+        if (globalSettings->value("luabridge").toBool())
+        {
+            LuaBridge* luaBridge = new LuaBridge();
+            wsServer.addDeviceFactory(luaBridge);
+        }
+        if (globalSettings->value("snesclassic").toBool())
+        {
+            SNESClassicFactory* snesClassic = new SNESClassicFactory();
+            wsServer.addDeviceFactory(snesClassic);
+        }
+        QObject::connect(&wsServer, &WSServer::listenFailed, [=](const QString& err) {
+
+        });
+        QTimer::singleShot(100, &startServer);
+        return app.exec();
+    }
+    QLoggingCategory::setFilterRules(QStringLiteral("EmuNWAccessClient.debug=true"));
+>>>>>>> emunetwork-device
     AppUi*  appUi = new AppUi();
     int updatedIndex = app.arguments().indexOf("-updated");
     if (updatedIndex != -1)
