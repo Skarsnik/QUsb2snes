@@ -40,8 +40,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
     sd2snesFactory = nullptr;
     luaBridge = nullptr;
     snesClassic = nullptr;
-    emunwacess = new EmuNetworkAccessFactory();
-    wsServer.addDeviceFactory(emunwacess);
+    emuNWAccess = nullptr;
     dlManager = nullptr;
 
     QTranslator translator;
@@ -86,6 +85,11 @@ void AppUi::init()
     snesClassicAction = new QAction(QIcon(":/img/chrysalis.png"), tr("Enable SNES Classic support (experimental)"));
     snesClassicAction->setCheckable(true);
     connect(snesClassicAction, SIGNAL(triggered(bool)), this, SLOT(onSNESClassicTriggered(bool)));
+
+    emuNWAccessAction = new QAction(QIcon(":/img/cheer.png"), tr("Enable EmuNetworkAccess (experimental)"));
+    emuNWAccessAction->setCheckable(true);
+    connect(emuNWAccessAction, &QAction::triggered, this, &AppUi::onEmuNWAccessTriggered);
+
     if (globalSettings->value("sd2snessupport").toBool())
     {
         sd2snesFactory = new SD2SnesFactory();
@@ -109,6 +113,12 @@ void AppUi::init()
         snesClassic = new SNESClassicFactory();
         wsServer.addDeviceFactory(snesClassic);
         snesClassicAction->setChecked(true);
+    }
+    if (globalSettings->value("emunwaccess").toBool())
+    {
+        emuNWAccess = new EmuNetworkAccessFactory();
+        wsServer.addDeviceFactory(emuNWAccess);
+        emuNWAccessAction->setChecked(true);
     }
     if (globalSettings->contains("trustedOrigin"))
     {
@@ -281,6 +291,7 @@ void AppUi::onMenuAboutToshow()
     deviceMenu->addAction(retroarchAction);
     deviceMenu->addAction(luaBridgeAction);
     deviceMenu->addAction(snesClassicAction);
+    deviceMenu->addAction(emuNWAccessAction);
     //(deviceMenu + 1)->addAction(snesClassicAction);
 }
 
@@ -550,6 +561,17 @@ void AppUi::onSNESClassicTriggered(bool checked)
         //wsServer.removeDevice(snesClassic);
     }
     globalSettings->setValue("snesclassic", checked);
+}
+
+void AppUi::onEmuNWAccessTriggered(bool checked)
+{
+    if (checked == true)
+    {
+        if (emuNWAccess == nullptr)
+            emuNWAccess = new EmuNetworkAccessFactory();
+        wsServer.addDeviceFactory(emuNWAccess);
+    }
+    globalSettings->setValue("emunwaccess", checked);
 }
 
 
