@@ -24,6 +24,8 @@ Project {
             "devices/emunetworkaccessfactory.h",
             "devices/retroarchfactory.cpp",
             "devices/retroarchfactory.h",
+            "devices/retroarchhost.cpp",
+            "devices/retroarchhost.h",
             "devices/sd2snesfactory.cpp",
             "devices/sd2snesfactory.h",
             "devices/snesclassicfactory.cpp",

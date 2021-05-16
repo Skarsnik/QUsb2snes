@@ -33,6 +33,7 @@ SOURCES += adevice.cpp \
           devices/luabridgedevice.cpp \
           devices/retroarchdevice.cpp \
           devices/retroarchfactory.cpp \
+          devices/retroarchhost.cpp \
           devices/emunetworkaccessfactory.cpp \
           devices/emunetworkaccessdevice.cpp \
           main.cpp \
@@ -54,6 +55,7 @@ HEADERS += adevice.h \
           devices/luabridge.h \
           devices/luabridgedevice.h \
           devices/retroarchdevice.h \
+          devices/retroarchhost.h \
           devices/emunetworkaccessfactory.h \
           devices/emunetworkaccessdevice.h \
           rommapping/rommapping.h \

@@ -4,24 +4,21 @@
 #include <QObject>
 #include <QUdpSocket>
 #include "../devicefactory.h"
+#include "retroarchhost.h"
 #include "retroarchdevice.h"
 
 
 class RetroArchFactory : public DeviceFactory
 {
     Q_OBJECT
-    struct RAHost {
-        RAHost() {
-            sock = nullptr;
-            port = 55355;
+    struct HostData {
+        HostData() {
             device = nullptr;
         }
         QString             name;
-        QHostAddress        addr;
-        QUdpSocket*         sock;
-        quint16             port;
-        QString             status;
+        RetroArchHost*      host;
         RetroArchDevice*    device;
+        qint64              reqId;
     };
 
 public:
@@ -30,6 +27,8 @@ public:
     // DeviceFactory interface
 public:
     QStringList listDevices();
+    bool    hasAsyncListDevices();
+    bool asyncListDevices();
     bool deleteDevice(ADevice *dev);
     QString status();
     QString name() const;
@@ -37,18 +36,25 @@ public:
 
 
 private slots:
-    void    onUdpDisconnected();
+    void    onRaHostInfosDone(qint64 id);
+    void    onRaHostgetInfosFailed(qint64 id);
+    void    onRaHostErrorOccured(QAbstractSocket::SocketError err);
+    void    onRaHostConnected();
 
 private:
-    QMap<QString, RAHost>           raHosts;
+    QMap<QString, HostData> raHosts;
+    int                     hostCheckCount;
+    int                     hostChecked;
 
-    bool            checkRetroArchHost(RAHost& host);
+    void                    checkInfoDone();
+
+/*    bool            checkRetroArchHost(RAHost& host);
 
     bool            tryNewRetroArchHost(RAHost& host);
 
-    // DeviceFactory interface
-public:
-    bool asyncListDevices();
+    RAHost          testRetroArchHost(RAHost host);*/
+
+    void    addHost(RetroArchHost *host);
 };
 
 #endif // RETROARCHFACTORY_H

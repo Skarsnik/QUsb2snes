@@ -14,21 +14,32 @@ Q_LOGGING_CATEGORY(log_retroarchfact, "RA Factory")
 
 extern QSettings* globalSettings;
 
+void    RetroArchFactory::addHost(RetroArchHost* host)
+{
+    raHosts[host->name()].host = host;
+    connect(host, &RetroArchHost::infoDone, this, &RetroArchFactory::onRaHostInfosDone);
+    connect(host, &RetroArchHost::infoFailed, this, &RetroArchFactory::onRaHostgetInfosFailed);
+    connect(host, &RetroArchHost::errorOccured, this, &RetroArchFactory::onRaHostErrorOccured);
+    connect(host, &RetroArchHost::connected, this, &RetroArchFactory::onRaHostConnected);
+    sDebug() << "Added new RetroArch host: " << host->name();
+}
+
 RetroArchFactory::RetroArchFactory()
 {
+    hostChecked = -1;
+    hostCheckCount = -1;
+
     QString snesclassicIP;
     if (globalSettings->contains("SNESClassicIP"))
         snesclassicIP = globalSettings->value("SNESClassicIP").toString();
     else
         snesclassicIP = SNES_CLASSIC_IP;
-    RAHost scHost;
-    scHost.addr = QHostAddress(snesclassicIP);
-    scHost.name = "SNES Classic";
-    raHosts[scHost.name] = scHost;
-    RAHost local;
-    local.addr = QHostAddress("127.0.0.1");
-    local.name = "Localhost";
-    raHosts[local.name] = local;
+    RetroArchHost* scHost = new RetroArchHost("Snes Classic");
+    scHost->setHostAddress(QHostAddress(snesclassicIP));
+    addHost(scHost);
+    RetroArchHost* local = new RetroArchHost("Localhost");
+    local->setHostAddress(QHostAddress("127.0.0.1"));
+    addHost(local);
     // Compatibility with previous version
     if (globalSettings->contains("RetroArchHost"))
     {
@@ -37,10 +48,11 @@ RetroArchFactory::RetroArchFactory()
         {
             globalSettings->remove("RetroArchHost");
         } else {
-            RAHost old;
-            old.addr = QHostAddress(oldEntry);
-            old.name = oldEntry;
-            raHosts[oldEntry] = old;
+            RetroArchHost* old = new RetroArchHost(oldEntry);
+            QHostInfo::lookupHost(oldEntry, this, [old](QHostInfo hinfo){
+                old->setHostAddress(hinfo.addresses()[0]);
+            });
+           addHost(old);
         }
     }
     if (globalSettings->contains("RetroArchHosts"))
@@ -50,23 +62,21 @@ RetroArchFactory::RetroArchFactory()
         QStringList hosts = hostString.split(';');
         foreach(QString host, hosts) {
             QString name;
-            RAHost newHost;
+            RetroArchHost* newHost;
             if (host.contains('=')) {
-                name = host.split('=').at(0);
-                // TODO: refactor this blocking call to QHostInfo::fromName
-                QHostInfo info = QHostInfo::fromName(host.split('=').at(1));
-                QHostAddress address = info.addresses()[0];
-                newHost.addr = QHostAddress(address);
+                newHost = new RetroArchHost(host.split('=').at(0));
+                QHostInfo::lookupHost(host.split('=').at(1), this, [newHost](QHostInfo hinfo){
+                    sDebug() << "RetroArchHost [" << newHost->name() << "] get IP [" << newHost->address() << "].";
+                    newHost->setHostAddress(hinfo.addresses()[0]);
+                });
             } else {
-                name = host;
-                // TODO: refactor this blocking call to QHostInfo::fromName
-                QHostInfo info = QHostInfo::fromName(host);
-                QHostAddress address = info.addresses()[0];
-                newHost.addr = QHostAddress(address);
+                newHost = new RetroArchHost(host);
+                QHostInfo::lookupHost(host, this, [newHost](QHostInfo hinfo){
+                    sDebug() << "RetroArchHost [" << newHost->name() << "] get IP [" << newHost->address() << "].";
+                    newHost->setHostAddress(hinfo.addresses()[0]);
+                });
             }
-            newHost.name = name;
-            raHosts[name] = newHost;
-            sDebug() << "Added RetroArchHost [" << newHost.name << "] with IP [" << newHost.addr << "].";
+            addHost(newHost);
         }
     }
 }
@@ -76,7 +86,7 @@ QStringList RetroArchFactory::listDevices()
 {
     m_attachError.clear();
     QStringList toret;
-    QMutableMapIterator<QString, RAHost> i(raHosts);
+    /*QMutableMapIterator<QString, RAHost> i(raHosts);
     while (i.hasNext())
     {
         i.next();
@@ -102,21 +112,59 @@ QStringList RetroArchFactory::listDevices()
                 toret << host.device->name();
             connect(host.sock, &QUdpSocket::readyRead, host.device, &RetroArchDevice::onUdpReadyRead);
         }
-     }
+     }*/
     return toret;
 }
+
+bool RetroArchFactory::hasAsyncListDevices()
+{
+    return true;
+}
+
+
+bool RetroArchFactory::asyncListDevices()
+{
+    QMutableMapIterator<QString, HostData> it(raHosts);
+    hostCheckCount = 0;
+    hostChecked = 0;
+    while (it.hasNext())
+    {
+        it.next();
+        QString name = it.key();
+        HostData& data = it.value();
+        // Device exist and it's doing something, yay
+        if (data.device != nullptr && data.device->state() == ADevice::BUSY)
+        {
+            emit newDeviceName(data.device->name());
+            continue;
+        } else {
+            hostCheckCount++;
+            if (!data.host->isConnected())
+            {
+                sDebug() << "Trying to connect " << data.host->name();
+                data.host->connectToHost();
+            } else {
+                data.reqId = data.host->getInfos();
+            }
+        }
+    }
+    return true;
+}
+
+
 
 bool RetroArchFactory::deleteDevice(ADevice *dev)
 {
     sDebug() << "Cleaning RetroArch device :" << dev->name();
     RetroArchDevice* raDev = static_cast<RetroArchDevice*>(dev);
-    QMutableMapIterator<QString, RAHost> i(raHosts);
+    QMutableMapIterator<QString, HostData> i(raHosts);
     while (i.hasNext())
     {
         i.next();
         if (i.value().device == raDev)
         {
             i.value().device = nullptr;
+            break;
         }
     }
     raDev->deleteLater();
@@ -127,12 +175,12 @@ QString RetroArchFactory::status()
 {
     QString status;
     listDevices();
-    QMapIterator<QString, RAHost> i(raHosts);
+    QMapIterator<QString, HostData> i(raHosts);
     while (i.hasNext())
     {
         i.next();
-        const RAHost& host = i.value();
-        status += QString("RetroArch %1 : %2").arg(host.name).arg(host.status);
+        const HostData& host = i.value();
+        status += QString("RetroArch %1 ").arg(host.name);
         if (i.hasNext())
             status += " | ";
     }
@@ -148,7 +196,7 @@ QString RetroArchFactory::name() const
 ADevice *RetroArchFactory::attach(QString deviceName)
 {
     m_attachError.clear();
-    QMapIterator<QString, RAHost> i(raHosts);
+    QMapIterator<QString, HostData> i(raHosts);
     while (i.hasNext())
     {
         i.next();
@@ -158,64 +206,66 @@ ADevice *RetroArchFactory::attach(QString deviceName)
     return nullptr;
 }
 
-void RetroArchFactory::onUdpDisconnected()
-{
 
+void RetroArchFactory::onRaHostInfosDone(qint64 id)
+{
+    RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
+    if (raHosts[host->name()].reqId != id)
+        return ;
+    HostData& data = raHosts[host->name()];
+    if (data.device == nullptr)
+        data.device = new RetroArchDevice(host);
+    emit newDeviceName(data.device->name());
+    checkInfoDone();
 }
 
-bool RetroArchFactory::tryNewRetroArchHost(RAHost& host)
-{
-    QUdpSocket* sock = nullptr;
-    sDebug() << "Trying to connect to New RetroArch" << host.name << host.addr;
-    if (host.sock == nullptr || !host.sock->isOpen())
-    {
-        if (host.sock == nullptr)
-            host.sock = new QUdpSocket(this);
-        host.sock->connectToHost(host.addr, host.port);
-        if (!host.sock->waitForConnected(200))
-        {
-            host.status = tr("Can't connect to RetroArch.");
-            m_attachError = host.status;
-            host.sock->deleteLater();
-            host.sock = nullptr;
-            return false;
-        }
-    }
-    sock = host.sock;
-    sDebug() << "Connected, aka can create the connection";
-    sock->write("VERSION");
-    sock->waitForReadyRead(200);
-    if(sock->hasPendingDatagrams())
-    {
-        QString raVersion = sock->readAll().trimmed();
-        if (raVersion == "")
-        {
-            m_attachError = tr("Probably not running");
-            host.status = m_attachError;
-            return false;
-        }
-        sDebug() << "Received RA version : " << raVersion;
-    } else {
-        m_attachError = tr("Could not get the version.");
-        host.status = m_attachError;
-        return false;
-    }
-    RetroArchInfos info = RetroArchDevice::getRetroArchInfos(sock);
-    if (!info.error.isEmpty())
-    {
-        m_attachError = info.error;
-        host.status = info.error;
-        return false;
-    }
-    RetroArchDevice* newDev = new RetroArchDevice(sock, info, host.name);
-    host.device = newDev;
-    m_devices << newDev;
-    host.status = QString("RetroArch %1, running %2").arg(info.version).arg(info.gameName);
-    return true;
+void RetroArchFactory::onRaHostgetInfosFailed(qint64 id)
+{    
+    RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
+    if (raHosts[host->name()].reqId != id)
+        return ;
+    sDebug() << "Info failed for" << host->name();
+    checkInfoDone();
 }
 
-
-bool RetroArchFactory::asyncListDevices()
+void RetroArchFactory::onRaHostErrorOccured(QAbstractSocket::SocketError err)
 {
-    return false;
+    RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
+    sDebug() << host->name() << err;
+    // Doing info
+    if (hostChecked != -1)
+    {
+        disconnect(host, &RetroArchHost::connected, this, nullptr);
+        checkInfoDone();
+    }
 }
+
+void RetroArchFactory::onRaHostConnected()
+{
+    RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
+    sDebug() << host->name() << "Connected";
+    if (hostChecked != -1)
+    {
+         QMutableMapIterator<QString, HostData> it(raHosts);
+         while (it.hasNext())
+         {
+             it.next();
+             if (it.value().host == host)
+             {
+                 it.value().reqId = host->getInfos();
+             }
+         }
+    }
+}
+
+void RetroArchFactory::checkInfoDone()
+{
+    hostChecked++;
+    if (hostChecked == hostCheckCount)
+    {
+        hostChecked = -1;
+        hostCheckCount = -1;
+        emit devicesListDone();
+    }
+}
+

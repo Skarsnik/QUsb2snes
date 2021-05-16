@@ -2,11 +2,12 @@
 #define RETROARCHDEVICE_H
 
 #include "../adevice.h"
+#include "retroarchhost.h"
 #include "../rommapping/rominfo.h"
 
 #include <QObject>
 #include <QUdpSocket>
-#include <qtimer.h>
+#include <QTimer>
 
 
 struct RetroArchInfos {
@@ -23,7 +24,7 @@ class RetroArchDevice : public ADevice
 public:
 
 
-    RetroArchDevice(QUdpSocket* sock, RetroArchInfos info, QString name);
+    RetroArchDevice(RetroArchHost* mHost);
     /*RetroArchDevice(QUdpSocket* sock, QString raVersion, int bSize);
     RetroArchDevice(QUdpSocket* sock, QString raVersion, int bSize, QString gameName, enum rom_type romType);*/
 
@@ -48,7 +49,6 @@ public:
     USB2SnesInfo parseInfo(const QByteArray &data);
     QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI);
 
-    static RetroArchInfos   getRetroArchInfos(QUdpSocket* sock);
     friend class RetroArchFactory;
 
 
@@ -57,18 +57,17 @@ public slots:
     void close();
 
 private slots:
-    void    onUdpReadyRead();
+    void    onRHInfoDone(qint64 id);
+    void    onRHInfoFailled(qint64 id);
     void    timedCommandDone();
     void    commandTimeout();
+    void    onRHGetMemoryDone(qint64 id);
 
 private:
-    QUdpSocket*  m_sock;
+    RetroArchHost*  host;
     QByteArray   dataToWrite;
-    QTimer*      m_timeout_timer;
-    QString      m_raVersion;
-    QString      m_gameName;
+    qint64       reqId;
     QString      hostName;
-    QHostAddress hostAddress;
 
     bool         bigGet;
     unsigned int sizeBigGet;
@@ -78,18 +77,8 @@ private:
     unsigned int lastRCRSize;
     unsigned int sizePut;
     unsigned int sizeWritten;
-    bool         checkingRetroarch;
-    bool         checkingInfo;
-    bool         hasRomAccess;
-    enum rom_type   romType;
     QByteArray   checkReturnedValue;
-    rom_infos*   c_rom_infos;
-    void         read_core_ram(unsigned int addr, unsigned int size);
-    int          addr_to_addr(unsigned int addr);
-    unsigned int blockSize;
-    QString      m_uuid;
 
-    void    create(QUdpSocket *sock, QString raVersion, int bSize);
 signals:
     void    checkReturned();
 };
