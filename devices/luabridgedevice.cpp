@@ -160,6 +160,7 @@ static int asarpctosnes(unsigned int addr2, int mapper)
         if (addr&0x400000) return addr;
         return addr|0xC00000;
     }
+    return -1;
 }
 
 unsigned int LuaBridgeDevice::getSnes9xAddress(unsigned int addr)
