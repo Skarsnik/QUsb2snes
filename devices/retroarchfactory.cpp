@@ -41,6 +41,7 @@ void    RetroArchFactory::addHost(RetroArchHost* host)
     connect(host, &RetroArchHost::infoFailed, this, &RetroArchFactory::onRaHostgetInfosFailed);
     connect(host, &RetroArchHost::errorOccured, this, &RetroArchFactory::onRaHostErrorOccured);
     connect(host, &RetroArchHost::connected, this, &RetroArchFactory::onRaHostConnected);
+    connect(host, &RetroArchHost::connectionTimeout, this, &RetroArchFactory::onRaHostConnectionTimeout);
     sDebug() << "Added new RetroArch host: " << host->name();
 }
 
@@ -106,33 +107,6 @@ QStringList RetroArchFactory::listDevices()
 {
     m_attachError.clear();
     QStringList toret;
-    /*QMutableMapIterator<QString, RAHost> i(raHosts);
-    while (i.hasNext())
-    {
-        i.next();
-        RAHost& host = i.value();
-        sDebug() << "Checking : " << host.name;
-        if (host.sock == nullptr || host.device == nullptr)
-        {
-            if (tryNewRetroArchHost(host))
-            {
-                if (host.device != nullptr)
-                    toret << host.device->name();
-            }
-        } else {
-            // We don't want to interupt something
-            if (host.device->state() == ADevice::BUSY)
-            {
-                toret << host.device->name();
-                continue;
-            }
-            disconnect(host.sock, &QUdpSocket::readyRead, host.device, nullptr);
-            RetroArchInfos info = RetroArchDevice::getRetroArchInfos(host.sock);
-            if (info.error.isEmpty())
-                toret << host.device->name();
-            connect(host.sock, &QUdpSocket::readyRead, host.device, &RetroArchDevice::onUdpReadyRead);
-        }
-     }*/
     return toret;
 }
 
@@ -253,6 +227,17 @@ void RetroArchFactory::onRaHostErrorOccured(QAbstractSocket::SocketError err)
     RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
     sDebug() << host->name() << err;
     // Doing info
+    if (hostChecked != -1)
+    {
+        disconnect(host, &RetroArchHost::connected, this, nullptr);
+        checkInfoDone();
+    }
+}
+
+void RetroArchFactory::onRaHostConnectionTimeout()
+{
+    RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
+    sDebug() << host->name() << "Connection timeout";
     if (hostChecked != -1)
     {
         disconnect(host, &RetroArchHost::connected, this, nullptr);

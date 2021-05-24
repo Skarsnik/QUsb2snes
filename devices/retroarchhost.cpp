@@ -11,19 +11,26 @@ RetroArchHost::RetroArchHost(QString name, QObject *parent) : QObject(parent)
     m_name = name;
     m_port = 55355;
     readRamHasRomAccess = false;
-    readMemory = false;
+    readMemoryAPI = false;
     m_connected = false;
+    connectionTimeoutTimer.setInterval(500);
+    connectionTimeoutTimer.setSingleShot(true);
+    commandTimeoutTimer.setInterval(500);
+    commandTimeoutTimer.setSingleShot(true);
     connect(&socket, &QUdpSocket::connected, this, &RetroArchHost::connected);
     connect(&socket, &QUdpSocket::connected, this, [=](){m_connected = true;});
     connect(&socket, &QUdpSocket::readyRead, this, &RetroArchHost::onReadyRead);
+    connect(&socket, &QUdpSocket::bytesWritten, this, &RetroArchHost::onByteWritten);
     connect(&socket, &QUdpSocket::disconnected, this, &RetroArchHost::disconnected);
     connect(&socket, &QUdpSocket::disconnected, this, [=](){m_connected = false;});
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
     connect(&socket, &QUdpSocket::errorOccurred, this, &RetroArchHost::errorOccured);
-    connect(&socket, &QUdpSocket::errorOccurred, this, [this]{sDebug() << socket.error() << socket.errorString(); m_connected = false;});
+    connect(&socket, &QUdpSocket::errorOccurred, this, [this]{sDebug() << socket.error() << socket.errorString(); m_connected = false;connectionTimeoutTimer.stop();});
 #else
     connect(&socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &RetroArchHost::errorOccured);
+    connect(&socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, [this]{sDebug() << socket.error() << socket.errorString(); m_connected = false;connectionTimeoutTimer.stop();});
 #endif
+    connect(&commandTimeoutTimer, &QTimer::timeout, this, &RetroArchHost::onCommandTimerTimeout);
     state = None;
 }
 
@@ -31,6 +38,9 @@ void RetroArchHost::connectToHost()
 {
     sDebug() << "Connecting to " << m_address << m_port;
     socket.connectToHost(m_address, m_port);
+    connectionTimeoutTimer.singleShot(500, this, [=]{
+       emit connectionTimeout();
+    });
 }
 
 void RetroArchHost::setHostAddress(QHostAddress addr, quint16 port)
@@ -44,18 +54,59 @@ qint64 RetroArchHost::getMemory(unsigned int address, unsigned int size)
     int raAddress = translateAddress(address);
     if (raAddress == -1)
         return -1;
-    QByteArray data = (readMemory ? "READ_CORE_MEMORY " : "READ_CORE_RAM ") + QByteArray::number(raAddress, 16) + " " + QByteArray::number(size);
-    getMemorySize = size;
-    sDebug() << ">>" << data;
-    socket.write(data);
+    QByteArray data = (readMemoryAPI ? "READ_CORE_MEMORY " : "READ_CORE_RAM ") + QByteArray::number(raAddress, 16) + " " + QByteArray::number(size) + "\n";
+    getMemorySize = (int)size;
+    doCommmand(data);
     state = GetMemory;
     return ++id;
+}
+
+qint64 RetroArchHost::writeMemory(unsigned int address, unsigned int size)
+{
+    state = WriteMemory;
+    int raAddress = translateAddress(address);
+    if (raAddress == -1)
+        return -1;
+    writeAddress = (int)raAddress;
+    writeSize = (int)size;
+    writtenSize = 0;
+    writeMemoryBuffer.clear();
+    return ++id;
+}
+
+void RetroArchHost::writeMemoryData(QByteArray data)
+{
+    writtenSize += data.size();
+    writeMemoryBuffer.append(data);
+    if (writeSize == writtenSize)
+    {
+        QByteArray data = (readMemoryAPI ? "WRITE_CORE_MEMORY " : "WRITE_CORE_RAM ") + QByteArray::number(writeAddress, 16) + " ";
+        data.append(writeMemoryBuffer.toHex(' '));
+        data.append('\n');
+        raWriteSize = data.size();
+        doCommmand(data);
+        commandTimeoutTimer.stop();
+    }
+}
+
+void RetroArchHost::onByteWritten(qint64 bytes)
+{
+    sDebug() << "Byte written " << raWriteSize << bytes;
+    if (state == WriteMemory && readMemoryAPI == false)
+    {
+        if (bytes == raWriteSize)
+        {
+            sDebug() << "Data written";
+            state = None;
+            emit writeMemoryDone(id);
+        }
+    }
 }
 
 qint64 RetroArchHost::getInfos()
 {
     sDebug() << m_name << "Doing info";
-    socket.write("VERSION");
+    doCommmand("VERSION");
     state = ReqInfoVersion;
     return ++id;
 }
@@ -82,7 +133,7 @@ QString RetroArchHost::gameTitle() const
 
 bool RetroArchHost::hasRomAccess() const
 {
-    if (readMemory)
+    if (readMemoryAPI)
         return false;
     return readRamHasRomAccess;
 }
@@ -101,7 +152,7 @@ void RetroArchHost::setInfoFromRomHeader(QByteArray data)
 {
     struct rom_infos* rInfos = get_rom_info(data);
     sDebug() << "From header : " << rInfos->title << rInfos->type;
-    if (!readMemory)
+    if (!readMemoryAPI)
         m_gameTile = rInfos->title;
     romType = rInfos->type;
     free(rInfos);
@@ -120,6 +171,7 @@ void RetroArchHost::onReadyRead()
 {
     QByteArray data = socket.readAll();
     sDebug() << data;
+    commandTimeoutTimer.stop();
     switch(state)
     {
         case GetMemory:
@@ -128,6 +180,16 @@ void RetroArchHost::onReadyRead()
             tList = tList.mid(2);
             getMemoryDatas = QByteArray::fromHex(tList.join());
             emit getMemoryDone(id);
+            break;
+        }
+        case WriteMemory:
+        {
+            if (readMemoryAPI)
+            {
+                sDebug() << "Write memory done";
+                state = None;
+                emit writeMemoryDone(id);
+            }
             break;
         }
 
@@ -144,13 +206,13 @@ void RetroArchHost::onReadyRead()
                 break;
             }
             sDebug() << "Version : " << m_version;
-            readMemory = m_version >= QVersionNumber(1,9,0);
-            if (readMemory)
+            readMemoryAPI = m_version >= QVersionNumber(1,9,0);
+            if (readMemoryAPI)
             {
-                socket.write("GET_STATUS");
+                doCommmand("GET_STATUS");
                 state = ReqInfoStatus;
             } else {
-                socket.write("READ_CORE_RAM 0 1");
+                doCommmand("READ_CORE_RAM 0 1");
                 state = ReqInfoRRAMZero;
             }
             break;
@@ -183,7 +245,7 @@ void RetroArchHost::onReadyRead()
             }
             m_gameTile = game;
             state = ReqInfoRMemoryWRAM;
-            socket.write("READ_CORE_MEMORY 7E0000 1");
+            doCommmand("READ_CORE_MEMORY 7E0000 1");
             break;
         }
         case ReqInfoRMemoryWRAM:
@@ -194,7 +256,7 @@ void RetroArchHost::onReadyRead()
                 break;
             }
             state = ReqInfoRMemoryHiRomData;
-            socket.write("READ_CORE_MEMORY 40FFC0 32");
+            doCommmand("READ_CORE_MEMORY 40FFC0 32");
 
             break;
         }
@@ -230,7 +292,7 @@ void RetroArchHost::onReadyRead()
                 makeInfoFail("No game is running or core does not support memory read.");
                 break;
             }
-            socket.write("READ_CORE_RAM 40FFC0 32");
+            doCommmand("READ_CORE_RAM 40FFC0 32");
             state = ReqInfoRRAMHiRomData;
             break;
         }
@@ -250,16 +312,35 @@ void RetroArchHost::onReadyRead()
             break;
         }
         default:
+        {
+            sDebug() << "Onreadyread with unknow state" << state;
             break;
+        }
     }
 }
+
+
+void RetroArchHost::onCommandTimerTimeout()
+{
+    sDebug() << "Command timer timeout";
+    if (state >= ReqInfoVersion && state <= ReqInfoMemory2)
+    {
+        emit makeInfoFail("Timeout on one of the command");
+    } else {
+        emit commandTimeout(id);
+    }
+    state = None;
+}
+
+// ref is https://github.com/tewtal/pusb2snes/blob/master/src/main/python/devices/retroarch.py
+
 
 int RetroArchHost::translateAddress(unsigned int address)
 {
     int addr = static_cast<int>(address);
-    if (readMemory)
+    if (readMemoryAPI)
     {
-        // ROM ACCESS is like whatever it seems let's not bother with it
+        // ROM ACCESS is like whatever it seems, let's not bother with it
         if (addr < 0xE00000)
             return -1;//return rommapping_pc_to_snes(address, romType, false);
         if (addr >= 0xF50000 && addr <= 0xF70000)
@@ -298,8 +379,20 @@ int RetroArchHost::translateAddress(unsigned int address)
                 return addr - 0xE00000 + 0x20000;
             if (romType == LoROM)
                 return addr - 0xE00000 + 0x700000;
-            return lorom_sram_pc_to_snes(address - 0xE00000);
+            return lorom_sram_pc_to_snes(address - 0xE00000); // Test this
         }
         return -1;
     }
+}
+
+void RetroArchHost::doCommmand(QByteArray cmd)
+{
+    commandTimeoutTimer.start();
+    writeSocket(cmd);
+}
+
+void RetroArchHost::writeSocket(QByteArray data)
+{
+    sDebug() << ">>" << data;
+    socket.write(data);
 }

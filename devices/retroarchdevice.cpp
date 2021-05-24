@@ -40,7 +40,8 @@ RetroArchDevice::RetroArchDevice(RetroArchHost* mHost)
     connect(mHost, &RetroArchHost::infoDone, this, &RetroArchDevice::onRHInfoDone);
     connect(mHost, &RetroArchHost::infoFailed, this, &RetroArchDevice::onRHInfoFailled);
     connect(mHost, &RetroArchHost::getMemoryDone, this, &RetroArchDevice::onRHGetMemoryDone);
-
+    connect(mHost, &RetroArchHost::writeMemoryDone, this, &RetroArchDevice::onRHWriteMemoryDone);
+    connect(mHost, &RetroArchHost::commandTimeout, this, &RetroArchDevice::onRHCommandTimeout);
 }
 
 
@@ -52,18 +53,7 @@ QString RetroArchDevice::name() const
 
 void RetroArchDevice::writeData(QByteArray data)
 {
-    /*sizeWritten += static_cast<unsigned int>(data.size());
-    dataToWrite.append(data.toHex(' '));
-    if(sizeWritten >= sizePut)
-    {
-        sDebug() << ">>" << dataToWrite;
-        m_sock->write(dataToWrite);
-        m_sock->waitForBytesWritten(20);
-        sDebug() << "Write finished";
-        m_state = READY;
-        m_timeout_timer->stop();
-        emit commandFinished();
-    }*/
+    host->writeMemoryData(data);
 }
 
 void RetroArchDevice::infoCommand()
@@ -88,7 +78,7 @@ USB2SnesInfo RetroArchDevice::parseInfo(const QByteArray &data)
     info.version = host->version().toString();
     if(host->hasRomAccess() == false)
     {
-        info.flags << getFlagString(USB2SnesWS::NO_ROM_READ);
+        info.flags << getFlagString(USB2SnesWS::NO_ROM_READ) << getFlagString(USB2SnesWS::NO_ROM_WRITE);
     }
     info.deviceName = "RetroArch";
     info.flags << getFlagString(USB2SnesWS::NO_CONTROL_CMD);
@@ -128,28 +118,31 @@ void RetroArchDevice::onRHInfoFailled(qint64 id)
 }
 
 
-void RetroArchDevice::timedCommandDone()
-{
-    sDebug() << "Fake cmd finished";
-    m_state = READY;
-    emit commandFinished();
-}
-
-void RetroArchDevice::commandTimeout()
-{
-    sDebug() << "Command timed out, closing the connection";
-    close();
-    emit closed();
-}
-
 void RetroArchDevice::onRHGetMemoryDone(qint64 id)
 {
-    sDebug() << "Get memory done";
     if (id != reqId)
         return;
+    sDebug() << "Get memory done";
     m_state = READY;
     emit getDataReceived(host->getMemoryData());
     emit commandFinished();
+}
+
+void RetroArchDevice::onRHWriteMemoryDone(qint64 id)
+{
+    if (id != reqId)
+        return;
+    sDebug() << "Write memory done";
+    m_state = READY;
+    emit commandFinished();
+}
+
+void RetroArchDevice::onRHCommandTimeout(qint64 id)
+{
+    Q_UNUSED(id)
+    sDebug() << "Command timeout";
+    emit protocolError();
+    m_state = CLOSED;
 }
 
 bool RetroArchDevice::hasFileCommands()
@@ -188,9 +181,6 @@ void RetroArchDevice::putFile(QByteArray name, unsigned int size)
     Q_UNUSED(size);
 }
 
-// ref is https://github.com/tewtal/pusb2snes/blob/master/src/main/python/devices/retroarch.py
-
-
 void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
     sDebug() << "GetAddress " << space << addr << size;
@@ -223,22 +213,26 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned 
 
 void RetroArchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, unsigned int size)
 {
-    sizePut = size;
-    sizeWritten = 0;
-    unsigned int addr = addr0;
+    sDebug() << "GetAddress " << space << addr0 << size;
     m_state = BUSY;
-    /*int newAddr = addr_to_addr(addr);
-    if (space != SD2Snes::space::SNES || newAddr == -1)
+
+    if (space != SD2Snes::SNES)
     {
         m_state = CLOSED;
-        sDebug() << "Error, address or space incorect";
+        sDebug() << "Error, Only SNES space is usable";
+        close();
         emit protocolError();
         return ;
     }
-    sDebug() << "WRITING TO RAM/SRAM" << newAddr;
-    dataToWrite = "WRITE_CORE_RAM " + QByteArray::number(newAddr, 16) + " ";
-    //m_timeout_timer->start();
-    */
+    reqId = host->writeMemory(addr0, size);
+    if (reqId == -1)
+    {
+        m_state = CLOSED;
+        sDebug() << "Error, address incorect";
+        close();
+        emit protocolError();
+        return ;
+    }
 }
 
 void RetroArchDevice::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)

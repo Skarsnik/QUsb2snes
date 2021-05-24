@@ -79,25 +79,14 @@ public slots:
 private slots:
     void    onRHInfoDone(qint64 id);
     void    onRHInfoFailled(qint64 id);
-    void    timedCommandDone();
-    void    commandTimeout();
     void    onRHGetMemoryDone(qint64 id);
+    void    onRHWriteMemoryDone(qint64 id);
+    void    onRHCommandTimeout(qint64 id);
 
 private:
     RetroArchHost*  host;
-    QByteArray   dataToWrite;
     qint64       reqId;
     QString      hostName;
-
-    bool         bigGet;
-    unsigned int sizeBigGet;
-    unsigned int sizeRequested;
-    unsigned int sizePrevBigGet;
-    unsigned int addrBigGet;
-    unsigned int lastRCRSize;
-    unsigned int sizePut;
-    unsigned int sizeWritten;
-    QByteArray   checkReturnedValue;
 
 signals:
     void    checkReturned();

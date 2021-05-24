@@ -1,3 +1,24 @@
+/*
+ * Copyright (c) 2018 Sylvain "Skarsnik" Colinet.
+ *
+ * This file is part of the QUsb2Snes project.
+ * (see https://github.com/Skarsnik/QUsb2snes).
+ *
+ * QUsb2Snes is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QUsb2Snes is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with QUsb2Snes.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+
 #ifndef RETROARCHHOST_H
 #define RETROARCHHOST_H
 
@@ -16,6 +37,7 @@ public:
     {
         None,
         GetMemory,
+        WriteMemory,
         ReqInfoVersion,
         ReqInfoStatus,
         ReqInfoRMemoryWRAM,
@@ -34,7 +56,8 @@ public:
     void            setHostAddress(QHostAddress, quint16 port = 55355);
     qint64          getMemory(unsigned int address, unsigned int size);
     qint64          getInfos();
-    void            write(QByteArray data);
+    qint64          writeMemory(unsigned int address, unsigned int size);
+    void            writeMemoryData(QByteArray data);
     QVersionNumber  version() const;
     QByteArray      getMemoryData() const;
     QString         name() const;
@@ -48,6 +71,7 @@ signals:
     void    connected();
     void    disconnected();
     void    connectionTimeout();
+    void    commandTimeout(qint64 id);
     void    errorOccured(QAbstractSocket::SocketError err);
     void    getMemoryDone(qint64 id);
     void    writeMemoryDone(qint64 id);
@@ -62,20 +86,32 @@ private:
     QHostAddress    m_address;
     QString         m_lastInfoError;
     bool            readRamHasRomAccess;
-    bool            readMemory;
+    bool            readMemoryAPI;
     State           state;
-    QTimer          timeoutTimer;
+    QTimer          commandTimeoutTimer;
+    QTimer          connectionTimeoutTimer;
     rom_type        romType;
     QString         m_gameTile;
     QUdpSocket      socket;
     int             getMemorySize;
     QByteArray      getMemoryDatas;
+
+    QByteArray      writeMemoryBuffer;
+    int             writtenSize;
+    int             writeSize;
+    int             raWriteSize;
+    unsigned int    writeAddress;
     bool            m_connected;
 
     void    setInfoFromRomHeader(QByteArray data);
     void    makeInfoFail(QString error);
     void    onReadyRead();
+    void    onByteWritten(qint64 bytes);
+    void    onCommandTimerTimeout();
     int     translateAddress(unsigned int address);
+    void    doCommmand(QByteArray cmd);
+    void    writeSocket(QByteArray data);
+
 
 };
 
