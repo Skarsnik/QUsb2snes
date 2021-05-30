@@ -37,6 +37,7 @@ extern QSettings* globalSettings;
 void    RetroArchFactory::addHost(RetroArchHost* host)
 {
     raHosts[host->name()].host = host;
+    raHosts[host->name()].error = false;
     connect(host, &RetroArchHost::infoDone, this, &RetroArchFactory::onRaHostInfosDone);
     connect(host, &RetroArchHost::infoFailed, this, &RetroArchFactory::onRaHostgetInfosFailed);
     connect(host, &RetroArchHost::errorOccured, this, &RetroArchFactory::onRaHostErrorOccured);
@@ -138,6 +139,7 @@ bool RetroArchFactory::asyncListDevices()
                 sDebug() << "Trying to connect " << data.host->name();
                 data.host->connectToHost();
             } else {
+                data.error = false;
                 data.reqId = data.host->getInfos();
             }
         }
@@ -168,13 +170,27 @@ bool RetroArchFactory::deleteDevice(ADevice *dev)
 QString RetroArchFactory::status()
 {
     QString status;
-    listDevices();
     QMapIterator<QString, HostData> i(raHosts);
     while (i.hasNext())
     {
         i.next();
         const HostData& host = i.value();
-        status += QString("RetroArch %1 ").arg(host.name);
+        if (host.device != nullptr && host.device->state() == ADevice::BUSY)
+            status += QString("RetroArch %1").arg(i.key());
+        if (host.device == nullptr)
+        {
+            if (host.error == false)
+            {
+                if (host.host->version().toString().isEmpty() == false)
+                {
+                    status += QString("RetroArch %1 - Version %2").arg(i.key(), host.host->version().toString());
+                } else {
+                    status += QString("RetroArch %1 not running").arg(i.key());
+                }
+            } else {
+                status += QString("RetroArch %1: %2").arg(i.key(), host.host->lastInfoError());
+            }
+        }
         if (i.hasNext())
             status += " | ";
     }
@@ -207,6 +223,7 @@ void RetroArchFactory::onRaHostInfosDone(qint64 id)
     if (raHosts[host->name()].reqId != id)
         return ;
     HostData& data = raHosts[host->name()];
+    data.error = false;
     if (data.device == nullptr)
         data.device = new RetroArchDevice(host);
     emit newDeviceName(data.device->name());
@@ -218,6 +235,7 @@ void RetroArchFactory::onRaHostgetInfosFailed(qint64 id)
     RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
     if (raHosts[host->name()].reqId != id)
         return ;
+    raHosts[host->name()].error = true;
     sDebug() << "Info failed for" << host->name();
     checkInfoDone();
 }
@@ -226,6 +244,7 @@ void RetroArchFactory::onRaHostErrorOccured(QAbstractSocket::SocketError err)
 {
     RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
     sDebug() << host->name() << err;
+    raHosts[host->name()].error = true;
     // Doing info
     if (hostChecked != -1)
     {
@@ -238,6 +257,7 @@ void RetroArchFactory::onRaHostConnectionTimeout()
 {
     RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
     sDebug() << host->name() << "Connection timeout";
+    raHosts[host->name()].error = true;
     if (hostChecked != -1)
     {
         disconnect(host, &RetroArchHost::connected, this, nullptr);

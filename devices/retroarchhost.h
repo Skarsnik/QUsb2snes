@@ -64,6 +64,7 @@ public:
     QString         gameTitle() const;
     bool            hasRomAccess() const;
     QHostAddress    address() const;
+    QString         lastInfoError() const;
     bool            isConnected() const;
 
 

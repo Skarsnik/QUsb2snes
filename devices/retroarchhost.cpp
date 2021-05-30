@@ -165,6 +165,11 @@ QHostAddress RetroArchHost::address() const
     return m_address;
 }
 
+QString RetroArchHost::lastInfoError() const
+{
+    return m_lastInfoError;
+}
+
 bool RetroArchHost::isConnected() const
 {
     return m_connected;

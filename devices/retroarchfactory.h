@@ -37,6 +37,7 @@ class RetroArchFactory : public DeviceFactory
         }
         QString             name;
         RetroArchHost*      host;
+        bool                error;
         RetroArchDevice*    device;
         qint64              reqId;
     };
