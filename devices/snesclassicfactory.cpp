@@ -228,6 +228,7 @@ void SNESClassicFactory::aliveCheck()
     {
         sDebug() << "Closing the device, Canoe not running anymore";
         device->close();
+        socket->close();
 
         checkAliveTimer.stop();
         resetMemoryAddresses();
