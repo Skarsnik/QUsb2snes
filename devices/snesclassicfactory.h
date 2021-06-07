@@ -57,6 +57,7 @@ private:
     QByteArray readSocketReturns(QTcpSocket* msocket);
 
     void findMemoryLocations();
+    bool tryRomLocation(unsigned int pid, unsigned int location);
     bool checkStuff();
     void aliveCheck();
 

@@ -94,7 +94,7 @@ QByteArray SNESClassicFactory::readSocketReturns(QTcpSocket* msocket)
 void SNESClassicFactory::findMemoryLocations()
 {
     QByteArray pmap;
-    executeCommand(QByteArray("pmap ") + canoePid + " -x -q | grep -v canoe-shvc | grep -v /lib | grep rwx | grep anon");
+    executeCommand(QByteArray("pmap ") + canoePid + " -x -q | grep -v canoe-shvc | grep -v /lib | grep rwx");
     pmap = readCommandReturns(socket);
     QList<QByteArray> memEntries = pmap.split('\n');
 
@@ -124,8 +124,45 @@ void SNESClassicFactory::findMemoryLocations()
         {
             romLocation = ls.at(0).toULong(&ok, 16) + 0x38;
         }
+        else if (ls.at(1) == "10240")
+        {
+            // The 8196KB rom block is sometimes combined with a 2044KB stack block,
+            // so check for the rom 2044KB into this block.
+            unsigned int startLocation = ls.at(0).toULong(&ok, 16);
+            if (!tryRomLocation(pid, startLocation + 2044 * 1024))
+            {
+                // If it wasn't there, also check at the start of this block
+                tryRomLocation(pid, startLocation);
+            }
+        }
     }
     sDebug() << "Locations : ram/sram/rom" << QString::number(ramLocation, 16) << QString::number(sramLocation, 16) << QString::number(romLocation, 16);
+}
+
+bool SNESClassicFactory::tryRomLocation(unsigned int pid, unsigned int location)
+{
+    // The proper rom location will start with 5 4-byte values:
+    // 0x00: 0
+    // 0x04: 8392706
+    // 0x08: 256
+    // 0x0C: <rom size>
+    // 0x10: 48
+    QString s;
+    s.sprintf("READ_MEM %u %x %u\n", pid, location, 20);
+    writeSocket(s.toUtf8());
+    QByteArray memory = readSocketReturns(socket);
+    char* data = memory.data();
+    // readSocketReturns will strip the 4 bytes of 0 at the beginning so we have to subtract 4 from each of the other addresses,
+    // and the rom size will vary, but if the other 3 match, assume we have the right location
+    if (qFromLittleEndian<uint32_t>(data) == 8392706
+        && qFromLittleEndian<uint32_t>(data + 4) == 256
+        && qFromLittleEndian<uint32_t>(data + 12) == 48)
+    {
+        romLocation = location + 0x38;
+        return true;
+    }
+
+    return false;
 }
 
 bool SNESClassicFactory::checkStuff()
@@ -191,6 +228,7 @@ void SNESClassicFactory::aliveCheck()
     {
         sDebug() << "Closing the device, Canoe not running anymore";
         device->close();
+        socket->close();
 
         checkAliveTimer.stop();
         resetMemoryAddresses();
