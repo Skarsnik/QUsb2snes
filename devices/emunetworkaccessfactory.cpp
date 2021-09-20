@@ -175,7 +175,11 @@ bool EmuNetworkAccessFactory::asyncListDevices()
             auto emuInfo = rep.toMap();
             sDebug() << emuInfo;
             client->cmdCoresList("SNES");
-            QString deviceName =  QString("%1 - %2").arg(emuInfo["name"], emuInfo["version"]);
+            QString deviceName;
+            if (emuInfo.contains("id"))
+                deviceName = QString("%1 - %2").arg(emuInfo["name"], emuInfo["id"]);
+            else
+                deviceName =  QString("%1 - %2").arg(emuInfo["name"], emuInfo["version"]);
             connect(client, &EmuNWAccessClient::readyRead, this, [=]
             {
                 disconnect(client, &EmuNWAccessClient::readyRead, this, nullptr);
@@ -200,9 +204,15 @@ bool EmuNetworkAccessFactory::asyncListDevices()
     return true;
 }
 
+bool EmuNetworkAccessFactory::devicesStatus()
+{
+    return false;
+}
+
 void EmuNetworkAccessFactory::onClientDisconnected()
 {
-    return ; // this is kinda useless?
+    sDebug() << "Client disconnected";
+    //return ; // this is kinda useless?
     EmuNWAccessClient* client = qobject_cast<EmuNWAccessClient*>(sender());
     QMutableListIterator<ClientInfo> it(clientInfos);
     while (it.hasNext())

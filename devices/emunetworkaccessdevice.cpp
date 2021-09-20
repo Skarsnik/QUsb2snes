@@ -38,11 +38,7 @@ EmuNetworkAccessDevice::EmuNetworkAccessDevice(QString _name)
         m_state = READY;
     });
     connect(emu, &EmuNWAccessClient::readyRead, this, &EmuNetworkAccessDevice::onEmuReadyRead, Qt::UniqueConnection);
-    connect(emu, &EmuNWAccessClient::disconnected, this, [=]()
-    {
-       m_state = CLOSED;
-       emit closed();
-    });
+    connect(emu, &EmuNWAccessClient::disconnected, this, &EmuNetworkAccessDevice::onEmuDisconnected);
     m_state = CLOSED;
     emuVersion.clear();
 }
@@ -130,6 +126,13 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
         default:
             break;
     }
+}
+
+void EmuNetworkAccessDevice::onEmuDisconnected()
+{
+    sDebug() << "Emulator disconnected";
+    m_state = CLOSED;
+    emit closed();
 }
 
 

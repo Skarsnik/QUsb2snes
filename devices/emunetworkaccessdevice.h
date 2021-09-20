@@ -75,6 +75,7 @@ private:
     QPair<QString, unsigned int> sd2snesToDomain(unsigned int sd2snesAddr);
 private slots:
     void onEmuReadyRead();
+    void onEmuDisconnected();
 };
 
 #endif // EMUNETWORKACCESSDEVICE_H
