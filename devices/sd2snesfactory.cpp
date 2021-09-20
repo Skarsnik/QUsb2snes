@@ -134,7 +134,7 @@ bool SD2SnesFactory::asyncListDevices()
         {
             sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
             if (usbinfo.serialNumber() == "DEMO00000000")
-                    emit newDeviceName("SD2SNES " + usbinfo.portName());
+                emit newDeviceName("SD2SNES " + usbinfo.portName());
         }
         emit devicesListDone();
     });
