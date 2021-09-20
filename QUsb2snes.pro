@@ -29,6 +29,7 @@ SOURCES += adevice.cpp \
           devices/sd2snesfactory.cpp \
           devices/snesclassicfactory.cpp \
           ipsparse.cpp \
+          devices/deviceerror.cpp \
           devices/luabridge.cpp \
           devices/luabridgedevice.cpp \
           devices/retroarchdevice.cpp \
@@ -48,6 +49,7 @@ SOURCES += adevice.cpp \
 
 HEADERS += adevice.h \
           devicefactory.h \
+          devices/deviceerror.h \
           devices/sd2snesfactory.h \
           devices/snesclassicfactory.h \
           devices/retroarchfactory.h \
