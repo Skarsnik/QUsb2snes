@@ -75,7 +75,9 @@ signals:
     void    commandTimeout(qint64 id);
     void    errorOccured(QAbstractSocket::SocketError err);
     void    getMemoryDone(qint64 id);
+    void    getMemoryFailed(qint64 id);
     void    writeMemoryDone(qint64 id);
+    void    writeMemoryFailed(qint64 id);
     void    infoDone(qint64 id);
     void    infoFailed(qint64 id);
 

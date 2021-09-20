@@ -146,6 +146,13 @@ void RetroArchDevice::onRHCommandTimeout(qint64 id)
     m_state = CLOSED;
 }
 
+void RetroArchDevice::onRHGetMemoryFailed(qint64 id)
+{
+    sDebug() << "Error with Get memory";
+    emit protocolError();
+    m_state = CLOSED;
+}
+
 bool RetroArchDevice::hasFileCommands()
 {
     return false;

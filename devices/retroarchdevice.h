@@ -82,6 +82,7 @@ private slots:
     void    onRHGetMemoryDone(qint64 id);
     void    onRHWriteMemoryDone(qint64 id);
     void    onRHCommandTimeout(qint64 id);
+    void    onRHGetMemoryFailed(qint64 id);
 
 private:
     RetroArchHost*  host;

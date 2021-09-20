@@ -205,6 +205,11 @@ void RetroArchHost::onReadyRead()
         {
             QList<QByteArray> tList = data.trimmed().split(' ');
             tList = tList.mid(2);
+            if (tList.at(0) == "-1")
+            {
+                emit getMemoryFailed(id);
+                break;
+            }
             getMemoryDatas = QByteArray::fromHex(tList.join());
             emit getMemoryDone(id);
             break;
