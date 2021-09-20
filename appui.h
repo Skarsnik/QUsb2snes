@@ -61,7 +61,10 @@ private slots:
     void    onMagic2SnesMenuTriggered(QAction*action);
     void    addWindowsSendToEntry();
     void    onUntrustedConnection(QString origin);
-    void    DLManagerRequestFinished(QNetworkReply *reply);
+    void    DLManagerRequestFinished(QNetworkReply *reply);    
+    void    onMenuHovered(QAction* action);
+    void    onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus status);
+    void    onDeviceFactoryStatusDone();
 
 private:
     struct ApplicationInfo {
@@ -101,6 +104,7 @@ private:
     QLabel*                         dlLabel;
     QProgressBar*                   dlProgressBar;
     QWidget*                        dlWindow;
+    bool                            checkingDeviceInfos;
 
     void                checkForApplications();
     void                handleMagic2Snes(QString path);

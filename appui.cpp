@@ -55,6 +55,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
 {
     sysTray = new QSystemTrayIcon(QIcon(":/img/icon64x64.ico"));
     qApp->setQuitOnLastWindowClosed(false);
+    checkingDeviceInfos = false;
 
     retroarchFactory = nullptr;
     sd2snesFactory = nullptr;
@@ -79,7 +80,10 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
 
     deviceMenu = menu->addMenu(QIcon(":/img/deviceicon.svg"), tr("Devices", "Menu entry"));
     connect(&wsServer, &WSServer::untrustedConnection, this, &AppUi::onUntrustedConnection);
-    connect(deviceMenu, SIGNAL(aboutToShow()), this, SLOT(onMenuAboutToshow()));
+    connect(&wsServer, &WSServer::deviceFactoryStatusDone, this, &AppUi::onDeviceFactoryStatusDone);
+    connect(&wsServer, &WSServer::newDeviceFactoryStatus, this, &AppUi::onDeviceFactoryStatusReceived);
+    //connect(deviceMenu, SIGNAL(aboutToShow()), this, SLOT(onMenuAboutToshow()));
+    connect(menu, &QMenu::hovered, this, &AppUi::onMenuHovered);
 
     appsMenu = menu->addMenu(QIcon(":/img/appicon.svg"), tr("Applications", "Menu entry"));
     appsMenu->addAction("No applications");
@@ -90,7 +94,7 @@ AppUi::AppUi(QObject *parent) : QObject(parent)
 
 void AppUi::init()
 {
-    sd2snesAction = new QAction(QIcon(":/img/ikari.ico"), tr("Enable SD2SNES Support"));
+    sd2snesAction = new QAction(QIcon(":/img/ikari.ico"), tr("Enable SD2SNES/FxPak pro Support"));
     sd2snesAction->setCheckable(true);
     connect(sd2snesAction, SIGNAL(triggered(bool)), this, SLOT(onSD2SnesTriggered(bool)));
 
@@ -292,6 +296,85 @@ void AppUi::updated(QString fromVersion)
                        QString(tr("QUsb2Snes successfully updated from %1 to version %2")).arg(fromVersion).arg(qApp->applicationVersion()));
 }
 
+void AppUi::onMenuHovered(QAction* action)
+{
+    if (action != deviceMenu->menuAction())
+        return ;
+    if (checkingDeviceInfos)
+        return ;
+    checkingDeviceInfos = true;
+    QTimer::singleShot(4000, this, [=] {
+        checkingDeviceInfos = false;
+    });
+    auto serverStatus = wsServer.serverStatus();
+    sDebug() << "Factory Count : " << serverStatus.deviceFactoryCount << "Devices Count: " << serverStatus.deviceCount;
+    sDebug() << "Client count : " << serverStatus.clientCount;
+    wsServer.requestDeviceStatus();
+    deviceMenu->clear();
+    deviceMenu->addAction("Devices state");
+    deviceMenu->addSeparator();
+}
+
+void AppUi::onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus status)
+{
+    QString statusString;
+    sDebug() << "Receveid status for" << status.name;
+    if (!status.deviceNames.isEmpty())
+    {
+        deviceMenu->addAction(status.name + ":");
+    } else {
+        statusString = status.name + " : ";
+    }
+    if (status.deviceNames.isEmpty())
+    {
+        if (status.generalError == Error::DeviceFactoryError::DFE_NO_ERROR)
+        {
+            statusString.append(QString("%1").arg(status.statusString()));
+        } else {
+            statusString.append(QString("%1").arg(status.errorString()));
+        }
+    } else {
+        for(QString name : status.deviceNames)
+        {
+            statusString = "       ";
+            auto& deviceStatus = status.deviceStatus[name];
+            if (deviceStatus.error == Error::DeviceError::DE_NO_ERROR)
+            {
+                QStringList clients = wsServer.getClientsName(name);
+                //TODO move the name in the full translation string
+                statusString.append(name + ": ");
+                if (clients.isEmpty())
+                {
+                    statusString.append(tr("ready, no client connected"));
+                } else {
+                    statusString.append(clients.join(", "));
+                }
+            } else {
+                statusString.append(name + " : " + deviceStatus.errorString());
+            }
+            sDebug() << "name" << statusString;
+            deviceMenu->addAction(statusString);
+            statusString.clear();
+        }
+    }
+
+    if (status.deviceNames.isEmpty())
+    {
+        deviceMenu->addAction(statusString);
+        sDebug() << "Added devfact status : " << statusString;
+    }
+}
+
+void AppUi::onDeviceFactoryStatusDone()
+{
+    deviceMenu->addSeparator();
+    deviceMenu->addAction(sd2snesAction);
+    deviceMenu->addAction(retroarchAction);
+    deviceMenu->addAction(luaBridgeAction);
+    deviceMenu->addAction(snesClassicAction);
+    deviceMenu->addAction(emuNWAccessAction);
+    //checkingDeviceInfos = false;
+}
 
 void AppUi::onMenuAboutToshow()
 {

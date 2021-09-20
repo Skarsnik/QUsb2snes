@@ -115,6 +115,12 @@ public:
        QStringList  clients;
     };
 
+    struct ServerStatus {
+        int clientCount;
+        int deviceCount;
+        int deviceFactoryCount;
+    };
+
     explicit    WSServer(QObject *parent = nullptr);
     QString     start(QHostAddress lAddress, quint16 port);
     QString&    errorString() const;
@@ -123,13 +129,18 @@ public:
     void        addDeviceFactory(DeviceFactory* devFact);
     void        removeDeviceFactory(DeviceFactory* devFact);
     QStringList getClientsName(ADevice* dev);
+    QStringList getClientsName(const QString devName) const;
     QList<MiniDeviceInfos>  getDevicesInfo();
     void        addTrusted(QString origin);
+    ServerStatus  serverStatus() const;
+    void        requestDeviceStatus();
 
 signals:
     void    error();
     void    untrustedConnection(QString origin);
     void    listenFailed(QString err);
+    void    newDeviceFactoryStatus(DeviceFactory::DeviceFactoryStatus status);
+    void    deviceFactoryStatusDone();
 
 public slots:
 
@@ -148,6 +159,7 @@ private slots:
     void    onDeviceSizeGet(unsigned int size);
     void    onNewDeviceName(QString name);
     void    onDeviceListDone();
+    void    onDeviceFactoryStatusDone(DeviceFactory::DeviceFactoryStatus);
 
 private:
     QMetaEnum                           cmdMetaEnum;
@@ -173,6 +185,9 @@ private:
     QStringList                         deviceList;
 
     QMap<ADevice*, QList<MRequest*> >   pendingRequests;
+
+    int                                 factoryStatusCount;
+    int                                 factoryStatusDoneCount;
 
     void        setError(const ErrorType type, const QString reason);
     MRequest*   requestFromJSON(const QString& str);

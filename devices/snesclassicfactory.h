@@ -41,6 +41,8 @@ public:
     bool deleteDevice(ADevice *);
     QString status();
     QString name() const;
+    bool devicesStatus();
+
 private:
     QTcpSocket*         socket = nullptr;
     QByteArray          canoePid;

@@ -18,6 +18,8 @@ Project {
             "backward.hpp",
             "devicefactory.cpp",
             "devicefactory.h",
+            "devices/deviceerror.cpp",
+            "devices/deviceerror.h",
             "devices/emunetworkaccessdevice.cpp",
             "devices/emunetworkaccessdevice.h",
             "devices/emunetworkaccessfactory.cpp",

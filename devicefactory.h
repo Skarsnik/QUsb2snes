@@ -22,17 +22,42 @@
 #define DEVICEFACTORY_H
 
 #include <QObject>
+#include <QMap>
 #include "adevice.h"
+#include "devices/deviceerror.h"
 
 class DeviceFactory : public QObject
 {
     Q_OBJECT
 public:
-    /*
-    struct DeviceInfo {
-        ADevice *device;
+    struct DeviceStatus {
+        ADevice::State  state;
+        Error::DeviceError error;
+        QString            overridedErrorString;
+        QString errorString() const
+        {
+            if (!overridedErrorString.isEmpty())
+                return overridedErrorString;
+            return Error::deviceErrorString(error);
+        }
+    };
 
-    };*/
+    struct DeviceFactoryStatus {
+        QString         name;
+        QStringList     deviceNames;
+        Error::DeviceFactoryStatusEnum  status;
+        Error::DeviceFactoryError       generalError;
+        QMap<QString, DeviceFactory::DeviceStatus> deviceStatus;
+        QString errorString() const
+        {
+            return Error::deviceFactoryErrorString(generalError);
+        }
+        QString statusString() const
+        {
+            return Error::deviceFactoryStatusString(status);
+        }
+    };
+
     enum DeviceFactoryState {
         NONE,
         BUSYDEVICELIST,
@@ -49,6 +74,7 @@ public:
     virtual QString     name() const = 0;
     virtual bool        hasAsyncListDevices();
     virtual bool        asyncListDevices() = 0;
+    virtual bool        devicesStatus() = 0;
     virtual QStringList getDevicesName() const;
     //QList<DeviceInfo>   deviceInfos();
 
@@ -56,6 +82,7 @@ signals:
     void    deviceRemoved(ADevice*);
     void    newDeviceName(QString name);
     void    devicesListDone();
+    void    deviceStatusDone(DeviceFactoryStatus status);
 
 
 protected:

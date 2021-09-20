@@ -132,6 +132,7 @@ void WSServer::removeDevice(ADevice *device)
 void WSServer::addDeviceFactory(DeviceFactory *devFact)
 {
     sDebug() << "Adding Device Factory " << devFact->name();
+    connect(devFact, &DeviceFactory::deviceStatusDone, this, &WSServer::onDeviceFactoryStatusDone);
     if (devFact->hasAsyncListDevices())
     {
         numberOfAsyncFactory++;
@@ -162,6 +163,21 @@ QStringList WSServer::getClientsName(ADevice *dev)
     {
         auto p = wsIit.next();
         if (p.value().attachedTo == dev)
+        {
+            toret << p.value().name;
+        }
+    }
+    return toret;
+}
+
+QStringList WSServer::getClientsName(const QString devName) const
+{
+    QStringList toret;
+    QMapIterator<QWebSocket*, WSInfos> wsIit(wsInfos);
+    while (wsIit.hasNext())
+    {
+        auto p = wsIit.next();
+        if (p.value().attachedTo->name() == devName)
         {
             toret << p.value().name;
         }
@@ -222,6 +238,35 @@ QList<WSServer::MiniDeviceInfos> WSServer::getDevicesInfo()
 void WSServer::addTrusted(QString origin)
 {
     trustedOrigin.append(origin);
+}
+
+WSServer::ServerStatus WSServer::serverStatus() const
+{
+    WSServer::ServerStatus status;
+    status.clientCount = wsInfos.size();
+    status.deviceFactoryCount = deviceFactories.size();
+    status.deviceCount = devices.size();
+    return status;
+}
+
+void WSServer::requestDeviceStatus()
+{
+    factoryStatusCount = 0;
+    factoryStatusDoneCount = 0;
+    for (DeviceFactory* devFac : deviceFactories)
+    {
+        if (devFac->devicesStatus())
+            factoryStatusCount++;
+    }
+}
+
+void WSServer::onDeviceFactoryStatusDone(DeviceFactory::DeviceFactoryStatus status)
+{
+    factoryStatusDoneCount++;
+    sDebug() << "DeviceFactory status done : " << factoryStatusDoneCount << "/" << factoryStatusCount;
+    emit newDeviceFactoryStatus(status);
+    if (factoryStatusCount == factoryStatusDoneCount)
+        emit deviceFactoryStatusDone();
 }
 
 

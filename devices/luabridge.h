@@ -39,6 +39,9 @@ public:
     bool deleteDevice(ADevice *);
     QString status();
     QString name() const;
+    bool asyncListDevices();
+    bool devicesStatus();
+
 
 private slots:
     void    onNewConnection();
@@ -51,10 +54,6 @@ private:
     QRandomGenerator*           rng;
     quint32                     rngSeed;
     QMap<QTcpSocket*, LuaBridgeDevice*> mapSockDev;
-
-    // DeviceFactory interface
-public:
-    bool asyncListDevices();
 };
 
 #endif // LUABRIDGE_H

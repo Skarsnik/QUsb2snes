@@ -99,6 +99,32 @@ bool SD2SnesFactory::hasAsyncListDevices()
     return true;
 }
 
+bool SD2SnesFactory::devicesStatus()
+{
+    QTimer::singleShot(0, this , [=]{
+        QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
+        DeviceFactoryStatus status;
+        status.status = Error::DeviceFactoryStatusEnum::DFS_SD2SNES_NO_DEVICE;
+        status.generalError = Error::DeviceFactoryError::DFE_SD2SNES_NO_DEVICE;
+        status.name = "SD2Snes";
+        foreach (QSerialPortInfo usbinfo, sinfos)
+        {
+            sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
+            if (usbinfo.serialNumber() == "DEMO00000000")
+            {
+                QString name = "SD2SNES " + usbinfo.portName();
+                status.deviceNames.append(name);
+                status.deviceStatus[name].state = ADevice::CLOSED;
+                status.deviceStatus[name].error = Error::DeviceError::DE_NO_ERROR;
+                status.status = Error::DeviceFactoryStatusEnum::DFS_SD2SNES_READY;
+                status.generalError = Error::DeviceFactoryError::DFE_NO_ERROR;
+            }
+        }
+        emit deviceStatusDone(status);
+    });
+    return true;
+}
+
 
 bool SD2SnesFactory::asyncListDevices()
 {

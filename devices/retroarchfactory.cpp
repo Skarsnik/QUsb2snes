@@ -44,6 +44,9 @@ void    RetroArchFactory::addHost(RetroArchHost* host)
     connect(host, &RetroArchHost::connected, this, &RetroArchFactory::onRaHostConnected);
     connect(host, &RetroArchHost::connectionTimeout, this, &RetroArchFactory::onRaHostConnectionTimeout);
     sDebug() << "Added new RetroArch host: " << host->name();
+    raHosts[host->name()].name = host->name();
+    doingListDevices = false;
+    doingDevicesStatus = false;
 }
 
 RetroArchFactory::RetroArchFactory()
@@ -117,11 +120,12 @@ bool RetroArchFactory::hasAsyncListDevices()
 }
 
 
-bool RetroArchFactory::asyncListDevices()
+void    RetroArchFactory::checkDevices()
 {
     QMutableMapIterator<QString, HostData> it(raHosts);
     hostCheckCount = 0;
     hostChecked = 0;
+
     while (it.hasNext())
     {
         it.next();
@@ -130,7 +134,14 @@ bool RetroArchFactory::asyncListDevices()
         // Device exist and it's doing something, yay
         if (data.device != nullptr && data.device->state() == ADevice::BUSY)
         {
-            emit newDeviceName(data.device->name());
+            if (doingListDevices)
+                emit newDeviceName(data.device->name());
+            if (doingDevicesStatus)
+            {
+                m_status.deviceNames.append(data.device->name());
+                m_status.deviceStatus[data.device->name()].state = ADevice::BUSY;
+                m_status.deviceStatus[data.device->name()].error = Error::DeviceError::DE_NO_ERROR;
+            }
             continue;
         } else {
             hostCheckCount++;
@@ -144,6 +155,12 @@ bool RetroArchFactory::asyncListDevices()
             }
         }
     }
+}
+
+bool RetroArchFactory::asyncListDevices()
+{
+    doingListDevices = true;
+    checkDevices();
     return true;
 }
 
@@ -216,6 +233,18 @@ ADevice *RetroArchFactory::attach(QString deviceName)
     return nullptr;
 }
 
+bool RetroArchFactory::devicesStatus()
+{
+    doingDevicesStatus = true;
+    m_status.generalError = Error::DeviceFactoryError::DFE_NO_ERROR;
+    m_status.status = Error::DeviceFactoryStatusEnum::DFS_RETROARCH_NO_RA;
+    m_status.name = "RetroArch";
+    m_status.deviceNames.clear();
+    m_status.deviceStatus.clear();
+    checkDevices();
+    return true;
+}
+
 
 void RetroArchFactory::onRaHostInfosDone(qint64 id)
 {
@@ -226,7 +255,14 @@ void RetroArchFactory::onRaHostInfosDone(qint64 id)
     data.error = false;
     if (data.device == nullptr)
         data.device = new RetroArchDevice(host);
-    emit newDeviceName(data.device->name());
+    if (doingListDevices)
+        emit newDeviceName(data.device->name());
+    if (doingDevicesStatus)
+    {
+        m_status.deviceNames.append(data.device->name());
+        m_status.deviceStatus[data.device->name()].state = ADevice::READY;
+        m_status.deviceStatus[data.device->name()].error = Error::DeviceError::DE_NO_ERROR;
+    }
     checkInfoDone();
 }
 
@@ -235,6 +271,14 @@ void RetroArchFactory::onRaHostgetInfosFailed(qint64 id)
     RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
     if (raHosts[host->name()].reqId != id)
         return ;
+    if (doingDevicesStatus)
+    {
+        const QString& devName = raHosts[host->name()].name;
+        m_status.deviceNames.append(devName);
+        m_status.deviceStatus[devName].state = ADevice::CLOSED;
+        m_status.deviceStatus[devName].error = Error::DeviceError::DE_RETROARCH_INFO_FAILED;
+        m_status.deviceStatus[devName].overridedErrorString = host->lastInfoError();
+    }
     raHosts[host->name()].error = true;
     sDebug() << "Info failed for" << host->name();
     checkInfoDone();
@@ -249,6 +293,15 @@ void RetroArchFactory::onRaHostErrorOccured(QAbstractSocket::SocketError err)
     if (hostChecked != -1)
     {
         disconnect(host, &RetroArchHost::connected, this, nullptr);
+        if (doingDevicesStatus)
+        {
+            const QString& devName = raHosts[host->name()].name;
+            sDebug() << devName;
+            m_status.deviceNames.append(devName);
+            m_status.deviceStatus[devName].state = ADevice::CLOSED;
+            if (err == QAbstractSocket::NetworkError)
+                m_status.deviceStatus[devName].error = Error::DeviceError::DE_RETROARCH_UNREACHABLE;
+        }
         checkInfoDone();
     }
 }
@@ -290,7 +343,10 @@ void RetroArchFactory::checkInfoDone()
     {
         hostChecked = -1;
         hostCheckCount = -1;
-        emit devicesListDone();
+        if (doingListDevices)
+            emit devicesListDone();
+        if (doingDevicesStatus)
+            emit deviceStatusDone(m_status);
     }
 }
 

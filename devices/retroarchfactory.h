@@ -54,6 +54,7 @@ public:
     QString status();
     QString name() const;
     ADevice* attach(QString deviceName);
+    bool devicesStatus();
 
 
 private slots:
@@ -69,6 +70,9 @@ private:
     int                     hostChecked;
 
     void                    checkInfoDone();
+    bool                    doingListDevices;
+    bool                    doingDevicesStatus;
+    DeviceFactoryStatus     m_status;
 
 /*    bool            checkRetroArchHost(RAHost& host);
 
@@ -77,6 +81,7 @@ private:
     RAHost          testRetroArchHost(RAHost host);*/
 
     void    addHost(RetroArchHost *host);
+    void    checkDevices();
 };
 
 #endif // RETROARCHFACTORY_H

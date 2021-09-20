@@ -135,3 +135,35 @@ bool LuaBridge::asyncListDevices()
 {
     return false;
 }
+
+
+bool LuaBridge::devicesStatus()
+{
+    sDebug() << "Lua status";
+    QTimer::singleShot(0, this, [=] {
+        sDebug() << "Piko";
+        DeviceFactoryStatus status;
+        status.status = Error::DeviceFactoryStatusEnum::DFS_LUA_LISTENNING;
+        status.generalError = Error::DeviceFactoryError::DFE_LUA_CANT_LISTEN;
+        status.name = "Lua Bridge";
+        if (server->isListening())
+        {
+            status.status = Error::DeviceFactoryStatusEnum::DFS_LUA_LISTENNING;
+            status.generalError = Error::DeviceFactoryError::DFE_NO_ERROR;
+        }
+        if (!mapSockDev.isEmpty())
+        {
+            QMapIterator<QTcpSocket*, LuaBridgeDevice*> i(mapSockDev);
+            while (i.hasNext()) {
+                i.next();
+                LuaBridgeDevice* dev = i.value();
+                status.deviceNames.append(dev->name());
+                status.deviceStatus[dev->name()].state = dev->state();
+                status.deviceStatus[dev->name()].error = Error::DeviceError::DE_NO_ERROR;
+            }
+        }
+        sDebug() << "Lua done";
+        emit deviceStatusDone(status);
+    });
+    return true;
+}

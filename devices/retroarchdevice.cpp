@@ -42,6 +42,7 @@ RetroArchDevice::RetroArchDevice(RetroArchHost* mHost)
     connect(mHost, &RetroArchHost::getMemoryDone, this, &RetroArchDevice::onRHGetMemoryDone);
     connect(mHost, &RetroArchHost::writeMemoryDone, this, &RetroArchDevice::onRHWriteMemoryDone);
     connect(mHost, &RetroArchHost::commandTimeout, this, &RetroArchDevice::onRHCommandTimeout);
+    connect(mHost, &RetroArchHost::getMemoryFailed, this, &RetroArchDevice::onRHGetMemoryFailed);
 }
 
 

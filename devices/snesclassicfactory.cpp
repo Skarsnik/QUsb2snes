@@ -295,6 +295,11 @@ QString SNESClassicFactory::name() const
     return "SNES Classic (Hakchi2CE)";
 }
 
+bool SNESClassicFactory::devicesStatus()
+{
+    return false;
+}
+
 bool SNESClassicFactory::hasValidMemory()
 {
     return ramLocation != 0 && romLocation != 0 && sramLocation != 0;

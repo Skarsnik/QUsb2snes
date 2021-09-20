@@ -49,6 +49,7 @@ public:
     QString name() const;
     bool hasAsyncListDevices();
     bool asyncListDevices();
+    bool devicesStatus();
 
     QList<ClientInfo>   clientInfos;
 
