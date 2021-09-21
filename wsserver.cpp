@@ -162,7 +162,7 @@ QStringList WSServer::getClientsName(ADevice *dev)
     while (wsIit.hasNext())
     {
         auto p = wsIit.next();
-        if (p.value().attachedTo == dev)
+        if (p.value().attached && p.value().attachedTo == dev)
         {
             toret << p.value().name;
         }

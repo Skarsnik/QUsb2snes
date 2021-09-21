@@ -302,7 +302,7 @@ void RetroArchHost::onReadyRead()
             {
                 if (state == ReqInfoRMemoryHiRomData)
                 {
-                    socket.write("READ_CORE_MEMORY FFC0 32");
+                    doCommmand("READ_CORE_MEMORY FFC0 32");
                     state = ReqInfoRMemoryLoRomData;
                     break;
                 } else {
@@ -374,7 +374,7 @@ int RetroArchHost::translateAddress(unsigned int address)
     {
         // ROM ACCESS is like whatever it seems, let's not bother with it
         if (addr < 0xE00000)
-            return -1;//return rommapping_pc_to_snes(address, romType, false);
+            return -1;// return rommapping_pc_to_snes(address, romType, false);
         if (addr >= 0xF50000 && addr <= 0xF70000)
             return 0x7E0000 + addr - 0xF50000;
         if (addr >= 0xE00000 && addr < 0xF70000)

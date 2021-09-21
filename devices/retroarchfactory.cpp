@@ -160,6 +160,7 @@ void    RetroArchFactory::checkDevices()
 bool RetroArchFactory::asyncListDevices()
 {
     doingListDevices = true;
+    doingDevicesStatus = false;
     checkDevices();
     return true;
 }
@@ -344,9 +345,15 @@ void RetroArchFactory::checkInfoDone()
         hostChecked = -1;
         hostCheckCount = -1;
         if (doingListDevices)
+        {
             emit devicesListDone();
+            doingListDevices = false;
+        }
         if (doingDevicesStatus)
+        {
             emit deviceStatusDone(m_status);
+            doingDevicesStatus = false;
+        }
     }
 }
 

@@ -91,6 +91,7 @@ ADevice *EmuNetworkAccessFactory::attach(QString deviceName)
 bool EmuNetworkAccessFactory::deleteDevice(ADevice *device)
 {
     sDebug() << "request for deleting device";
+    return false;
     QMutableListIterator<ClientInfo> it(clientInfos);
     while (it.hasNext())
     {
