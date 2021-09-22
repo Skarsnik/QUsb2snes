@@ -41,8 +41,6 @@ void    RetroArchFactory::addHost(RetroArchHost* host)
     connect(host, &RetroArchHost::infoDone, this, &RetroArchFactory::onRaHostInfosDone);
     connect(host, &RetroArchHost::infoFailed, this, &RetroArchFactory::onRaHostgetInfosFailed);
     connect(host, &RetroArchHost::errorOccured, this, &RetroArchFactory::onRaHostErrorOccured);
-    connect(host, &RetroArchHost::connected, this, &RetroArchFactory::onRaHostConnected);
-    connect(host, &RetroArchHost::connectionTimeout, this, &RetroArchFactory::onRaHostConnectionTimeout);
     sDebug() << "Added new RetroArch host: " << host->name();
     raHosts[host->name()].name = host->name();
     doingListDevices = false;
@@ -145,14 +143,8 @@ void    RetroArchFactory::checkDevices()
             continue;
         } else {
             hostCheckCount++;
-            if (!data.host->isConnected())
-            {
-                sDebug() << "Trying to connect " << data.host->name();
-                data.host->connectToHost();
-            } else {
-                data.error = false;
-                data.reqId = data.host->getInfos();
-            }
+            data.error = false;
+            data.reqId = data.host->getInfos();
         }
     }
 }
@@ -293,7 +285,6 @@ void RetroArchFactory::onRaHostErrorOccured(QAbstractSocket::SocketError err)
     // Doing info
     if (hostChecked != -1)
     {
-        disconnect(host, &RetroArchHost::connected, this, nullptr);
         if (doingDevicesStatus)
         {
             const QString& devName = raHosts[host->name()].name;
@@ -304,36 +295,6 @@ void RetroArchFactory::onRaHostErrorOccured(QAbstractSocket::SocketError err)
                 m_status.deviceStatus[devName].error = Error::DeviceError::DE_RETROARCH_UNREACHABLE;
         }
         checkInfoDone();
-    }
-}
-
-void RetroArchFactory::onRaHostConnectionTimeout()
-{
-    RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
-    sDebug() << host->name() << "Connection timeout";
-    raHosts[host->name()].error = true;
-    if (hostChecked != -1)
-    {
-        disconnect(host, &RetroArchHost::connected, this, nullptr);
-        checkInfoDone();
-    }
-}
-
-void RetroArchFactory::onRaHostConnected()
-{
-    RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
-    sDebug() << host->name() << "Connected";
-    if (hostChecked != -1)
-    {
-         QMutableMapIterator<QString, HostData> it(raHosts);
-         while (it.hasNext())
-         {
-             it.next();
-             if (it.value().host == host)
-             {
-                 it.value().reqId = host->getInfos();
-             }
-         }
     }
 }
 

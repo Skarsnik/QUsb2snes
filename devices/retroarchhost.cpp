@@ -34,35 +34,23 @@ RetroArchHost::RetroArchHost(QString name, QObject *parent) : QObject(parent)
     m_port = 55355;
     readRamHasRomAccess = false;
     readMemoryAPI = false;
-    m_connected = false;
-    connectionTimeoutTimer.setInterval(500);
-    connectionTimeoutTimer.setSingleShot(true);
     commandTimeoutTimer.setInterval(500);
     commandTimeoutTimer.setSingleShot(true);
-    connect(&socket, &QUdpSocket::connected, this, &RetroArchHost::connected);
-    connect(&socket, &QUdpSocket::connected, this, [=](){m_connected = true;});
     connect(&socket, &QUdpSocket::readyRead, this, &RetroArchHost::onReadyRead);
     connect(&socket, &QUdpSocket::bytesWritten, this, &RetroArchHost::onByteWritten);
-    connect(&socket, &QUdpSocket::disconnected, this, &RetroArchHost::disconnected);
-    connect(&socket, &QUdpSocket::disconnected, this, [=](){m_connected = false;});
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
     connect(&socket, &QUdpSocket::errorOccurred, this, &RetroArchHost::errorOccured);
-    connect(&socket, &QUdpSocket::errorOccurred, this, [this]{sDebug() << socket.error() << socket.errorString(); m_connected = false;connectionTimeoutTimer.stop();});
+    connect(&socket, &QUdpSocket::errorOccurred, this, [this]{
+        sDebug() << socket.error() << socket.errorString();
+    });
 #else
     connect(&socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &RetroArchHost::errorOccured);
-    connect(&socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, [this]{sDebug() << socket.error() << socket.errorString(); m_connected = false;connectionTimeoutTimer.stop();});
+    connect(&socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, [this]{
+        sDebug() << socket.error() << socket.errorString();
+    });
 #endif
     connect(&commandTimeoutTimer, &QTimer::timeout, this, &RetroArchHost::onCommandTimerTimeout);
     state = None;
-}
-
-void RetroArchHost::connectToHost()
-{
-    sDebug() << "Connecting to " << m_address << m_port;
-    socket.connectToHost(m_address, m_port);
-    connectionTimeoutTimer.singleShot(500, this, [=]{
-       emit connectionTimeout();
-    });
 }
 
 void RetroArchHost::setHostAddress(QHostAddress addr, quint16 port)
@@ -170,11 +158,6 @@ QString RetroArchHost::lastInfoError() const
     return m_lastInfoError;
 }
 
-bool RetroArchHost::isConnected() const
-{
-    return m_connected;
-}
-
 void RetroArchHost::setInfoFromRomHeader(QByteArray data)
 {
     struct rom_infos* rInfos = get_rom_info(data);
@@ -196,8 +179,23 @@ void RetroArchHost::makeInfoFail(QString error)
 
 void RetroArchHost::onReadyRead()
 {
-    QByteArray data = socket.readAll();
-    sDebug() << data;
+    while (socket.hasPendingDatagrams()) {
+        QHostAddress sender;
+        quint16 senderPort;
+        QByteArray data;
+        data.resize(socket.pendingDatagramSize());
+        socket.readDatagram(data.data(), data.size(), &sender, &senderPort);
+        sDebug() << "<<" << data << "from" << sender << senderPort;
+        if (senderPort != m_port || !sender.isEqual(m_address, QHostAddress::TolerantConversion)) {
+            sDebug() << "bad sender";
+            continue;
+        }
+        onPacket(data);
+    }
+}
+
+void RetroArchHost::onPacket(QByteArray& data)
+{
     commandTimeoutTimer.stop();
     switch(state)
     {
@@ -426,5 +424,7 @@ void RetroArchHost::doCommmand(QByteArray cmd)
 void RetroArchHost::writeSocket(QByteArray data)
 {
     sDebug() << ">>" << data;
-    socket.write(data);
+    auto written = socket.writeDatagram(data, m_address, m_port);
+    if (written != data.size())
+        sDebug() << "only written" << written << "/" << data.size() << "bytes";
 }
