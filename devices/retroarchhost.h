@@ -51,8 +51,6 @@ public:
 
     explicit    RetroArchHost(QString name, QObject *parent = nullptr);
 
-    void            connectToHost(QHostAddress addr, quint16 port = 55355);
-    void            connectToHost();
     void            setHostAddress(QHostAddress, quint16 port = 55355);
     qint64          getMemory(unsigned int address, unsigned int size);
     qint64          getInfos();
@@ -65,13 +63,9 @@ public:
     bool            hasRomAccess() const;
     QHostAddress    address() const;
     QString         lastInfoError() const;
-    bool            isConnected() const;
 
 
 signals:
-    void    connected();
-    void    disconnected();
-    void    connectionTimeout();
     void    commandTimeout(qint64 id);
     void    errorOccured(QAbstractSocket::SocketError err);
     void    getMemoryDone(qint64 id);
@@ -92,7 +86,6 @@ private:
     bool            readMemoryAPI;
     State           state;
     QTimer          commandTimeoutTimer;
-    QTimer          connectionTimeoutTimer;
     rom_type        romType;
     QString         m_gameTile;
     QUdpSocket      socket;
@@ -104,11 +97,11 @@ private:
     int             writeSize;
     int             raWriteSize;
     unsigned int    writeAddress;
-    bool            m_connected;
 
     void    setInfoFromRomHeader(QByteArray data);
     void    makeInfoFail(QString error);
     void    onReadyRead();
+    void    onPacket(QByteArray& data);
     void    onByteWritten(qint64 bytes);
     void    onCommandTimerTimeout();
     int     translateAddress(unsigned int address);

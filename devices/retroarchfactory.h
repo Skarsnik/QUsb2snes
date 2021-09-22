@@ -61,8 +61,6 @@ private slots:
     void    onRaHostInfosDone(qint64 id);
     void    onRaHostgetInfosFailed(qint64 id);
     void    onRaHostErrorOccured(QAbstractSocket::SocketError err);
-    void    onRaHostConnectionTimeout();
-    void    onRaHostConnected();
 
 private:
     QMap<QString, HostData> raHosts;
