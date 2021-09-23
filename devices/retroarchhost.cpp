@@ -86,14 +86,15 @@ qint64 RetroArchHost::writeMemory(unsigned int address, unsigned int size)
 void RetroArchHost::writeMemoryData(QByteArray data)
 {
     writeMemoryBuffer.append(data);
+    assert(writeMemoryBuffer.size() <= writeSize);
     if (writeSize == writeMemoryBuffer.size())
     {
         QByteArray data = (readMemoryAPI ? "WRITE_CORE_MEMORY " : "WRITE_CORE_RAM ") + QByteArray::number(writeAddress, 16) + " ";
         data.append(writeMemoryBuffer.toHex(' '));
         data.append('\n');
         doCommmand(data);
-        commandTimeoutTimer.stop();
         if (!readMemoryAPI) { // old API does not send a reply
+            commandTimeoutTimer.stop();
             sDebug() << "Write memory done";
             state = None;
             emit writeMemoryDone(id);
