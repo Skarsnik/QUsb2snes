@@ -93,16 +93,13 @@ private:
     QByteArray      getMemoryDatas;
 
     QByteArray      writeMemoryBuffer;
-    int             writtenSize;
     int             writeSize;
-    int             raWriteSize;
     unsigned int    writeAddress;
 
     void    setInfoFromRomHeader(QByteArray data);
     void    makeInfoFail(QString error);
     void    onReadyRead();
     void    onPacket(QByteArray& data);
-    void    onByteWritten(qint64 bytes);
     void    onCommandTimerTimeout();
     int     translateAddress(unsigned int address);
     void    doCommmand(QByteArray cmd);

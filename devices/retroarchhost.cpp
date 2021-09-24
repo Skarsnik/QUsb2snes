@@ -37,7 +37,6 @@ RetroArchHost::RetroArchHost(QString name, QObject *parent) : QObject(parent)
     commandTimeoutTimer.setInterval(500);
     commandTimeoutTimer.setSingleShot(true);
     connect(&socket, &QUdpSocket::readyRead, this, &RetroArchHost::onReadyRead);
-    connect(&socket, &QUdpSocket::bytesWritten, this, &RetroArchHost::onByteWritten);
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
     connect(&socket, &QUdpSocket::errorOccurred, this, &RetroArchHost::errorOccured);
     connect(&socket, &QUdpSocket::errorOccurred, this, [this]{
@@ -79,37 +78,28 @@ qint64 RetroArchHost::writeMemory(unsigned int address, unsigned int size)
         return -1;
     writeAddress = (int)raAddress;
     writeSize = (int)size;
-    writtenSize = 0;
     writeMemoryBuffer.clear();
+    writeMemoryBuffer.reserve(writeSize);
     return ++id;
 }
 
 void RetroArchHost::writeMemoryData(QByteArray data)
 {
-    writtenSize += data.size();
     writeMemoryBuffer.append(data);
-    if (writeSize == writtenSize)
+    assert(writeMemoryBuffer.size() <= writeSize);
+    if (writeSize == writeMemoryBuffer.size())
     {
         QByteArray data = (readMemoryAPI ? "WRITE_CORE_MEMORY " : "WRITE_CORE_RAM ") + QByteArray::number(writeAddress, 16) + " ";
         data.append(writeMemoryBuffer.toHex(' '));
         data.append('\n');
-        raWriteSize = data.size();
         doCommmand(data);
-        commandTimeoutTimer.stop();
-    }
-}
-
-void RetroArchHost::onByteWritten(qint64 bytes)
-{
-    sDebug() << "Byte written " << raWriteSize << bytes;
-    if (state == WriteMemory && readMemoryAPI == false)
-    {
-        if (bytes == raWriteSize)
-        {
-            sDebug() << "Data written";
+        if (!readMemoryAPI) { // old API does not send a reply
+            commandTimeoutTimer.stop();
+            sDebug() << "Write memory done";
             state = None;
             emit writeMemoryDone(id);
         }
+
     }
 }
 
