@@ -27,6 +27,7 @@
 #include <QTimer>
 #include <QUdpSocket>
 #include <QVersionNumber>
+#include <functional>
 #include "../rommapping/rominfo.h"
 
 class RetroArchHost : public QObject
@@ -48,6 +49,13 @@ public:
         ReqInfoMemory2
     };
 
+    struct Command
+    {
+        qint64 id;
+        QByteArray cmd;
+        State state;
+        std::function<void(qint64)> sentCallback;
+    };
 
     explicit    RetroArchHost(QString name, QObject *parent = nullptr);
 
@@ -55,7 +63,7 @@ public:
     qint64          getMemory(unsigned int address, unsigned int size);
     qint64          getInfos();
     qint64          writeMemory(unsigned int address, unsigned int size);
-    void            writeMemoryData(QByteArray data);
+    qint64          writeMemoryData(QByteArray data);
     QVersionNumber  version() const;
     QByteArray      getMemoryData() const;
     QString         name() const;
@@ -76,7 +84,7 @@ signals:
     void    infoFailed(qint64 id);
 
 private:
-    qint64          id;
+    qint64          lastId;
     QVersionNumber  m_version;
     QString         m_name;
     quint16         m_port;
@@ -84,8 +92,10 @@ private:
     QString         m_lastInfoError;
     bool            readRamHasRomAccess;
     bool            readMemoryAPI;
+    qint64          reqId;
     State           state;
     QTimer          commandTimeoutTimer;
+    QList<Command>  commandQueue;
     rom_type        romType;
     QString         m_gameTile;
     QUdpSocket      socket;
@@ -102,10 +112,10 @@ private:
     void    onPacket(QByteArray& data);
     void    onCommandTimerTimeout();
     int     translateAddress(unsigned int address);
-    void    doCommmand(QByteArray cmd);
+    qint64  queueCommand(QByteArray cmd, State state, std::function<void(qint64)> sentCallback = nullptr);
+    void    runCommandQueue();
+    void    doCommandNow(const Command& cmd);
     void    writeSocket(QByteArray data);
-
-
 };
 
 #endif // RETROARCHHOST_H
