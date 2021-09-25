@@ -54,7 +54,7 @@ QString RetroArchDevice::name() const
 
 void RetroArchDevice::writeData(QByteArray data)
 {
-    reqId = host->writeMemoryData(data);
+    host->writeMemoryData(reqId, data);
 }
 
 void RetroArchDevice::infoCommand()
@@ -232,8 +232,8 @@ void RetroArchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, u
         emit protocolError();
         return ;
     }
-    auto res = host->writeMemory(addr0, size); // reqId will be returned by writeMemotyData
-    if (res == -1)
+    reqId = host->writeMemory(addr0, size);
+    if (reqId == -1)
     {
         m_state = CLOSED;
         sDebug() << "Error, address incorect";

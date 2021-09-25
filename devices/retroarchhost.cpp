@@ -34,6 +34,10 @@ RetroArchHost::RetroArchHost(QString name, QObject *parent) : QObject(parent)
     m_port = 55355;
     readRamHasRomAccess = false;
     readMemoryAPI = false;
+    lastId = -1;
+    reqId = -1;
+    writeId = -1;
+    writeSize = 0;
     commandTimeoutTimer.setInterval(500);
     commandTimeoutTimer.setSingleShot(true);
     connect(&socket, &QUdpSocket::readyRead, this, &RetroArchHost::onReadyRead);
@@ -77,11 +81,13 @@ qint64 RetroArchHost::writeMemory(unsigned int address, unsigned int size)
     writeSize = (int)size;
     writeMemoryBuffer.clear();
     writeMemoryBuffer.reserve(writeSize);
-    return 0; // OK. reqId will be returned by writeMemoryData
+    writeId = nextId();
+    return writeId;
 }
 
-qint64 RetroArchHost::writeMemoryData(QByteArray data)
+void RetroArchHost::writeMemoryData(qint64 id, QByteArray data)
 {
+    if (id != writeId) return;
     writeMemoryBuffer.append(data);
     assert(writeMemoryBuffer.size() <= writeSize);
     if (writeSize == writeMemoryBuffer.size())
@@ -90,15 +96,14 @@ qint64 RetroArchHost::writeMemoryData(QByteArray data)
         data.append(writeMemoryBuffer.toHex(' '));
         data.append('\n');
         if (!readMemoryAPI) { // old API does not send a reply
-            return queueCommand(data, None, [this](qint64 sentId) {
+            queueCommand(data, None, [this](qint64 sentId) {
                 sDebug() << "Write memory done";
                 emit writeMemoryDone(sentId);
-            });
+            }, writeId);
         } else {
-            return queueCommand(data, WriteMemory);
+            queueCommand(data, WriteMemory, nullptr, writeId);
         }
     }
-    return -1; // not complete yet
 }
 
 qint64 RetroArchHost::getInfos()
@@ -418,9 +423,15 @@ int RetroArchHost::translateAddress(unsigned int address)
     }
 }
 
-qint64 RetroArchHost::queueCommand(QByteArray cmd, State newState, std::function<void(qint64)> sentCallback)
+qint64 RetroArchHost::nextId()
 {
-    qint64 newId = ++lastId;
+    if (lastId == std::numeric_limits<qint64>::max()) lastId = -1;
+    return ++lastId;
+}
+
+qint64 RetroArchHost::queueCommand(QByteArray cmd, State newState, std::function<void(qint64)> sentCallback, qint64 forceId)
+{
+    qint64 newId = forceId != -1 ? forceId : nextId();
     commandQueue.append({newId, cmd, newState, sentCallback});
     runCommandQueue();
     return newId;

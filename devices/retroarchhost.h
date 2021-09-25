@@ -63,7 +63,7 @@ public:
     qint64          getMemory(unsigned int address, unsigned int size);
     qint64          getInfos();
     qint64          writeMemory(unsigned int address, unsigned int size);
-    qint64          writeMemoryData(QByteArray data);
+    void            writeMemoryData(qint64 id, QByteArray data);
     QVersionNumber  version() const;
     QByteArray      getMemoryData() const;
     QString         name() const;
@@ -105,14 +105,16 @@ private:
     QByteArray      writeMemoryBuffer;
     int             writeSize;
     unsigned int    writeAddress;
+    qint64          writeId;
 
+    qint64  nextId();
     void    setInfoFromRomHeader(QByteArray data);
     void    makeInfoFail(QString error);
     void    onReadyRead();
     void    onPacket(QByteArray& data);
     void    onCommandTimerTimeout();
     int     translateAddress(unsigned int address);
-    qint64  queueCommand(QByteArray cmd, State state, std::function<void(qint64)> sentCallback = nullptr);
+    qint64  queueCommand(QByteArray cmd, State state, std::function<void(qint64)> sentCallback = nullptr, qint64 forceId=-1);
     void    runCommandQueue();
     void    doCommandNow(const Command& cmd);
     void    writeSocket(QByteArray data);
