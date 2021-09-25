@@ -34,6 +34,10 @@ RetroArchHost::RetroArchHost(QString name, QObject *parent) : QObject(parent)
     m_port = 55355;
     readRamHasRomAccess = false;
     readMemoryAPI = false;
+    lastId = -1;
+    reqId = -1;
+    writeId = -1;
+    writeSize = 0;
     commandTimeoutTimer.setInterval(500);
     commandTimeoutTimer.setSingleShot(true);
     connect(&socket, &QUdpSocket::readyRead, this, &RetroArchHost::onReadyRead);
@@ -62,29 +66,28 @@ qint64 RetroArchHost::getMemory(unsigned int address, unsigned int size)
 {
     int raAddress = translateAddress(address);
     if (raAddress == -1)
-        return -1;
+        return -1; // error
     QByteArray data = (readMemoryAPI ? "READ_CORE_MEMORY " : "READ_CORE_RAM ") + QByteArray::number(raAddress, 16) + " " + QByteArray::number(size) + "\n";
     getMemorySize = (int)size;
-    doCommmand(data);
-    state = GetMemory;
-    return ++id;
+    return queueCommand(data, GetMemory);
 }
 
 qint64 RetroArchHost::writeMemory(unsigned int address, unsigned int size)
 {
-    state = WriteMemory;
     int raAddress = translateAddress(address);
     if (raAddress == -1)
-        return -1;
+        return -1; // error
     writeAddress = (int)raAddress;
     writeSize = (int)size;
     writeMemoryBuffer.clear();
     writeMemoryBuffer.reserve(writeSize);
-    return ++id;
+    writeId = nextId();
+    return writeId;
 }
 
-void RetroArchHost::writeMemoryData(QByteArray data)
+void RetroArchHost::writeMemoryData(qint64 id, QByteArray data)
 {
+    if (id != writeId) return;
     writeMemoryBuffer.append(data);
     assert(writeMemoryBuffer.size() <= writeSize);
     if (writeSize == writeMemoryBuffer.size())
@@ -92,23 +95,32 @@ void RetroArchHost::writeMemoryData(QByteArray data)
         QByteArray data = (readMemoryAPI ? "WRITE_CORE_MEMORY " : "WRITE_CORE_RAM ") + QByteArray::number(writeAddress, 16) + " ";
         data.append(writeMemoryBuffer.toHex(' '));
         data.append('\n');
-        doCommmand(data);
         if (!readMemoryAPI) { // old API does not send a reply
-            commandTimeoutTimer.stop();
-            sDebug() << "Write memory done";
-            state = None;
-            emit writeMemoryDone(id);
+            queueCommand(data, None, [this](qint64 sentId) {
+                sDebug() << "Write memory done";
+                emit writeMemoryDone(sentId);
+            }, writeId);
+        } else {
+            queueCommand(data, WriteMemory, nullptr, writeId);
         }
-
     }
 }
 
 qint64 RetroArchHost::getInfos()
 {
-    sDebug() << m_name << "Doing info";
-    doCommmand("VERSION");
-    state = ReqInfoVersion;
-    return ++id;
+    if (state >= ReqInfoVersion && state <= ReqInfoMemory2) {
+        sDebug() << m_name << "Waiting for info done";
+        return reqId;
+    } else {
+        for (const auto& cmd: qAsConst(commandQueue)) {
+            if (cmd.state == ReqInfoVersion) {
+                sDebug() << m_name << "Waiting for info";
+                return cmd.id;
+            }
+        }
+        sDebug() << m_name << "Doing info";
+        return queueCommand("VERSION", ReqInfoVersion);
+    }
 }
 
 QVersionNumber RetroArchHost::version() const
@@ -164,7 +176,7 @@ void RetroArchHost::makeInfoFail(QString error)
     state = None;
     sDebug() << "Info error " << error;
     m_lastInfoError = error;
-    emit infoFailed(id);
+    emit infoFailed(reqId);
 }
 
 void RetroArchHost::onReadyRead()
@@ -187,35 +199,40 @@ void RetroArchHost::onReadyRead()
 void RetroArchHost::onPacket(QByteArray& data)
 {
     commandTimeoutTimer.stop();
+
     switch(state)
     {
+        /*
+         * Memory Stuff
+         */
         case GetMemory:
         {
+            state = None;
             QList<QByteArray> tList = data.trimmed().split(' ');
             tList = tList.mid(2);
             if (tList.at(0) == "-1")
             {
-                emit getMemoryFailed(id);
+                emit getMemoryFailed(reqId);
                 break;
             }
             getMemoryDatas = QByteArray::fromHex(tList.join());
-            emit getMemoryDone(id);
+            emit getMemoryDone(reqId);
             break;
         }
         case WriteMemory:
         {
+            state = None;
             if (readMemoryAPI)
             {
                 sDebug() << "Write memory done";
-                state = None;
-                emit writeMemoryDone(id);
+                emit writeMemoryDone(reqId);
             }
             break;
         }
 
         /*
          * Info Stuff
-        */
+         */
         case ReqInfoVersion:
         {
             QString raVersion = data.trimmed();
@@ -229,11 +246,9 @@ void RetroArchHost::onPacket(QByteArray& data)
             readMemoryAPI = m_version >= QVersionNumber(1,9,0);
             if (readMemoryAPI)
             {
-                doCommmand("GET_STATUS");
-                state = ReqInfoStatus;
+                doCommandNow({reqId, "GET_STATUS", ReqInfoStatus, nullptr});
             } else {
-                doCommmand("READ_CORE_RAM 0 1");
-                state = ReqInfoRRAMZero;
+                doCommandNow({reqId, "READ_CORE_RAM 0 1", ReqInfoRRAMZero, nullptr});
             }
             break;
         }
@@ -264,8 +279,7 @@ void RetroArchHost::onPacket(QByteArray& data)
                 break;
             }
             m_gameTile = game;
-            state = ReqInfoRMemoryWRAM;
-            doCommmand("READ_CORE_MEMORY 7E0000 1");
+            doCommandNow({reqId, "READ_CORE_MEMORY 7E0000 1", ReqInfoRMemoryWRAM, nullptr});
             break;
         }
         case ReqInfoRMemoryWRAM:
@@ -275,9 +289,7 @@ void RetroArchHost::onPacket(QByteArray& data)
                 makeInfoFail("Could not read WRAM");
                 break;
             }
-            state = ReqInfoRMemoryHiRomData;
-            doCommmand("READ_CORE_MEMORY 40FFC0 32");
-
+            doCommandNow({reqId, "READ_CORE_MEMORY 40FFC0 32", ReqInfoRMemoryHiRomData, nullptr});
             break;
         }
         case ReqInfoRMemoryHiRomData:
@@ -290,8 +302,7 @@ void RetroArchHost::onPacket(QByteArray& data)
             {
                 if (state == ReqInfoRMemoryHiRomData)
                 {
-                    doCommmand("READ_CORE_MEMORY FFC0 32");
-                    state = ReqInfoRMemoryLoRomData;
+                    doCommandNow({reqId, "READ_CORE_MEMORY FFC0 32", ReqInfoRMemoryLoRomData, nullptr});
                     break;
                 } else {
                     // This should actually still be valid, since you can read wram
@@ -301,7 +312,8 @@ void RetroArchHost::onPacket(QByteArray& data)
                 }
             }
             setInfoFromRomHeader(QByteArray::fromHex(tList.join()));
-            emit infoDone(id);
+            state = None;
+            emit infoDone(reqId);
             break;
         }
         // This is the part for the old RA Version
@@ -312,8 +324,7 @@ void RetroArchHost::onPacket(QByteArray& data)
                 makeInfoFail("No game is running or core does not support memory read.");
                 break;
             }
-            doCommmand("READ_CORE_RAM 40FFC0 32");
-            state = ReqInfoRRAMHiRomData;
+            doCommandNow({reqId, "READ_CORE_RAM 40FFC0 32", ReqInfoRRAMHiRomData, nullptr});
             break;
         }
         case ReqInfoRRAMHiRomData:
@@ -328,28 +339,35 @@ void RetroArchHost::onPacket(QByteArray& data)
                 setInfoFromRomHeader(QByteArray::fromHex(tList.join()));
                 readRamHasRomAccess = true;
             }
-            emit infoDone(id);
+            state = None;
+            emit infoDone(reqId);
             break;
         }
         default:
         {
-            sDebug() << "Onreadyread with unknow state" << state;
+            sDebug() << "OnReadyRead with unexpected state" << state;
+            state = None;
             break;
         }
     }
+
+    runCommandQueue(); // send next command if idle
 }
 
 
 void RetroArchHost::onCommandTimerTimeout()
 {
-    sDebug() << "Command timer timeout";
+    sDebug() << "Command timed out";
     if (state >= ReqInfoVersion && state <= ReqInfoMemory2)
     {
-        emit makeInfoFail("Timeout on one of the command");
+        state = None;
+        makeInfoFail("Timeout of a command");
     } else {
-        emit commandTimeout(id);
+        state = None;
+        emit commandTimeout(reqId);
     }
-    state = None;
+
+    runCommandQueue(); // send next command
 }
 
 // ref is https://github.com/tewtal/pusb2snes/blob/master/src/main/python/devices/retroarch.py
@@ -405,10 +423,41 @@ int RetroArchHost::translateAddress(unsigned int address)
     }
 }
 
-void RetroArchHost::doCommmand(QByteArray cmd)
+qint64 RetroArchHost::nextId()
 {
-    commandTimeoutTimer.start();
-    writeSocket(cmd);
+    if (lastId == std::numeric_limits<qint64>::max()) lastId = -1;
+    return ++lastId;
+}
+
+qint64 RetroArchHost::queueCommand(QByteArray cmd, State newState, std::function<void(qint64)> sentCallback, qint64 forceId)
+{
+    qint64 newId = forceId != -1 ? forceId : nextId();
+    commandQueue.append({newId, cmd, newState, sentCallback});
+    runCommandQueue();
+    return newId;
+}
+
+void RetroArchHost::runCommandQueue()
+{
+    while (state == None && !commandQueue.empty()) {
+        doCommandNow(commandQueue.front());
+        commandQueue.pop_front();
+    }
+}
+
+void RetroArchHost::doCommandNow(const Command& cmd)
+{
+    reqId = cmd.id;
+    state = cmd.state;
+    // if state is None, we don't expect a reply
+    if (state != None) commandTimeoutTimer.start();
+    writeSocket(cmd.cmd);
+    // this is kind of a hack, but we should not run the callback before we returned an id, because it may emit a signal
+    auto cb = cmd.sentCallback;
+    auto cbId = cmd.id;
+    if (cmd.sentCallback) QTimer::singleShot(0, this, [this,cbId,cb]() {
+       cb(cbId);
+    });
 }
 
 void RetroArchHost::writeSocket(QByteArray data)

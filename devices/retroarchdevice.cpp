@@ -54,7 +54,7 @@ QString RetroArchDevice::name() const
 
 void RetroArchDevice::writeData(QByteArray data)
 {
-    host->writeMemoryData(data);
+    host->writeMemoryData(reqId, data);
 }
 
 void RetroArchDevice::infoCommand()
