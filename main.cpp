@@ -19,10 +19,6 @@
  */
 
 
-#ifdef Q_OS_MACOS
-#include "osx/appnap.h"
-#endif
-
 #include <QDebug>
 
 #ifndef QUSB2SNES_NOGUI
@@ -43,6 +39,11 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <ostream>
+
+#ifdef Q_OS_MACOS
+#include "osx/appnap.h"
+#endif
+
 
 #include "wsserver.h"
 #include "devices/sd2snesfactory.h"
@@ -222,6 +223,7 @@ int main(int ac, char *ag[])
     wsServer.addTrusted("https://multiworld.samus.link/");
     wsServer.addTrusted("http://usb2snes.com");
     wsServer.addTrusted("https://samus.link");
+    QLoggingCategory::setFilterRules("EmuNWAccessClient.debug=true\n");
 
 #ifndef QUSB2SNES_NOGUI
     AppUi*  appUi = new AppUi();
