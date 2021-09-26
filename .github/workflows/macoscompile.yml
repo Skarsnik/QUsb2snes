@@ -46,6 +46,7 @@ jobs:
           make
           cd QFile2Snes
           qmake QFile2Snes.pro
+          make
           cd ..
       - name: Create dmg
         run: |
