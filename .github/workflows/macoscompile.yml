@@ -1,0 +1,79 @@
+# This is a basic workflow to help you get started with Actions
+
+name: compile os x
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+    tags:
+      - '*'
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: macos-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+        with: 
+          submodules : true
+      - uses: little-core-labs/get-git-tag@v3.0.1
+        id: tagName
+          
+
+      # Runs a single command using the runners shell
+      - name: install qt
+        run: |
+            brew update
+            brew install qt5
+
+      # Runs a set of commands using the runners shell
+      - name: build
+        run: |
+          export PATH="/usr/local/opt/qt5/bin:$PATH"
+          qmake QUsb2Snes.pro
+          make
+          cd QFile2Snes
+          qmake QFile2Snes.pro
+          cd ..
+      - name: Create dmg
+        run: |
+            export PATH="/usr/local/opt/qt5/bin:$PATH"
+            mkdir QUsb2Snes.app/Contents/MacOs/apps
+            mkdir QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/
+            cp QFile2Snes/QFile2Snes.app/Contents/MacOs/QFile2Snes QUsb2Snes.app/Contents/MacOs/
+            cp QFile2Snes/icon50x50.png QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/icone.png
+            cp QFile2Snes/qusb2snesapposx.json QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/qusb2snesapp.json
+            macdeployqt QUsb2Snes.app -dmg
+
+      - name: Upload dmg
+        uses: actions/upload-artifact@v2
+        with:
+          name: QUsb2Snes.dmg
+          path: QUsb2Snes.dmg
+
+      - name: Prep Release
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+             cp QUsb2Snes.dmg "QUsb2Snes-$GIT_TAG_NAME.dmg"
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: "QUsb2Snes-${{ steps.tagName.outputs.tag }}.dmg"
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
