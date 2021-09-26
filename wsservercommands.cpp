@@ -218,12 +218,24 @@ void    WSServer::executeRequest(MRequest *req)
         bool    ok;
         if (req->arguments.size() == 2)
         {
+            if (req->arguments.at(1).toUInt(&ok, 16) == 0)
+            {
+                setError(ErrorType::CommandError, "GetAddress - trying to read 0 byte");
+                clientError(ws);
+                return ;
+            }
             device->getAddrCommand(req->space, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
         } else {
 
             QList<QPair<unsigned int, quint8> > pairs;
             for (int i = 0; i < req->arguments.size(); i += 2)
             {
+                if (req->arguments.at(i + 1).toUInt(&ok, 16) == 0)
+                {
+                    setError(ErrorType::CommandError, "GetAddress - trying to read 0 byte");
+                    clientError(ws);
+                    return ;
+                }
                 pairs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUInt(&ok, 16)));
             }
             if (device->hasVariaditeCommands())
@@ -263,6 +275,12 @@ void    WSServer::executeRequest(MRequest *req)
         if (req->arguments.size() == 2)
         {
             putSize = req->arguments.at(1).toUInt(&ok, 16);
+            if (putSize == 0)
+            {
+                setError(ErrorType::CommandError, "PutAddress - trying to write 0 byte");
+                clientError(ws);
+                return ;
+            }
             if (req->flags.isEmpty())
                 device->putAddrCommand(req->space, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
             else {
@@ -277,6 +295,12 @@ void    WSServer::executeRequest(MRequest *req)
             QList<QPair<unsigned int, quint8> > vputArgs;
             for (int i = 0; i < req->arguments.size(); i += 2)
             {
+                if (req->arguments.at(i + 1).toUInt(&ok, 16) == 0)
+                {
+                    setError(ErrorType::CommandError, "PutAddress - trying to write 0 byte");
+                    clientError(ws);
+                    return ;
+                }
                 vputArgs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUShort(&ok, 16)));
                 putSize += req->arguments.at(i + 1).toUShort(&ok, 16);
             }
