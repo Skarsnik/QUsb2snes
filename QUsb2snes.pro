@@ -68,6 +68,7 @@ HEADERS += adevice.h \
           wsserver.h
 
 macx: {
+        message("MAC OS BUILD")
 	SOURCES += osx/appnap.mm
 	HEADERS += osx/appnap.h
 	LIBS += -framework Foundation
