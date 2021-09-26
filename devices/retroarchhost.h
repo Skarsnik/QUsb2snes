@@ -69,6 +69,7 @@ public:
     QString         name() const;
     QString         gameTitle() const;
     bool            hasRomAccess() const;
+    bool            hasRomWriteAccess() const;
     QHostAddress    address() const;
     QString         lastInfoError() const;
 
@@ -92,6 +93,7 @@ private:
     QString         m_lastInfoError;
     bool            readRamHasRomAccess;
     bool            readMemoryAPI;
+    bool            readMemoryHasRomAccess;
     qint64          reqId;
     State           state;
     QTimer          commandTimeoutTimer;

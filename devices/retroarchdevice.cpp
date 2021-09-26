@@ -81,6 +81,10 @@ USB2SnesInfo RetroArchDevice::parseInfo(const QByteArray &data)
     {
         info.flags << getFlagString(USB2SnesWS::NO_ROM_READ) << getFlagString(USB2SnesWS::NO_ROM_WRITE);
     }
+    else if (host->hasRomWriteAccess() == false)
+    {
+        info.flags << getFlagString(USB2SnesWS::NO_ROM_WRITE);
+    }
     info.deviceName = "RetroArch";
     info.flags << getFlagString(USB2SnesWS::NO_CONTROL_CMD);
     info.flags << getFlagString(USB2SnesWS::NO_FILE_CMD);
@@ -197,7 +201,7 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
     if (space != SD2Snes::SNES)
     {
         m_state = CLOSED;
-        sDebug() << "Error, address or space incorect";
+        sDebug() << "Error, bad address space" << space;
         close();
         emit protocolError();
         return ;
@@ -206,7 +210,7 @@ void RetroArchDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, un
     if (reqId == -1)
     {
         m_state = CLOSED;
-        sDebug() << "Error, address or space incorect";
+        sDebug() << "Error, bad address";
         close();
         emit protocolError();
         return ;
@@ -227,7 +231,7 @@ void RetroArchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, u
     if (space != SD2Snes::SNES)
     {
         m_state = CLOSED;
-        sDebug() << "Error, Only SNES space is usable";
+        sDebug() << "Error, bad address space" << space;
         close();
         emit protocolError();
         return ;
@@ -236,7 +240,7 @@ void RetroArchDevice::putAddrCommand(SD2Snes::space space, unsigned int addr0, u
     if (reqId == -1)
     {
         m_state = CLOSED;
-        sDebug() << "Error, address incorect";
+        sDebug() << "Error, bad address";
         close();
         emit protocolError();
         return ;
