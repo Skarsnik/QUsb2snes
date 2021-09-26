@@ -286,7 +286,13 @@ void RetroArchHost::onPacket(QByteArray& data)
         {
             if (data.split(' ').at(2) == "-1")
             {
-                makeInfoFail("Could not read WRAM");
+                // fall back to READ_CORE_RAM (WRAM-only) for Snes9x core, RA>=1.9.2
+                if (m_version >= QVersionNumber(1,9,2)) {
+                    readMemoryAPI = false;
+                    doCommandNow({reqId, "READ_CORE_RAM 0 1", ReqInfoRRAMZero, nullptr});
+                } else {
+                    makeInfoFail("Incompatible, please update RetroArch");
+                }
                 break;
             }
             doCommandNow({reqId, "READ_CORE_MEMORY 40FFC0 32", ReqInfoRMemoryHiRomData, nullptr});
