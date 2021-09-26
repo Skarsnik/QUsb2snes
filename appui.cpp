@@ -110,7 +110,7 @@ void AppUi::init()
     snesClassicAction->setCheckable(true);
     connect(snesClassicAction, SIGNAL(triggered(bool)), this, SLOT(onSNESClassicTriggered(bool)));
 
-    emuNWAccessAction = new QAction(QIcon(":/img/cheer.png"), tr("Enable EmuNetworkAccess (experimental)"));
+    emuNWAccessAction = new QAction(QIcon(":/img/mr chip.png"), tr("Enable EmuNetworkAccess (experimental)"));
     emuNWAccessAction->setCheckable(true);
     connect(emuNWAccessAction, &QAction::triggered, this, &AppUi::onEmuNWAccessTriggered);
 
