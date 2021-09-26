@@ -34,6 +34,7 @@ RetroArchHost::RetroArchHost(QString name, QObject *parent) : QObject(parent)
     m_port = 55355;
     readRamHasRomAccess = false;
     readMemoryAPI = false;
+    readMemoryHasRomAccess = false;
     lastId = -1;
     reqId = -1;
     writeId = -1;
@@ -146,8 +147,14 @@ QString RetroArchHost::gameTitle() const
 bool RetroArchHost::hasRomAccess() const
 {
     if (readMemoryAPI)
-        return false;
+        return readMemoryHasRomAccess;
     return readRamHasRomAccess;
+}
+
+bool RetroArchHost::hasRomWriteAccess() const
+{
+    if (readMemoryAPI) return false; // at least with bsnes-mercury
+    return hasRomAccess(); // old API untested
 }
 
 QHostAddress RetroArchHost::address() const
@@ -318,6 +325,7 @@ void RetroArchHost::onPacket(QByteArray& data)
                 }
             }
             setInfoFromRomHeader(QByteArray::fromHex(tList.join()));
+            readMemoryHasRomAccess = (romType == HiROM); // see comments in translateAddress()
             state = None;
             emit infoDone(reqId);
             break;
@@ -384,11 +392,23 @@ int RetroArchHost::translateAddress(unsigned int address)
     int addr = static_cast<int>(address);
     if (readMemoryAPI)
     {
-        // ROM ACCESS is like whatever it seems, let's not bother with it
-        if (addr < 0xE00000)
-            return -1;// return rommapping_pc_to_snes(address, romType, false);
+        // ROM ACCESS
+        if (addr < 0xE00000) {
+            if (romType == HiROM && addr < 0x400000) {
+                // we can simply access all of HiROM from C00000 to FFFFFF
+                return addr + 0xC00000;
+            } else if (romType == LoROM) {
+                // Not supported. Half of LoROM is unmapped for READ_MEMORY in bsnes-mercury
+                return -1;
+            } else {
+                // ExLo, ExHi untested
+                return -1;
+            }
+        }
+        // WRAM
         if (addr >= 0xF50000 && addr <= 0xF70000)
             return 0x7E0000 + addr - 0xF50000;
+        // SRAM
         if (addr >= 0xE00000 && addr < 0xF70000)
             return rommapping_sram_pc_to_snes(address - 0xE00000, romType, false);
         return -1;

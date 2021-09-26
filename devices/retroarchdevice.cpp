@@ -81,6 +81,10 @@ USB2SnesInfo RetroArchDevice::parseInfo(const QByteArray &data)
     {
         info.flags << getFlagString(USB2SnesWS::NO_ROM_READ) << getFlagString(USB2SnesWS::NO_ROM_WRITE);
     }
+    else if (host->hasRomWriteAccess() == false)
+    {
+        info.flags << getFlagString(USB2SnesWS::NO_ROM_WRITE);
+    }
     info.deviceName = "RetroArch";
     info.flags << getFlagString(USB2SnesWS::NO_CONTROL_CMD);
     info.flags << getFlagString(USB2SnesWS::NO_FILE_CMD);
