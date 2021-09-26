@@ -53,6 +53,7 @@ enum DeviceError {
     DE_NO_ERROR,
     DE_RETROARCH_INFO_FAILED,
     DE_RETROARCH_UNREACHABLE,
+    DE_RETROARCH_NO_CONNECTION,
     DE_RETROARCH_NO_VERSION,
     DE_RETROARCH_NO_SNES_GAME,
     DE_RETROARCH_NO_WRAM_READ,
@@ -64,6 +65,7 @@ enum DeviceError {
 Q_ENUM_NS(DeviceError)
 
 QString deviceErrorString(DeviceError er);
+QString deviceErrorHints(DeviceError er);
 
 }
 #endif // DEVICEERROR_H

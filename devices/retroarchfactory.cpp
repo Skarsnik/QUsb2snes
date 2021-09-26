@@ -145,6 +145,7 @@ void    RetroArchFactory::checkDevices()
             hostCheckCount++;
             data.error = false;
             data.reqId = data.host->getInfos();
+            sDebug() << data.name << "Info id" << data.reqId;
         }
     }
 }
@@ -241,6 +242,7 @@ bool RetroArchFactory::devicesStatus()
 
 void RetroArchFactory::onRaHostInfosDone(qint64 id)
 {
+    sDebug() << "Info done" << id;
     RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
     if (raHosts[host->name()].reqId != id)
         return ;
@@ -261,6 +263,7 @@ void RetroArchFactory::onRaHostInfosDone(qint64 id)
 
 void RetroArchFactory::onRaHostgetInfosFailed(qint64 id)
 {    
+    sDebug() << "Info failed" << id;
     RetroArchHost*  host = qobject_cast<RetroArchHost*>(sender());
     if (raHosts[host->name()].reqId != id)
         return ;
@@ -293,6 +296,8 @@ void RetroArchFactory::onRaHostErrorOccured(QAbstractSocket::SocketError err)
             m_status.deviceStatus[devName].state = ADevice::CLOSED;
             if (err == QAbstractSocket::NetworkError)
                 m_status.deviceStatus[devName].error = Error::DeviceError::DE_RETROARCH_UNREACHABLE;
+            if (err == QAbstractSocket::ConnectionRefusedError)
+                m_status.deviceStatus[devName].error = Error::DeviceError::DE_RETROARCH_NO_CONNECTION;
         }
         checkInfoDone();
     }

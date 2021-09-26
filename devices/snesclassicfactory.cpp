@@ -317,10 +317,10 @@ bool SNESClassicFactory::deleteDevice(ADevice *)
 
 QString SNESClassicFactory::status()
 {
-    listDevices();
+    //listDevices();
     if (device == nullptr || device->state() == ADevice::CLOSED)
     {
-        return m_attachError;
+        return "Unknow (device status not implemented) : " + m_attachError;
     }
     else
     {

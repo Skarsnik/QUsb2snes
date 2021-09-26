@@ -107,9 +107,28 @@ bool EmuNetworkAccessFactory::deleteDevice(ADevice *device)
     return false;
 }
 
+// FIXME, this is a placeholder and need to be removed when the full async
+// API is rewritten
+
 QString EmuNetworkAccessFactory::status()
 {
-    return QString();
+    QString toret;
+    if (clientInfos.isEmpty())
+        return "Unknow (device status not implemented)";
+    for (ClientInfo ci : clientInfos)
+    {
+        if (ci.device != nullptr)
+            toret.append(ci.deviceName + " Ready");
+        else {
+            if (!ci.lastError.isEmpty())
+                toret.append(ci.deviceName + " " + ci.lastError);
+            else {
+                toret.append("Unknow (device status not implemented)");
+            }
+        }
+        toret.append(" - ");
+    }
+    return toret;
 }
 
 QString EmuNetworkAccessFactory::name() const

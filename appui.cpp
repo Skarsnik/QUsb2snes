@@ -367,6 +367,11 @@ void AppUi::onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus sta
 
 void AppUi::onDeviceFactoryStatusDone()
 {
+    //FIXME - remove this when it's implemented in the factory
+    if (snesClassic != nullptr)
+        deviceMenu->addAction("SNES Classic : " + snesClassic->status());
+    if (emuNWAccess != nullptr)
+        deviceMenu->addAction("Emu NWA : " + emuNWAccess->status());
     deviceMenu->addSeparator();
     deviceMenu->addAction(sd2snesAction);
     deviceMenu->addAction(retroarchAction);

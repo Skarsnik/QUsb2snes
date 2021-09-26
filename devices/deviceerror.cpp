@@ -29,7 +29,20 @@ QString deviceErrorString(DeviceError er)
     {
     case DE_RETROARCH_UNREACHABLE:
         return QObject::tr("Host unreachable");
+    case DE_RETROARCH_NO_CONNECTION:
+        return QObject::tr("Can't connect to host");
     default: return QString();
+    }
+}
+
+QString deviceErrorHints(DeviceError err)
+{
+    switch (err)
+    {
+    case DE_RETROARCH_NO_CONNECTION:
+        return QObject::tr("RetroArch not running or network command support not activated");
+    default:
+        return QString();
     }
 }
 
