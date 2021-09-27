@@ -18,7 +18,7 @@
  * along with QUsb2Snes.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "ipsparse.h"
+#include "utils/ipsparse.h"
 #include "wsserver.h"
 #include <QLoggingCategory>
 #include <QSerialPortInfo>

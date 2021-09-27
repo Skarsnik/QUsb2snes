@@ -6,10 +6,10 @@ GIT_TAG_VERSION=$$system(git describe --always --tags)
 DEFINES += GIT_TAG_VERSION=\\\"$$GIT_TAG_VERSION\\\"
 
 
-UISOURCES = appui.cpp \
-            tempdeviceselector.cpp
-UIHEADERS = appui.h \
-            tempdeviceselector.h
+UISOURCES = ui/appui.cpp \
+            ui/tempdeviceselector.cpp
+UIHEADERS = ui/appui.h \
+            ui/tempdeviceselector.h
 
 equals(QUSB2SNES_NOGUI, 1) {
     message("building QUsb2Snes in NOGUI mode")
@@ -17,18 +17,22 @@ equals(QUSB2SNES_NOGUI, 1) {
     QT -= gui
 } else {
     QT += gui widgets
-    FORMS =  tempdeviceselector.ui
+    FORMS =  ui/tempdeviceselector.ui
     SOURCES = $$UISOURCES
     HEADERS = $$UIHEADERS
 }
 
-include($$PWD/EmuNWAccess-qt/EmuNWAccess-qt.pri)
+include($$PWD/devices/EmuNWAccess-qt/EmuNWAccess-qt.pri)
 
-SOURCES += adevice.cpp \
-          devicefactory.cpp \
+INCLUDEPATH += core/ $$PWD
+
+SOURCES += main.cpp \
+          core/adevice.cpp \
+          core/devicefactory.cpp \
+          core/wsserver.cpp \
+          core/wsservercommands.cpp \
           devices/sd2snesfactory.cpp \
           devices/snesclassicfactory.cpp \
-          ipsparse.cpp \
           devices/deviceerror.cpp \
           devices/luabridge.cpp \
           devices/luabridgedevice.cpp \
@@ -37,35 +41,33 @@ SOURCES += adevice.cpp \
           devices/retroarchhost.cpp \
           devices/emunetworkaccessfactory.cpp \
           devices/emunetworkaccessdevice.cpp \
-          main.cpp \
-          rommapping/mapping_hirom.c \
-          rommapping/mapping_lorom.c \
-          rommapping/rommapping.c \
-          rommapping/rominfo.c \
           devices/sd2snesdevice.cpp \
           devices/snesclassic.cpp \
-          wsserver.cpp \
-          wsservercommands.cpp
+          utils/ipsparse.cpp \
+          utils/rommapping/mapping_hirom.c \
+          utils/rommapping/mapping_lorom.c \
+          utils/rommapping/rommapping.c \
+          utils/rommapping/rominfo.c
 
-HEADERS += adevice.h \
-          devicefactory.h \
+HEADERS += core/adevice.h \
+          core/devicefactory.h \
+          core/usb2snes.h \
+          core/wsserver.h \
           devices/deviceerror.h \
           devices/sd2snesfactory.h \
           devices/snesclassicfactory.h \
           devices/retroarchfactory.h \
-          ipsparse.h \
           devices/luabridge.h \
           devices/luabridgedevice.h \
           devices/retroarchdevice.h \
           devices/retroarchhost.h \
           devices/emunetworkaccessfactory.h \
           devices/emunetworkaccessdevice.h \
-          rommapping/rommapping.h \
-          rommapping/rominfo.h \
-          devices/sd2snesdevice.h \
-          devices/snesclassic.h \
-          usb2snes.h \
-          wsserver.h
+          devices/snesclassic.h
+          devices/sd2snesdevice.h
+          utils/ipsparse.h \
+          utils/rommapping/rommapping.h \
+          utils/rommapping/rominfo.h
 
 macx: {
         message("MAC OS BUILD")

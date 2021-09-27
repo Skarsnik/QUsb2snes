@@ -25,7 +25,7 @@
 #include <QVersionNumber>
 #include <QHostInfo>
 #include "retroarchfactory.h"
-#include "../rommapping/rominfo.h"
+#include "utils/rommapping/rominfo.h"
 
 #define SNES_CLASSIC_IP "169.254.13.37"
 

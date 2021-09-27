@@ -21,9 +21,9 @@
 #ifndef RETROARCHDEVICE_H
 #define RETROARCHDEVICE_H
 
-#include "../adevice.h"
+#include "core/adevice.h"
 #include "retroarchhost.h"
-#include "../rommapping/rominfo.h"
+#include "utils/rommapping/rominfo.h"
 
 #include <QObject>
 #include <QUdpSocket>

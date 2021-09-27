@@ -23,7 +23,7 @@
  */
 
 
-#include "../adevice.h"
+#include "core/adevice.h"
 #include "emunwaccessclient.h"
 
 class EmuNetworkAccessDevice : public ADevice

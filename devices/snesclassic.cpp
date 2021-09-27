@@ -22,7 +22,7 @@
 #include <QLoggingCategory>
 #include <QThread>
 
-#include "../rommapping/rominfo.h"
+#include "utils/rommapping/rominfo.h"
 #include "snesclassic.h"
 
 Q_LOGGING_CATEGORY(log_snesclassic, "SNESClassic")

@@ -19,8 +19,6 @@
  */
 
 
-
-
 #include <QApplication>
 #include <QDesktopServices>
 #include <QDir>
@@ -43,7 +41,7 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #include "usb2snes.h"
 #include "appui.h"
 #include "devices/snesclassic.h"
-#include "wsserver.h"
+#include "core/wsserver.h"
 #include "tempdeviceselector.h"
 
 const  QString             applicationJsonFileName = "qusb2snesapp.json";

@@ -24,7 +24,7 @@
 #ifndef QUSB2SNES_NOGUI
   #include <QApplication>
   #include <QMessageBox>
-  #include "appui.h"
+  #include "ui/appui.h"
 #else
   #include <QCoreApplication>
 #endif
@@ -45,7 +45,7 @@
 #endif
 
 
-#include "wsserver.h"
+#include "core/wsserver.h"
 #include "devices/sd2snesfactory.h"
 #include "devices/luabridge.h"
 #include "devices/retroarchfactory.h"

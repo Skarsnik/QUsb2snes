@@ -21,7 +21,7 @@
 #ifndef SNESCLASSIC_H
 #define SNESCLASSIC_H
 
-#include "../adevice.h"
+#include "core/adevice.h"
 
 #include <QObject>
 #include <QTcpSocket>

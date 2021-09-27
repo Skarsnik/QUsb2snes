@@ -22,7 +22,7 @@
 #define EMUNETWORKACCESSFACTORY_H
 
 #include <QObject>
-#include "../devicefactory.h"
+#include "core/devicefactory.h"
 #include "emunetworkaccessdevice.h"
 #include "emunwaccessclient.h"
 

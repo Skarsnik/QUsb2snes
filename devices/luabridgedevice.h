@@ -21,13 +21,13 @@
 #ifndef LUABRIDGEDEVICE_H
 #define LUABRIDGEDEVICE_H
 
-#include "../adevice.h"
+#include "core/adevice.h"
 
 #include <QObject>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTimer>
-#include "../rommapping/rommapping.h"
+#include "utils/rommapping/rommapping.h"
 
 
 class LuaBridgeDevice : public ADevice

@@ -24,7 +24,7 @@
 #include <QObject>
 #include <QTcpSocket>
 
-#include "../devicefactory.h"
+#include "core/devicefactory.h"
 
 #include "snesclassic.h"
 
