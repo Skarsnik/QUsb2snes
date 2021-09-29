@@ -29,6 +29,12 @@
 #include <QMetaEnum>
 #include "adevice.h"
 #include "devicefactory.h"
+#include "types.h"
+#include "aclient.h"
+#include "websocketprovider.h"
+#include "websocketclient.h"
+
+using namespace Core;
 
 Q_DECLARE_LOGGING_CATEGORY(log_wsserver)
 
@@ -40,70 +46,10 @@ Q_DECLARE_LOGGING_CATEGORY(log_wsserver)
 class WSServer : public QObject
 {
     Q_OBJECT
-public:
-    enum ClientCommandState {
-        NOCOMMAND,
-        WAITINGREPLY,
-        WAITINGBDATAREPLY
-    };
-    Q_ENUM(ClientCommandState)
-
-    enum ErrorType {
-        CommandError,
-        ProtocolError,
-        DeviceError,
-    };
-    Q_ENUM(ErrorType)
-
-    enum class RequestState {
-        NEW,
-        SENT,
-        WAITINGREPLY,
-        WAITINGBDATAREPLY,
-        DONE,
-        CANCELLED
-    };
-    Q_ENUM(RequestState)
 private:
-
-    struct MRequest {
-        MRequest() {
-            id = gId++;
-            wasPending = false;
-        }
-        quint64             id;
-        QWebSocket*         owner;
-        QTime               timeCreated;
-        USB2SnesWS::opcode  opcode;
-        SD2Snes::space      space;
-        QStringList         arguments;
-        QStringList         flags;
-        RequestState        state;
-        bool                wasPending;
-        friend QDebug              operator<<(QDebug debug, const MRequest& req);
-    private:
-        static quint64      gId;
-    };
-
-    friend QDebug              operator<<(QDebug debug, const WSServer::MRequest& req);
-    struct WSInfos {
-        QString                 name;
-        bool                    attached;
-        ADevice*                attachedTo;
-        ClientCommandState      commandState;
-        unsigned int            currentPutSize;
-        QList<unsigned int>     pendingPutSizes;
-        QList<QByteArray>       pendingPutDatas;
-        QByteArray              recvData;
-        QByteArray              ipsData;
-        unsigned int            ipsSize;
-        unsigned int            byteReceived;
-        bool                    pendingAttach;
-        bool                    legacy;
-    };
-
+    friend QDebug              Core::operator<<(QDebug debug, const MRequest& req);
     struct DeviceInfos {
-        QWebSocket*         currentWS;
+        AClient*            currentClient;
         USB2SnesWS::opcode  currentCommand;
     };
 
@@ -145,13 +91,11 @@ signals:
 public slots:
 
 private slots:
-    void    onNewConnection();
-    void    onWSError(QWebSocketProtocol::CloseCode code);
-    void    onWSClosed();
-    void    onTextMessageReceived(QString message);
+    void    onNewWsClient(AClient* client);
+    void    onNewRequest(MRequest* req);
     void    onBinaryMessageReceived(QByteArray data);
     void    onClientDisconnected();
-    void    onClientError(QAbstractSocket::SocketError);
+    void    onClientError();
     void    onDeviceCommandFinished();
     void    onDeviceProtocolError();
     void    onDeviceClosed();
@@ -165,11 +109,10 @@ private:
     QMetaEnum                           cmdMetaEnum;
     QMetaEnum                           spaceMetaEnum;
     QMetaEnum                           flagsMetaEnum;
-    QList<QWebSocketServer*>            wsServers;
-    //QWebSocketServer*                   wsServer;
-    QMap<QWebSocket*, WSInfos>          wsInfos;
+    QList<WebSocketProvider*>           wsServers;
     QList<ADevice*>                     devices; // Mostly used to keep tracks of signal/slots connection
     QList<DeviceFactory*>               deviceFactories;
+    QList<AClient*>                     clients;
     QMap<ADevice*, DeviceFactory*>      mapDevFact;
     QMap<ADevice*, DeviceInfos>         devicesInfos;
     QMap<ADevice*, MRequest*>           currentRequests;
@@ -180,7 +123,7 @@ private:
     // Used for the async devicelist stuff
     unsigned    int                     numberOfAsyncFactory;
     unsigned    int                     pendingDeviceListQuery;
-    QList<QWebSocket*>                  pendingDeviceListWebsocket;
+    QList<AClient*>                     pendingDeviceListClients;
     QList<MRequest*>                    pendingDeviceListRequests;
     QStringList                         deviceList;
 
@@ -191,8 +134,8 @@ private:
 
     void        setError(const ErrorType type, const QString reason);
     MRequest*   requestFromJSON(const QString& str);
-    void        clientError(QWebSocket* ws);
-    void        cleanUpSocket(QWebSocket* ws);
+    void        clientError(AClient* client);
+    void        cleanUpClient(AClient* client);
     bool        isValidUnAttached(const USB2SnesWS::opcode opcode);
     void        executeRequest(MRequest* req);
     void        executeServerRequest(MRequest *req);
@@ -202,9 +145,9 @@ private:
     void        asyncDeviceList();
     QStringList getDevicesList();
     void        cmdAttach(MRequest* req);
-    void        processIpsData(QWebSocket* ws);
-    void        sendReply(QWebSocket* ws, const QStringList& args);
-    void        sendReply(QWebSocket* ws, QString args);
+    void        processIpsData(AClient* client);
+    void        sendReply(AClient* client, const QStringList& args);
+    void        sendReply(AClient* client, QString args);
 
 
     void cmdInfo(MRequest *req);

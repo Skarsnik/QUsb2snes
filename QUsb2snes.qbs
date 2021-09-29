@@ -9,11 +9,18 @@ Project {
         cpp.includePaths: ["devices/EmuNWAccess-qt", "core", "."]
         consoleApplication: false
         files: [
+            "core/aclient.h",
+            "core/aclientprovider.h",
             "core/adevice.cpp",
             "core/adevice.h",
             "core/devicefactory.cpp",
             "core/devicefactory.h",
+            "core/types.h",
             "core/usb2snes.h",
+            "core/websocketclient.cpp",
+            "core/websocketclient.h",
+            "core/websocketprovider.cpp",
+            "core/websocketprovider.h",
             "core/wsserver.cpp",
             "core/wsserver.h",
             "core/wsservercommands.cpp",

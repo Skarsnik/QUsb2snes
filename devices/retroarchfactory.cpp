@@ -118,6 +118,20 @@ bool RetroArchFactory::hasAsyncListDevices()
 }
 
 
+/*
+ * This part is tricky:
+ * Simple scenarii are like this:
+ * - Device not busy/not created & ui status request : Do Info - DONE
+ * - Device not busy/not created & deviceList request : Do Info - DONE
+ * - Device BUSY & ui status request : do nothing - DONE
+ * - Device BUSY & deviceList request : do nothing - DONE
+ *
+ * Complex
+ * - Device not busy/not created & ui status request : Do Info, then deviceList request happens
+ *      send both the Ui and the core the info - TO CHECK: don't trigger checkdevice again
+ *
+*/
+
 void    RetroArchFactory::checkDevices()
 {
     QMutableMapIterator<QString, HostData> it(raHosts);
