@@ -22,7 +22,7 @@ equals(QUSB2SNES_NOGUI, 1) {
     HEADERS = $$UIHEADERS
 }
 
-include($$PWD/EmuNWAccess-qt/EmuNWAccess-qt.pri)
+include($$PWD/devices/EmuNWAccess-qt/EmuNWAccess-qt.pri)
 
 SOURCES += adevice.cpp \
           devicefactory.cpp \

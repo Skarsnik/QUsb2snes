@@ -29,6 +29,11 @@ QString deviceFactoryErrorString(DeviceFactoryError er)
     {
     case DFE_SD2SNES_NO_DEVICE : return QObject::tr("No SD2Snes/FXpak pro device detected");
     case DFE_LUA_CANT_LISTEN  : return QObject::tr("Lua bridge support can't open a connection");
+    case DFE_SNESCLASSIC_NO_DEVICE : return QObject::tr("Can't find the SNES Classic.");
+    case DFE_SNESCLASSIC_CANOE_NOT_RUNNING : return QObject::tr("SNES Classic emulator is not running.");
+    case DFE_SNESCLASSIC_DEMO_MODE : return QObject::tr("SNES Classic emulator is running in demo mode.");
+    case DFE_SNESCLASSIC_WRONG_VERSION : return QObject::tr("SNES Classic emulator is not v2.0.14.");
+    case DFE_SNESCLASSIC_MEMORY_LOCATION_NOT_FOUND : return QObject::tr("Can't find the proper memory locations.");
     default: return QString();
     }
 }
@@ -39,6 +44,7 @@ QString deviceFactoryStatusString(DeviceFactoryStatusEnum st)
     {
     case DFS_SD2SNES_READY : return QObject::tr("SD2Snes/Fxpak pro device ready");
     case DFS_LUA_LISTENNING: return QObject::tr("Waiting for emulator to connect");
+    case DFS_SNESCLASSIC_READY: return QObject::tr("SNES Classic device ready");
     default: return QString();
     }
 }

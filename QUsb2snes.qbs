@@ -6,11 +6,11 @@ Project {
     QtApplication {
         name : "QUsb2Snes"
         cpp.cxxLanguageVersion: "c++11"
-        cpp.includePaths: ["EmuNWAccess-qt"]
+        cpp.includePaths: ["devices/EmuNWAccess-qt"]
         consoleApplication: false
         files: [
-            "EmuNWAccess-qt/emunwaccessclient.cpp",
-            "EmuNWAccess-qt/emunwaccessclient.h",
+            "devices/EmuNWAccess-qt/emunwaccessclient.cpp",
+            "devices/EmuNWAccess-qt/emunwaccessclient.h",
             "adevice.cpp",
             "adevice.h",
             "appui.cpp",

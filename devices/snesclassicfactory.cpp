@@ -45,13 +45,41 @@ SNESClassicFactory::SNESClassicFactory()
     }
 
     sInfo() << "SNES Classic device will try to connect to " << snesclassicIP;
-
+    checkState = StatusState::NO_CHECK;
     checkAliveTimer.setInterval(1000);
     connect(&checkAliveTimer, &QTimer::timeout, this, &SNESClassicFactory::aliveCheck);
+    connect(socket, &QAbstractSocket::readyRead, this, &SNESClassicFactory::onReadyRead);
+    connect(socket, &QAbstractSocket::connected, this, &SNESClassicFactory::onSocketConnected);
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+    connect(socket, &QAbstractSocket::errorOccurred, this, &SNESClassicFactory::onSocketError);
+#else
+    connect(socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &SNESClassicFactory::onSocketError);
+#endif
 }
+
+void    SNESClassicFactory::onSocketConnected()
+{
+    sDebug() << "Connected";
+    if ((doingDeviceList || doingDeviceStatus) && checkState == StatusState::NO_CHECK)
+    {
+        checkStuff();
+    }
+}
+
+void SNESClassicFactory::onSocketError(QAbstractSocket::SocketError err)
+{
+    sDebug() << "Socket error" << err << socket->errorString();
+    if (err == QAbstractSocket::ConnectionRefusedError || err == QAbstractSocket::NetworkError)
+    {
+        if (doingDeviceList || doingDeviceStatus)
+            checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_NO_DEVICE);
+    }
+}
+
 
 void SNESClassicFactory::executeCommand(QByteArray toExec)
 {
+    doingCommand = true;
     sDebug() << "Executing : " << toExec;
     writeSocket("CMD " + toExec + "\n");
 }
@@ -62,235 +90,311 @@ void SNESClassicFactory::writeSocket(QByteArray toWrite)
     socket->write(toWrite);
 }
 
-QByteArray SNESClassicFactory::readCommandReturns(QTcpSocket* msocket)
-{
-    QByteArray toret = readSocketReturns(msocket);
-    toret.truncate(toret.size() - 4);
-    return toret;
-}
 
-QByteArray SNESClassicFactory::readSocketReturns(QTcpSocket* msocket)
+void SNESClassicFactory::onReadyRead()
 {
-    QByteArray toret;
-    msocket->waitForReadyRead(50);
-    forever {
-        QByteArray data = msocket->readAll();
-        sDebug() << "Reading" << data;
-        if (data.isEmpty())
+    quint64 size = socket->bytesAvailable();
+    dataRecv += socket->readAll();
+    sDebug() << "Received : " << size << " bytes" << dataRecv;
+    if (doingCommand)
+    {
+        if (dataRecv.right(10) == "\0\0ERROR\0\0")
         {
-            break;
+            sDebug() << "Error with the command, abording";
+            //TODO stop the check;
+            checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_COMMAND_ERROR);
+            doingCommand = false;
+            return;
         }
-        if (toret.isEmpty() && data.left(4) == QByteArray(4, 0))
-            data = data.mid(4);
-        toret += data;
-        if (!msocket->waitForReadyRead(100))
+        if (dataRecv.right(4) != QByteArray(4, 0))
         {
-            break;
+            return;
+        } else {
+            sDebug() << "Command finished, triming the 4 trailing 0";
+            doingCommand = false;
+            dataRecv.chop(4);
+        }
+    } else {
+        if (dataRecv.size() != readMemSize)
+        {
+            return ;
+        } else {
+            readMemSize = 0;
         }
     }
-    return toret;
-}
-
-void SNESClassicFactory::findMemoryLocations()
-{
-    QByteArray pmap;
-    executeCommand(QByteArray("pmap ") + canoePid + " -x -q | grep -v canoe-shvc | grep -v /lib | grep rwx");
-    pmap = readCommandReturns(socket);
-    QList<QByteArray> memEntries = pmap.split('\n');
-
-    resetMemoryAddresses();
-
-    bool ok;
-    uint32_t pid = canoePid.toULong(&ok);
-    QString s;
-    //(*0x1dff84) + 0x20BEC
-    s.sprintf("READ_MEM %u %zx %u\n", pid, 0x1dff84, 4);
-    writeSocket(s.toUtf8());
-    QByteArray memory = readSocketReturns(socket);
-    ramLocation = qFromLittleEndian<uint32_t>(memory.data()) + 0x20BEC;
-
-    foreach (QByteArray memEntry, memEntries)
+    switch(checkState)
     {
-        if (memEntry.isEmpty())
-            continue;
-        QString s = memEntry;
-        QStringList ls = s.split(" ", QString::SkipEmptyParts);
+    case StatusState::CHECK_ALIVE:
+    {
+        dontLogNext = false;
+        dataRecv = dataRecv.trimmed();
+        // Canoe not running anymore
+        if (dataRecv.isEmpty())
+        {
+            sDebug() << "Closing the device, Canoe not running anymore";
+            device->close();
+            socket->close();
 
-        if (ls.at(1) == "5092")
-        {
-            sramLocation = ls.at(0).toULong(&ok, 16) + 0x26E0;
+            checkAliveTimer.stop();
+            resetMemoryAddresses();
+            checkState = StatusState::NO_CHECK;
+            break;
         }
-        else if (ls.at(1) == "8196")
+        canoePid = dataRecv;
+        // Canoe still running, everything should be fine
+        if (canoePid == oldCanoePid)
         {
-            romLocation = ls.at(0).toULong(&ok, 16) + 0x38;
+            checkState = StatusState::NO_CHECK;
+            break;
         }
-        else if (ls.at(1) == "10240")
+        // We have a new pid, the old addresses are invalid
+        resetMemoryAddresses();
+        checkStuff();
+        break;
+    }
+    case StatusState::CHECK_PIDCANOE:
+    {
+        if (dataRecv.isEmpty())
+            checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_CANOE_NOT_RUNNING);
+        oldCanoePid = canoePid;
+        canoePid = dataRecv.trimmed();
+        executeCommand("canoe-shvc --version");
+        checkState = StatusState::CHECK_CANOE_VERSION;
+        break;
+    }
+    case StatusState::CHECK_CANOE_VERSION:
+    {
+        if (QString(dataRecv) != "fc349ac43140141277d2d6f964c1ee361fcd20ca\n")
         {
-            // The 8196KB rom block is sometimes combined with a 2044KB stack block,
-            // so check for the rom 2044KB into this block.
-            unsigned int startLocation = ls.at(0).toULong(&ok, 16);
-            if (!tryRomLocation(pid, startLocation + 2044 * 1024))
+            checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_WRONG_VERSION, dataRecv);
+            m_attachError = tr("SNES Classic emulator is not v2.0.14 - has hash " + dataRecv);
+            break;
+        }
+        if (oldCanoePid != canoePid)
+            resetMemoryAddresses();
+        // canoe in demo mode is useless
+        executeCommand("ps | grep canoe-shvc | grep -v grep");
+        checkState = StatusState::CHECK_CANOE_MODE;
+        break;
+    }
+    case StatusState::CHECK_CANOE_MODE:
+    {
+        if (dataRecv.isEmpty())
+        {
+            checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_CANOE_NOT_RUNNING);
+            break;
+        }
+        if (dataRecv.indexOf("-resume") != -1)
+        {
+            checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_DEMO_MODE);
+            m_attachError = tr("SNES Classic emulator is running in demo mode.");
+            break;
+        }
+        if (!hasValidMemory())
+        {
+            checkState = StatusState::CHECK_MEMORY_LOCATION_READ_RAM_LOC;
+            bool     ok;
+            uint32_t pid = canoePid.toULong(&ok);
+            QString s;
+            //(*0x1dff84) + 0x20BEC
+            s.sprintf("READ_MEM %u %zx %u\n", pid, 0x1dff84, 4);
+            readMemSize = 4;
+            writeSocket(s.toUtf8());
+        } else {
+            checkSuccess();
+        }
+        break;
+    }
+    case StatusState::CHECK_MEMORY_LOCATION_READ_RAM_LOC:
+    {
+        ramLocation = qFromLittleEndian<quint32>(static_cast<const void*>(dataRecv.constData())) + 0x20BEC;
+        executeCommand(QByteArray("pmap ") + canoePid + " -x -q | grep -v canoe-shvc | grep -v /lib | grep rwx");
+        checkState = StatusState::CHECK_MEMORY_LOCATION_PMAP;
+        break;
+    }
+    case StatusState::CHECK_MEMORY_LOCATION_PMAP:
+    {
+        QList<QByteArray> memEntries = dataRecv.split('\n');
+
+        romLocation = 0;
+        sramLocation = 0;
+        bool ok;
+        for (const QByteArray& memEntry : memEntries)
+        {
+            sDebug() << memEntry;
+            if (memEntry.isEmpty())
+                continue;
+            QString s = memEntry;
+            QStringList ls = s.split(" ", QString::SkipEmptyParts);
+
+            if (ls.at(1) == "5092")
             {
-                // If it wasn't there, also check at the start of this block
-                tryRomLocation(pid, startLocation);
+                sramLocation = ls.at(0).toULong(&ok, 16) + 0x26E0;
+            }
+            else if (ls.at(1) == "8196")
+            {
+                romLocation = ls.at(0).toULong(&ok, 16) + 0x38;
+            }
+            else if (ls.at(1) == "10240")
+            {
+                // The 8196KB rom block is sometimes combined with a 2044KB stack block,
+                // so check for the rom 2044KB into this block.
+                // The proper rom location will start with 5 4-byte values:
+                // 0x00: 0
+                // 0x04: 8392706
+                // 0x08: 256
+                // 0x0C: <rom size>
+                // 0x10: 48
+                bool ok;
+                uint32_t pid = canoePid.toULong(&ok);
+                unsigned int location = ls.at(0).toULong(&ok, 16);
+                lastPmapLocation = location;
+                QString s;
+                s.sprintf("READ_MEM %u %x %u\n", pid, location + 2044 * 1024, 20);
+                readMemSize = 20;
+                writeSocket(s.toUtf8());
+                checkState = StatusState::CHECK_MEMORY_LOCATION_READ_ROM_CHECK1;
             }
         }
+        sDebug() << "Mem location" << sramLocation << romLocation << ramLocation;
+        if (hasValidMemory())
+            checkSuccess();
+        break;
     }
-    sDebug() << "Locations : ram/sram/rom" << QString::number(ramLocation, 16) << QString::number(sramLocation, 16) << QString::number(romLocation, 16);
-}
-
-bool SNESClassicFactory::tryRomLocation(unsigned int pid, unsigned int location)
-{
-    // The proper rom location will start with 5 4-byte values:
-    // 0x00: 0
-    // 0x04: 8392706
-    // 0x08: 256
-    // 0x0C: <rom size>
-    // 0x10: 48
-    QString s;
-    s.sprintf("READ_MEM %u %x %u\n", pid, location, 20);
-    writeSocket(s.toUtf8());
-    QByteArray memory = readSocketReturns(socket);
-    char* data = memory.data();
-    // readSocketReturns will strip the 4 bytes of 0 at the beginning so we have to subtract 4 from each of the other addresses,
-    // and the rom size will vary, but if the other 3 match, assume we have the right location
-    if (qFromLittleEndian<uint32_t>(data) == 8392706
-        && qFromLittleEndian<uint32_t>(data + 4) == 256
-        && qFromLittleEndian<uint32_t>(data + 12) == 48)
+    case StatusState::CHECK_MEMORY_LOCATION_READ_ROM_CHECK1:
     {
-        romLocation = location + 0x38;
-        return true;
+        const char* data = dataRecv.constData();
+        if (qFromLittleEndian<uint32_t>(data) == 8392706
+            && qFromLittleEndian<uint32_t>(data + 4) == 256
+            && qFromLittleEndian<uint32_t>(data + 12) == 48)
+        {
+            romLocation = lastPmapLocation + 2044 * 1024 + 0x38;
+            checkSuccess();
+        } else {
+        // If it wasn't there, also check at the start of this block
+            bool ok;
+            uint32_t pid = canoePid.toULong(&ok);
+            QString s;
+            s.sprintf("READ_MEM %u %x %u\n", pid, lastPmapLocation, 20);
+            writeSocket(s.toUtf8());
+            checkState = StatusState::CHECK_MEMORY_LOCATION_READ_ROM_CHECK2;
+        }
+        break;
     }
-
-    return false;
+    case StatusState::CHECK_MEMORY_LOCATION_READ_ROM_CHECK2:
+    {
+        // readSocketReturns will strip the 4 bytes of 0 at the beginning so we have to subtract 4 from each of the other addresses,
+        // and the rom size will vary, but if the other 3 match, assume we have the right location
+        const char* data = dataRecv.constData();
+        if (qFromLittleEndian<uint32_t>(data) == 8392706
+            && qFromLittleEndian<uint32_t>(data + 4) == 256
+            && qFromLittleEndian<uint32_t>(data + 12) == 48)
+        {
+            romLocation = lastPmapLocation + 0x38;
+            checkSuccess();
+        } else {
+            checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_MEMORY_LOCATION_NOT_FOUND);
+        }
+    }
+    }
+    dataRecv.clear();
 }
+
+void SNESClassicFactory::checkSuccess()
+{
+    checkState = StatusState::NO_CHECK;
+    sDebug() << "Check success";
+    if (doingDeviceList)
+    {
+        doingDeviceList = false;
+        if (device == nullptr)
+        {
+            sDebug() << "Creating SNES Classic device";
+            device = new SNESClassic();
+            m_devices.append(device);
+        }
+        if (device->state() == ADevice::CLOSED)
+        {
+            device->sockConnect(snesclassicIP);
+            checkAliveTimer.start();
+        }
+        emit newDeviceName(device->name());
+        emit devicesListDone();
+    }
+    if (doingDeviceStatus)
+    {
+        doingDeviceStatus = false;
+        factStatus.status = Error::DeviceFactoryStatusEnum::DFS_SNESCLASSIC_READY;
+        emit deviceStatusDone(factStatus);
+    }
+    // This is probably not needed for every case, but this ensure
+    // the checkalive canoe can refresh the device settings
+    device->canoePid = canoePid;
+    device->setMemoryLocation(ramLocation, sramLocation, romLocation);
+}
+
+void    SNESClassicFactory::checkFailed(Error::DeviceFactoryError err, QString extra)
+{
+    checkState = StatusState::NO_CHECK;
+    sDebug() << "Check failed " << err;
+    if (doingDeviceList)
+    {
+        doingDeviceList = false;
+        emit devicesListDone();
+    }
+    if (doingDeviceStatus)
+    {
+        factStatus.generalError = err;
+        if (!extra.isEmpty())
+            ;
+        doingDeviceStatus = false;
+        emit deviceStatusDone(factStatus);
+    }
+}
+
 
 bool SNESClassicFactory::checkStuff()
 {
-    executeCommand("pidof canoe-shvc");
-    QByteArray data = readCommandReturns(socket);
-    if (!data.isEmpty())
+    sDebug() << "Checkstuff call" << checkState;
+    if (checkState == StatusState::NO_CHECK || \
+        checkState == StatusState::CHECK_ALIVE)
     {
-        executeCommand("canoe-shvc --version");
-        QByteArray version = readCommandReturns(socket);
-        if(QString(version) != "fc349ac43140141277d2d6f964c1ee361fcd20ca\n")
-        {
-            m_attachError = tr("SNES Classic emulator is not v2.0.14 - has hash " + version);
-            return 0;
-        }
-
-        auto oldCanoePid = canoePid;
-        canoePid = data.trimmed();
-        if(oldCanoePid != canoePid)
-        {
-            resetMemoryAddresses();
-        }
-        // canoe in demo mode is useless
-        executeCommand("ps | grep canoe-shvc | grep -v grep");
-        QByteArray canoeArgs = readCommandReturns(socket);
-        if (canoeArgs.indexOf("-resume") != -1)
-        {
-            m_attachError = tr("SNES Classic emulator is running in demo mode.");
-            return false;
-        }
-
-        // Try to connect with canoe if we haven't already
-        if (!hasValidMemory())
-        {
-            findMemoryLocations();
-        }
-        // If we still don't have valid memory, bail
-        if (ramLocation == 0 || romLocation == 0 || sramLocation == 0)
-        {
-            m_attachError = tr("Can't find memory locations, try restarting the game.");
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    } else {
-        m_attachError = tr("The SNES Classic emulator is not running.");
+        checkState = StatusState::CHECK_PIDCANOE;
+        executeCommand("pidof canoe-shvc");
     }
-    return false;
+    return true;
 }
 
 void SNESClassicFactory::aliveCheck()
 {
-    QByteArray oldPid = canoePid;
-    dontLogNext = true;
-    executeCommand("pidof canoe-shvc");
-    QByteArray data = readCommandReturns(socket);
-    dontLogNext = false;
-    data = data.trimmed();
-    // Canoe not running anymore
-    if (data.isEmpty())
-    {
-        sDebug() << "Closing the device, Canoe not running anymore";
-        device->close();
-        socket->close();
 
-        checkAliveTimer.stop();
-        resetMemoryAddresses();
-        return;
-    }
-    canoePid = data.trimmed();
-    // Canoe still running, everything should be fine
-    if (canoePid == oldPid)
+    if (checkState == StatusState::NO_CHECK)
     {
-        return;
-    }
-    // We have a new pid, the old addresses are invalid
-    resetMemoryAddresses();
-    if (checkStuff())
-    {
-        sDebug() << "Updating device infos";
-        device->canoePid = canoePid;
-
-    } else {
-        sDebug() << "Closing the device, can't find location";
-        device->close();
-    }
+        dontLogNext = true;
+        checkState = StatusState::CHECK_ALIVE;
+        executeCommand("pidof canoe-shvc");
+     }
 }
 
 QStringList SNESClassicFactory::listDevices()
 {
     QStringList toret;
+    return toret;
+}
+
+bool SNESClassicFactory::asyncListDevices()
+{
+    doingDeviceList = true;
     if (socket->state() == QAbstractSocket::UnconnectedState)
     {
         sDebug() << "Trying to connect to serverstuff";
         socket->connectToHost(snesclassicIP, 1042);
-        socket->waitForConnected(100);
-    }
-    sDebug() << socket->state();
-    if (socket->state() == QAbstractSocket::ConnectedState)
-    {
-        if (checkStuff())
-        {
-            if (device == nullptr)
-            {
-                sDebug() << "Creating SNES Classic device";
-                device = new SNESClassic();
-                m_devices.append(device);
-            }
-            if (device->state() == ADevice::CLOSED)
-            {
-                device->sockConnect(snesclassicIP);
-                checkAliveTimer.start();
-            }
-            device->canoePid = canoePid;
-            device->setMemoryLocation(ramLocation, sramLocation, romLocation);
-            return toret << "SNES Classic";
-        } else {
-            return toret;
-        }
-
     } else {
-        m_attachError = tr("Can't connect to the SNES Classic.");
+        checkStuff();
     }
-    sDebug() << "Not ready";
-    return toret;
+    return false;
 }
+
 
 ADevice *SNESClassicFactory::attach(QString deviceName)
 {
@@ -317,7 +421,7 @@ bool SNESClassicFactory::deleteDevice(ADevice *)
 
 QString SNESClassicFactory::status()
 {
-    //listDevices();
+
     if (device == nullptr || device->state() == ADevice::CLOSED)
     {
         return "Unknow (device status not implemented) : " + m_attachError;
@@ -335,7 +439,26 @@ QString SNESClassicFactory::name() const
 
 bool SNESClassicFactory::devicesStatus()
 {
-    return false;
+    sDebug() << "devices Status";
+    factStatus.name = "SNES Classic";
+    factStatus.generalError = Error::DFE_NO_ERROR;
+    factStatus.status = Error::DFS_SNESCLASSIC_NO_DEVICE;
+
+    if (device != nullptr && device->state() == ADevice::BUSY)
+    {
+        factStatus.status = Error::DFS_SNESCLASSIC_READY;
+        emit deviceStatusDone(factStatus);
+    } else {
+        doingDeviceStatus = true;
+    }
+    if (socket->state() == QAbstractSocket::UnconnectedState)
+    {
+        sDebug() << "Trying to connect to serverstuff";
+        socket->connectToHost(snesclassicIP, 1042);
+    } else {
+        checkStuff();
+    }
+    return true;
 }
 
 bool SNESClassicFactory::hasValidMemory()
@@ -348,14 +471,15 @@ void SNESClassicFactory::resetMemoryAddresses()
     ramLocation = 0;
     romLocation = 0;
     sramLocation = 0;
-    if(device)
+    if (device)
     {
         device->setMemoryLocation(ramLocation, sramLocation, romLocation);
     }
 }
 
 
-bool SNESClassicFactory::asyncListDevices()
+
+bool SNESClassicFactory::hasAsyncListDevices()
 {
-    return false;
+    return true;
 }

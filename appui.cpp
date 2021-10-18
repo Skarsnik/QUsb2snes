@@ -309,10 +309,10 @@ void AppUi::onMenuHovered(QAction* action)
     auto serverStatus = wsServer.serverStatus();
     sDebug() << "Factory Count : " << serverStatus.deviceFactoryCount << "Devices Count: " << serverStatus.deviceCount;
     sDebug() << "Client count : " << serverStatus.clientCount;
-    wsServer.requestDeviceStatus();
     deviceMenu->clear();
     deviceMenu->addAction("Devices state");
     deviceMenu->addSeparator();
+    wsServer.requestDeviceStatus();
 }
 
 void AppUi::onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus status)
@@ -368,8 +368,6 @@ void AppUi::onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus sta
 void AppUi::onDeviceFactoryStatusDone()
 {
     //FIXME - remove this when it's implemented in the factory
-    if (snesClassic != nullptr)
-        deviceMenu->addAction("SNES Classic : " + snesClassic->status());
     if (emuNWAccess != nullptr)
         deviceMenu->addAction("Emu NWA : " + emuNWAccess->status());
     deviceMenu->addSeparator();
