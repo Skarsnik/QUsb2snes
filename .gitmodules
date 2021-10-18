@@ -4,3 +4,6 @@
 [submodule "EmuNWAccess-qt"]
 	path = devices/EmuNWAccess-qt
 	url = https://github.com/black-sliver/EmuNWAccess-qt.git
+[submodule "devices/EmuNWAccess-qt"]
+	path = devices/EmuNWAccess-qt
+	url = https://github.com/black-sliver/EmuNWAccess-qt.git
