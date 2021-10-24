@@ -258,6 +258,8 @@ void WSServer::requestDeviceStatus()
         if (devFac->devicesStatus())
             factoryStatusCount++;
     }
+    if (factoryStatusCount == 0)
+        emit deviceFactoryStatusDone();
 }
 
 void WSServer::onDeviceFactoryStatusDone(DeviceFactory::DeviceFactoryStatus status)
