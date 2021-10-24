@@ -229,7 +229,7 @@ void AppUi::init()
                 onSD2SnesTriggered(true);
 #ifdef Q_OS_WIN
                 QMessageBox msg;
-                msg.setText(tr("Do you want to create a entry in the 'Send To' menu of Windows to upload file to the sd2snes?"));
+                msg.setText(tr("Do you want to create a entry in the 'Send To' menu in the context menu of Windows to upload file to the sd2snes?"));
                 msg.setInformativeText(tr("This will only be asked once, if you want to add it later go into the Misc menu."));
                 msg.setWindowTitle("QUsb2Snes");
                 msg.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
