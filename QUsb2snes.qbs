@@ -9,6 +9,7 @@ Project {
         cpp.includePaths: ["devices/EmuNWAccess-qt"]
         consoleApplication: false
         files: [
+            "TODO",
             "devices/EmuNWAccess-qt/emunwaccessclient.cpp",
             "devices/EmuNWAccess-qt/emunwaccessclient.h",
             "adevice.cpp",
