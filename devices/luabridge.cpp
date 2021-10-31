@@ -146,6 +146,8 @@ bool LuaBridge::devicesStatus()
         status.status = Error::DeviceFactoryStatusEnum::DFS_LUA_LISTENNING;
         status.generalError = Error::DeviceFactoryError::DFE_LUA_CANT_LISTEN;
         status.name = "Lua Bridge";
+        status.deviceNames.clear();
+        status.deviceStatus.clear();
         if (server->isListening())
         {
             status.status = Error::DeviceFactoryStatusEnum::DFS_LUA_LISTENNING;

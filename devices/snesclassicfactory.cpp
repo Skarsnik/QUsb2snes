@@ -443,6 +443,8 @@ bool SNESClassicFactory::devicesStatus()
     factStatus.name = "SNES Classic";
     factStatus.generalError = Error::DFE_NO_ERROR;
     factStatus.status = Error::DFS_SNESCLASSIC_NO_DEVICE;
+    factStatus.deviceNames.clear();
+    factStatus.deviceStatus.clear();
 
     if (device != nullptr && device->state() == ADevice::BUSY)
     {
