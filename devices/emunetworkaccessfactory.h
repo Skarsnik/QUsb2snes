@@ -29,18 +29,18 @@
 class EmuNetworkAccessFactory : public DeviceFactory
 {
     Q_OBJECT
-private:
-    struct ClientInfo {
-        EmuNWAccessClient*      client;
-        EmuNetworkAccessDevice* device;
-        QString                 lastError;
-        QString                 deviceName;
-    };
 
 public:
     EmuNetworkAccessFactory();
 
-    // DeviceFactory interface
+    enum DetectState {
+        NO_CHECK,
+        CHECK_CONNECTION,
+        CHECK_EMU_INFO,
+        CHECK_CORE_LIST,
+    };
+    Q_ENUM(DetectState)
+
 public:
     QStringList listDevices();
     ADevice *attach(QString deviceName);
@@ -51,10 +51,34 @@ public:
     bool asyncListDevices();
     bool devicesStatus();
 
-    QList<ClientInfo>   clientInfos;
+private:
+    struct ClientInfo {
+        EmuNWAccessClient*      client;
+        EmuNetworkAccessDevice* device;
+        QString                 deviceName;
+        enum DetectState        checkState;
+        bool                    doingAttach;
+        int                     port;
+    };
+    unsigned int checkedCount;
+    bool    doingDeviceStatus;
+    bool    doingDeviceList;
+    DeviceFactoryStatus  devFacStatus;
+
+    void    checkStatus();
+    void    checkFailed(EmuNWAccessClient* client, Error::DeviceError);
+    void    checkSuccess(EmuNWAccessClient* client);
+
+    // DeviceFactory interface
+
+    QMap<EmuNWAccessClient*, ClientInfo>    clientInfos;
 
  private slots:
     void    onClientDisconnected();
+    void    onClientConnected();
+    void    onClientConnectionError();
+    void    onClientReadyRead();
+
 };
 
 #endif // EMUNETWORKACCESSFACTORY_H
