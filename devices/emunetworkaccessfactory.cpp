@@ -117,7 +117,7 @@ bool EmuNetworkAccessFactory::deleteDevice(ADevice *device)
         {
             device->deleteLater();
             it.value().device = nullptr;
-            //it.value().client->deleteLater();
+            it.value().client->deleteLater();
             //it.remove();
             return true;
         }
@@ -309,8 +309,8 @@ void EmuNetworkAccessFactory::onClientDisconnected()
             if (it.value().device != nullptr)
             {
                 it.value().device->close();
-                //it.value().device->deleteLater();
-                //it.value().device = nullptr;
+                it.value().device->deleteLater();
+                it.value().device = nullptr;
             }
             //client->deleteLater();
             return;
