@@ -34,6 +34,7 @@ RetroArchHost::RetroArchHost(QString name, QObject *parent) : QObject(parent)
     m_port = 55355;
     readRamHasRomAccess = false;
     readMemoryAPI = false;
+    useReadMemoryAPI = false;
     readMemoryHasRomAccess = false;
     lastId = -1;
     reqId = -1;
@@ -68,7 +69,7 @@ qint64 RetroArchHost::getMemory(unsigned int address, unsigned int size)
     int raAddress = translateAddress(address);
     if (raAddress == -1)
         return -1; // error
-    QByteArray data = (readMemoryAPI ? "READ_CORE_MEMORY " : "READ_CORE_RAM ") + QByteArray::number(raAddress, 16) + " " + QByteArray::number(size) + "\n";
+    QByteArray data = (useReadMemoryAPI ? "READ_CORE_MEMORY " : "READ_CORE_RAM ") + QByteArray::number(raAddress, 16) + " " + QByteArray::number(size) + "\n";
     getMemorySize = (int)size;
     return queueCommand(data, GetMemory);
 }
@@ -93,10 +94,10 @@ void RetroArchHost::writeMemoryData(qint64 id, QByteArray data)
     assert(writeMemoryBuffer.size() <= writeSize);
     if (writeSize == writeMemoryBuffer.size())
     {
-        QByteArray data = (readMemoryAPI ? "WRITE_CORE_MEMORY " : "WRITE_CORE_RAM ") + QByteArray::number(writeAddress, 16) + " ";
+        QByteArray data = (useReadMemoryAPI ? "WRITE_CORE_MEMORY " : "WRITE_CORE_RAM ") + QByteArray::number(writeAddress, 16) + " ";
         data.append(writeMemoryBuffer.toHex(' '));
         data.append('\n');
-        if (!readMemoryAPI) { // old API does not send a reply
+        if (!useReadMemoryAPI) { // old API does not send a reply
             queueCommand(data, None, [this](qint64 sentId) {
                 sDebug() << "Write memory done";
                 emit writeMemoryDone(sentId);
@@ -392,6 +393,7 @@ int RetroArchHost::translateAddress(unsigned int address)
     int addr = static_cast<int>(address);
     if (readMemoryAPI)
     {
+        useReadMemoryAPI = true;
         // ROM ACCESS
         if (addr < 0xE00000) {
             if (romType == HiROM && addr < 0x400000) {
@@ -408,11 +410,21 @@ int RetroArchHost::translateAddress(unsigned int address)
         // WRAM
         if (addr >= 0xF50000 && addr <= 0xF70000)
             return 0x7E0000 + addr - 0xF50000;
-        // SRAM
+        // SRAM, this does not work properly with the new api
+        // This is a mess anyways xD
         if (addr >= 0xE00000 && addr < 0xF70000)
-            return rommapping_sram_pc_to_snes(address - 0xE00000, romType, false);
+        {
+            useReadMemoryAPI = false;
+            //if (!hasRomAccess())
+            return addr - 0xE00000 + 0x20000;
+            if (romType == LoROM)
+                //return addr - 0xE00000 + 0x700000;
+                return lorom_sram_pc_to_snes(address - 0xE00000);
+            return lorom_sram_pc_to_snes(address - 0xE00000);
+        }
         return -1;
     } else {
+        useReadMemoryAPI = false;
         // Rom access
         if (addr < 0xE00000)
         {

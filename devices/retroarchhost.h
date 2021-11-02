@@ -92,7 +92,17 @@ private:
     QHostAddress    m_address;
     QString         m_lastInfoError;
     bool            readRamHasRomAccess;
+     // tell that we have a 1.9.0+ RA
     bool            readMemoryAPI;
+    /* Enforce the use of write/read_core_memory or write/read_core_ram
+     * For some memory access the newest API does not work (like sram)
+     * This is a way to enforce the use of old api
+     * FIXME, this should maybe be in the queue?
+     */
+    bool            useReadMemoryAPI;
+    /* Can only access half LoROM with new API
+     * Why RA...
+     */
     bool            readMemoryHasRomAccess;
     qint64          reqId;
     State           state;
