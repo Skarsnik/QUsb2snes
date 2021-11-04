@@ -37,7 +37,7 @@ extern bool    dontLogNext;
 SNESClassicFactory::SNESClassicFactory()
     : snesclassicIP(SNES_CLASSIC_IP)
 {
-    socket = new QTcpSocket();
+    socket = new QTcpSocket(this);
 
     if (globalSettings->contains("SNESClassicIP"))
     {
@@ -47,9 +47,14 @@ SNESClassicFactory::SNESClassicFactory()
     sInfo() << "SNES Classic device will try to connect to " << snesclassicIP;
     checkState = StatusState::NO_CHECK;
     checkAliveTimer.setInterval(1000);
+    doingDeviceList = false;
+    doingDeviceStatus = false;
     connect(&checkAliveTimer, &QTimer::timeout, this, &SNESClassicFactory::aliveCheck);
     connect(socket, &QAbstractSocket::readyRead, this, &SNESClassicFactory::onReadyRead);
     connect(socket, &QAbstractSocket::connected, this, &SNESClassicFactory::onSocketConnected);
+    connect(socket, &QAbstractSocket::stateChanged, this, [=] {
+        sDebug() << "Socket state changed" << socket->state();
+    });
 #if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
     connect(socket, &QAbstractSocket::errorOccurred, this, &SNESClassicFactory::onSocketError);
 #else
@@ -155,7 +160,10 @@ void SNESClassicFactory::onReadyRead()
     case StatusState::CHECK_PIDCANOE:
     {
         if (dataRecv.isEmpty())
+        {
             checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_CANOE_NOT_RUNNING);
+            break;
+        }
         oldCanoePid = canoePid;
         canoePid = dataRecv.trimmed();
         executeCommand("canoe-shvc --version");
@@ -355,7 +363,7 @@ void    SNESClassicFactory::checkFailed(Error::DeviceFactoryError err, QString e
 
 bool SNESClassicFactory::checkStuff()
 {
-    sDebug() << "Checkstuff call" << checkState;
+    sDebug() << "Checkstuff called" << checkState;
     if (checkState == StatusState::NO_CHECK || \
         checkState == StatusState::CHECK_ALIVE)
     {
@@ -380,19 +388,6 @@ QStringList SNESClassicFactory::listDevices()
 {
     QStringList toret;
     return toret;
-}
-
-bool SNESClassicFactory::asyncListDevices()
-{
-    doingDeviceList = true;
-    if (socket->state() == QAbstractSocket::UnconnectedState)
-    {
-        sDebug() << "Trying to connect to serverstuff";
-        socket->connectToHost(snesclassicIP, 1042);
-    } else {
-        checkStuff();
-    }
-    return false;
 }
 
 
@@ -421,21 +416,41 @@ bool SNESClassicFactory::deleteDevice(ADevice *)
 
 QString SNESClassicFactory::status()
 {
-
-    if (device == nullptr || device->state() == ADevice::CLOSED)
-    {
-        return "Unknow (device status not implemented) : " + m_attachError;
-    }
-    else
-    {
-        return tr("SNES Classic ready.");
-    }
+    return QString();
 }
 
 QString SNESClassicFactory::name() const
 {
     return "SNES Classic (Hakchi2CE)";
 }
+
+bool SNESClassicFactory::asyncListDevices()
+{
+    sDebug() << "List devices";
+    doingDeviceList = true;
+    if (socket->state() == QAbstractSocket::ConnectingState)
+    {
+        sDebug() << "This should not happen, socket already trying to connect";
+        return false;
+    }
+    if (socket->state() == QAbstractSocket::UnconnectedState)
+    {
+        sDebug() << "Trying to connect to serverstuff";
+        socket->connectToHost(snesclassicIP, 1042);
+        QTimer::singleShot(200, this, [=] {
+           sDebug() << "Timeout " << socket->state();
+           if (socket->state() == QAbstractSocket::ConnectingState)
+           {
+               socket->close();
+               this->checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_NO_DEVICE);
+           }
+        });
+    } else {
+        checkStuff();
+    }
+    return false;
+}
+
 
 bool SNESClassicFactory::devicesStatus()
 {
@@ -453,10 +468,23 @@ bool SNESClassicFactory::devicesStatus()
     } else {
         doingDeviceStatus = true;
     }
+    if (socket->state() == QAbstractSocket::ConnectingState)
+    {
+        sDebug() << "This should not happen, socket already trying to connect";
+        return false;
+    }
     if (socket->state() == QAbstractSocket::UnconnectedState)
     {
         sDebug() << "Trying to connect to serverstuff";
         socket->connectToHost(snesclassicIP, 1042);
+        QTimer::singleShot(200, this, [=] {
+           sDebug() << "Timeout " << socket->state();
+           if (socket->state() == QAbstractSocket::ConnectingState)
+           {
+               socket->close();
+               this->checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_NO_DEVICE);
+           }
+        });
     } else {
         checkStuff();
     }
