@@ -284,6 +284,7 @@ void SNESClassicFactory::onReadyRead()
             uint32_t pid = canoePid.toULong(&ok);
             QString s;
             s.sprintf("READ_MEM %u %x %u\n", pid, lastPmapLocation, 20);
+            readMemSize = 20;
             writeSocket(s.toUtf8());
             checkState = StatusState::CHECK_MEMORY_LOCATION_READ_ROM_CHECK2;
         }
