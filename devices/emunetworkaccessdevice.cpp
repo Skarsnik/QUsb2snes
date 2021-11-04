@@ -320,6 +320,7 @@ void EmuNetworkAccessDevice::close()
 {
     if (m_state != CLOSED)
         emu->disconnectFromHost();
+    m_state = CLOSED;
 }
 
 

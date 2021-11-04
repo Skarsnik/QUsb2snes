@@ -108,7 +108,6 @@ ADevice *EmuNetworkAccessFactory::attach(QString deviceName)
 bool EmuNetworkAccessFactory::deleteDevice(ADevice *device)
 {
     sDebug() << "request for deleting device";
-    //return false;
     QMutableMapIterator<EmuNWAccessClient*, ClientInfo> it(clientInfos);
     while (it.hasNext())
     {
@@ -118,7 +117,7 @@ bool EmuNetworkAccessFactory::deleteDevice(ADevice *device)
             device->deleteLater();
             it.value().device = nullptr;
             it.value().client->deleteLater();
-            //it.remove();
+            it.value().deviceName.clear();
             return true;
         }
     }
@@ -306,13 +305,8 @@ void EmuNetworkAccessFactory::onClientDisconnected()
         if (it.value().client == client)
         {
             sDebug()  << "Client disconnected, closing " << it.value().deviceName;
-            if (it.value().device != nullptr)
-            {
+            if (it.value().device != nullptr && it.value().device->state() != ADevice::CLOSED)
                 it.value().device->close();
-                it.value().device->deleteLater();
-                it.value().device = nullptr;
-            }
-            //client->deleteLater();
             return;
         }
     }
