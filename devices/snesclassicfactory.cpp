@@ -272,9 +272,9 @@ void SNESClassicFactory::onReadyRead()
     case StatusState::CHECK_MEMORY_LOCATION_READ_ROM_CHECK1:
     {
         const char* data = dataRecv.constData();
-        if (qFromLittleEndian<uint32_t>(data) == 8392706
-            && qFromLittleEndian<uint32_t>(data + 4) == 256
-            && qFromLittleEndian<uint32_t>(data + 12) == 48)
+        if (qFromLittleEndian<uint32_t>(data + 4) == 8392706
+            && qFromLittleEndian<uint32_t>(data + 8) == 256
+            && qFromLittleEndian<uint32_t>(data + 16) == 48)
         {
             romLocation = lastPmapLocation + 2044 * 1024 + 0x38;
             checkSuccess();
@@ -292,12 +292,10 @@ void SNESClassicFactory::onReadyRead()
     }
     case StatusState::CHECK_MEMORY_LOCATION_READ_ROM_CHECK2:
     {
-        // readSocketReturns will strip the 4 bytes of 0 at the beginning so we have to subtract 4 from each of the other addresses,
-        // and the rom size will vary, but if the other 3 match, assume we have the right location
         const char* data = dataRecv.constData();
-        if (qFromLittleEndian<uint32_t>(data) == 8392706
-            && qFromLittleEndian<uint32_t>(data + 4) == 256
-            && qFromLittleEndian<uint32_t>(data + 12) == 48)
+        if (qFromLittleEndian<uint32_t>(data + 4) == 8392706
+            && qFromLittleEndian<uint32_t>(data + 8) == 256
+            && qFromLittleEndian<uint32_t>(data + 16) == 48)
         {
             romLocation = lastPmapLocation + 0x38;
             checkSuccess();
@@ -312,7 +310,7 @@ void SNESClassicFactory::onReadyRead()
 void SNESClassicFactory::checkSuccess()
 {
     checkState = StatusState::NO_CHECK;
-    sDebug() << "Check success";
+    sDebug() << "Check success DL - DS" << doingDeviceList << doingDeviceStatus;
     if (doingDeviceList)
     {
         doingDeviceList = false;
@@ -338,8 +336,11 @@ void SNESClassicFactory::checkSuccess()
     }
     // This is probably not needed for every case, but this ensure
     // the checkalive canoe can refresh the device settings
-    device->canoePid = canoePid;
-    device->setMemoryLocation(ramLocation, sramLocation, romLocation);
+    if (device != nullptr)
+    {
+        device->canoePid = canoePid;
+        device->setMemoryLocation(ramLocation, sramLocation, romLocation);
+    }
 }
 
 void    SNESClassicFactory::checkFailed(Error::DeviceFactoryError err, QString extra)
@@ -365,10 +366,13 @@ void    SNESClassicFactory::checkFailed(Error::DeviceFactoryError err, QString e
 bool SNESClassicFactory::checkStuff()
 {
     sDebug() << "Checkstuff called" << checkState;
-    if (checkState == StatusState::NO_CHECK || \
-        checkState == StatusState::CHECK_ALIVE)
+    if (checkState == StatusState::NO_CHECK)
     {
         checkState = StatusState::CHECK_PIDCANOE;
+        executeCommand("pidof canoe-shvc");
+    }
+    if (checkState == StatusState::CHECK_ALIVE)
+    {
         executeCommand("pidof canoe-shvc");
     }
     return true;
@@ -376,7 +380,6 @@ bool SNESClassicFactory::checkStuff()
 
 void SNESClassicFactory::aliveCheck()
 {
-
     if (checkState == StatusState::NO_CHECK)
     {
         dontLogNext = true;
@@ -472,6 +475,7 @@ bool SNESClassicFactory::devicesStatus()
     if (socket->state() == QAbstractSocket::ConnectingState)
     {
         sDebug() << "This should not happen, socket already trying to connect";
+        checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_NO_DEVICE);
         return false;
     }
     if (socket->state() == QAbstractSocket::UnconnectedState)
