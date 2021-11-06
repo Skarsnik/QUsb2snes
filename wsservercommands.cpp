@@ -227,24 +227,46 @@ void    WSServer::executeRequest(MRequest *req)
             device->getAddrCommand(req->space, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
         } else {
 
-            QList<QPair<unsigned int, quint8> > pairs;
+            QList<QPair<unsigned int, unsigned int> > pairs;
+            // NOTE a size > 255 is ignored by the original server
+            // When it should probably be an error, but the ZeldaHub software use it
+            // Let fallback of spliting the request when it's a legacy connection
+            bool split = false;
             for (int i = 0; i < req->arguments.size(); i += 2)
             {
-                if (req->arguments.at(i + 1).toUInt(&ok, 16) == 0)
+                unsigned usize = req->arguments.at(i + 1).toUInt(&ok, 16);
+                if (usize == 0)
                 {
                     setError(ErrorType::CommandError, "GetAddress - trying to read 0 byte");
                     clientError(ws);
                     return ;
                 }
-                pairs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUInt(&ok, 16)));
+                if (usize > 255)
+                {
+                    if (wsInfos.value(ws).legacy)
+                    {
+                        split = true;
+                    } else {
+                        setError(ErrorType::CommandError, "GetAddress - VGet with a size > 255");
+                        clientError(ws);
+                        return ;
+                    }
+                }
+                pairs.append(QPair<unsigned int, unsigned int>(req->arguments.at(i).toUInt(&ok, 16), usize));
             }
-            if (device->hasVariaditeCommands())
+            if (!split && device->hasVariaditeCommands())
             {
-                device->getAddrCommand(req->space, pairs);
+                QList<QPair<unsigned int, quint8>> translatedPairs;
+                for (auto mpair : pairs)
+                {
+                    translatedPairs.append(QPair<unsigned int, quint8>(mpair.first, static_cast<quint8>(mpair.second)));
+                }
+                device->getAddrCommand(req->space, translatedPairs);
             } else {
                 device->getAddrCommand(req->space, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
                 for (int i = 1; i < pairs.size(); i++)
                 {
+                    sDebug() << pairs.at(i);
                     MRequest* newReq = new MRequest();
                     newReq->owner = ws;
                     newReq->state = RequestState::NEW;
