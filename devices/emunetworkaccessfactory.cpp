@@ -38,7 +38,7 @@ EmuNetworkAccessFactory::EmuNetworkAccessFactory()
 {
     for (int i = 0; i < 5; i++)
     {
-        auto piko = new EmuNWAccessClient();
+        auto piko = new EmuNWAccessClient(this);
         connect(piko, &EmuNWAccessClient::connected, this, &EmuNetworkAccessFactory::onClientConnected);
         connect(piko, &EmuNWAccessClient::connectError, this, &EmuNetworkAccessFactory::onClientConnectionError);
         connect(piko, &EmuNWAccessClient::readyRead, this, &EmuNetworkAccessFactory::onClientReadyRead);
@@ -116,7 +116,7 @@ bool EmuNetworkAccessFactory::deleteDevice(ADevice *device)
         {
             device->deleteLater();
             it.value().device = nullptr;
-            it.value().client->deleteLater();
+            //it.value().client->deleteLater();
             it.value().deviceName.clear();
             return true;
         }
