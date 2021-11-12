@@ -165,18 +165,25 @@ void AppUi::init()
     miscMenu = menu->addMenu(tr("Misc", "Menu entry"));
 
 #ifdef Q_OS_WIN
-    QObject::connect(miscMenu->addAction(QIcon(":/img/updateicon.svg"), tr( "Check for Update")), &QAction::triggered, [this] {
-        this->checkForNewVersion(true);
-    });
+    bool noUpdate = globalSettings->contains("windowNoUpdate") && globalSettings->value("windowNoUpdate").toBool();
+    if (!noUpdate)
+    {
+        QObject::connect(miscMenu->addAction(QIcon(":/img/updateicon.svg"), tr( "Check for Update")), &QAction::triggered, [this] {
+            this->checkForNewVersion(true);
+        });
+    }
     miscMenu->addSeparator();
     QObject::connect(miscMenu->addAction(QIcon(":/img/microsoft-windows-logo.svg"), tr("Add a 'Send To' entry in the Windows menu")),
                      &QAction::triggered, this, &AppUi::addWindowsSendToEntry);
-    if (!globalSettings->contains("checkUpdateCounter") || globalSettings->value("checkUpdateCounter").toInt() == 5)
+    if (!noUpdate)
     {
-        globalSettings->setValue("checkUpdateCounter", 0);
-        checkForNewVersion();
-    } else {
-        globalSettings->setValue("checkUpdateCounter", globalSettings->value("checkUpdateCounter").toInt() + 1);
+        if (!globalSettings->contains("checkUpdateCounter") || globalSettings->value("checkUpdateCounter").toInt() == 5)
+        {
+            globalSettings->setValue("checkUpdateCounter", 0);
+            checkForNewVersion();
+        } else {
+            globalSettings->setValue("checkUpdateCounter", globalSettings->value("checkUpdateCounter").toInt() + 1);
+        }
     }
 #endif
 
