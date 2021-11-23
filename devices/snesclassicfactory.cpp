@@ -147,8 +147,10 @@ void SNESClassicFactory::onReadyRead()
         }
         canoePid = dataRecv;
         // Canoe still running, everything should be fine
+        //sDebug() << canoePid << dataRecv;
         if (canoePid == oldCanoePid)
         {
+            //sDebug() << "Pid is same, nice";
             checkState = StatusState::NO_CHECK;
             break;
         }
