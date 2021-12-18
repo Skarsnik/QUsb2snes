@@ -142,7 +142,7 @@ void AppUi::init()
     {
         emuNWAccess = new EmuNetworkAccessFactory();
         wsServer.addDeviceFactory(emuNWAccess);
-        emuNWAccessAction->setChecked(true);
+        onEmuNWAccessTriggered(true);
     }
     if (globalSettings->contains("trustedOrigin"))
     {
@@ -679,6 +679,12 @@ void AppUi::onEmuNWAccessTriggered(bool checked)
     {
         if (emuNWAccess == nullptr)
             emuNWAccess = new EmuNetworkAccessFactory();
+        if (!LocalStorage::isUsable())
+        {
+            if (!QFileInfo::exists(qApp->applicationDirPath() + "/Games"))
+                QDir(qApp->applicationDirPath()).mkdir("Games");
+            LocalStorage::setRootPath(qApp->applicationDirPath() + "/Games");
+        }
         wsServer.addDeviceFactory(emuNWAccess);
     }
     globalSettings->setValue("emunwaccess", checked);

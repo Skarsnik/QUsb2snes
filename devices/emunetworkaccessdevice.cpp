@@ -21,7 +21,7 @@
 
 
 #include "emunetworkaccessdevice.h"
-
+#include <QApplication>
 #include <QLoggingCategory>
 
 Q_LOGGING_CATEGORY(log_emunwaccessdevice, "Emu NWA Device")
@@ -41,6 +41,13 @@ EmuNetworkAccessDevice::EmuNetworkAccessDevice(QString _name)
     connect(emu, &EmuNWAccessClient::disconnected, this, &EmuNetworkAccessDevice::onEmuDisconnected);
     m_state = CLOSED;
     emuVersion.clear();
+    uploadedFile = nullptr;
+    timerFakeComandFinish.setInterval(10);
+    connect(&timerFakeComandFinish, &QTimer::timeout, this, [=] {
+        emit commandFinished();
+        timerFakeComandFinish.stop();
+    });
+    doingPutFile = false;
 }
 
 
@@ -163,11 +170,6 @@ void EmuNetworkAccessDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
     Q_UNUSED(args)
 }
 
-void EmuNetworkAccessDevice::putFile(QByteArray name, unsigned int size)
-{
-    Q_UNUSED(name)
-    Q_UNUSED(size)
-}
 
 void EmuNetworkAccessDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
@@ -265,6 +267,19 @@ void EmuNetworkAccessDevice::infoCommand()
 
 void EmuNetworkAccessDevice::writeData(QByteArray data)
 {
+    if (doingPutFile)
+    {
+        uploadedFileSizeWritten += data.size();
+        uploadedFile->write(data);
+        if (uploadedFileSize == uploadedFileSizeWritten)
+        {
+            doingPutFile = false;
+            uploadedFile->close();
+            delete uploadedFile;
+            emit commandFinished();
+        }
+        return ;
+    }
     putAddressSizeSent += data.size();
     if (putAddressSizeSent > putAddressSize)
         emit protocolError();
@@ -278,7 +293,7 @@ QString EmuNetworkAccessDevice::name() const
 
 bool EmuNetworkAccessDevice::hasFileCommands()
 {
-    return false;
+    return true;
 }
 
 bool EmuNetworkAccessDevice::hasControlCommands()
@@ -304,12 +319,6 @@ USB2SnesInfo EmuNetworkAccessDevice::parseInfo(const QByteArray &data)
     return toret;
 }
 
-QList<ADevice::FileInfos> EmuNetworkAccessDevice::parseLSCommand(QByteArray &dataI)
-{
-    Q_UNUSED(dataI);
-    return QList<ADevice::FileInfos>();
-}
-
 bool EmuNetworkAccessDevice::open()
 {
     m_state = READY;
@@ -323,11 +332,97 @@ void EmuNetworkAccessDevice::close()
     m_state = CLOSED;
 }
 
+void EmuNetworkAccessDevice::putFile(QByteArray name, unsigned int size)
+{
+    doingPutFile = true;
+    uploadedFileName = name;
+    uploadedFile = LocalStorage::prepareWriteFile(name, size);
+    uploadedFileSize = size;
+    uploadedFileSizeWritten = 0;
+    if (!uploadedFile->isOpen())
+    {
+        doingPutFile = false;
+        delete uploadedFile;
+        uploadedFile = nullptr;
+        emit protocolError();
+    }
+}
+
 
 void EmuNetworkAccessDevice::fileCommand(SD2Snes::opcode op, QVector<QByteArray> args)
 {
+    bool success = true;
+    switch (op)
+    {
+    case SD2Snes::opcode::GET:
+    {
+        QByteArray data = LocalStorage::getFile(args.at(0));
+        if (data.isEmpty())
+        {
+            success = false;
+            break;
+        }
+        emit sizeGet(data.size());
+        emit getDataReceived(data);
+        break;
+    }
+    case SD2Snes::opcode::RM:
+    {
+        success = LocalStorage::remove(args.at(0));
+        break;
+    }
+    case SD2Snes::opcode::LS:
+    {
+        fileInfos = LocalStorage::list(args.at(0));
+        if (fileInfos.isEmpty())
+        {
+            success = false;
+            break;
+        }
+        break;
+    }
+    case SD2Snes::opcode::MV:
+    {
+        success = LocalStorage::rename(args.at(0), args.at(1));
+        break;
+    }
+    case SD2Snes::opcode::MKDIR:
+    {
+        success = LocalStorage::makeDir(args.at(0));
+        break;
+    }
+    default:
+    {
+        sDebug() << "Asked a bad file command";
+        emit protocolError();
+        return ;
+    }
+    }
+    if (success) {
+        timerFakeComandFinish.start();
+    } else {
+        emit protocolError();
+    }
 }
 
 void EmuNetworkAccessDevice::fileCommand(SD2Snes::opcode op, QByteArray args)
 {
+    QVector<QByteArray> p;
+    p.append(args);
+    fileCommand(op, p);
+}
+
+QList<ADevice::FileInfos> EmuNetworkAccessDevice::parseLSCommand(QByteArray &dataI)
+{
+    Q_UNUSED(dataI);
+    QList<ADevice::FileInfos> toret;
+    for (auto finfo : fileInfos)
+    {
+        ADevice::FileInfos fi;
+        fi.name = finfo.name;
+        fi.type = static_cast<SD2Snes::file_type>(finfo.type);
+        toret.append(fi);
+    }
+    fileInfos.clear();
+    return toret;
 }

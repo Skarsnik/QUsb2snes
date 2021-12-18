@@ -448,7 +448,7 @@ void WSServer::onClientDisconnected()
 void WSServer::onClientError(QAbstractSocket::SocketError)
 {
     QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
-    sInfo() << "Client error : " << wsInfos.value(ws).name << ws->errorString();
+    sInfo() << "Client error : " << wsInfos.value(ws).name << ws->error() << ws->errorString();
 }
 
 void WSServer::onDeviceCommandFinished()

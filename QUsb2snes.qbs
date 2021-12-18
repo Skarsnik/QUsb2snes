@@ -39,6 +39,8 @@ Project {
             "devices/luabridge.h",
             "devices/luabridgedevice.cpp",
             "devices/luabridgedevice.h",
+            "localstorage.cpp",
+            "localstorage.h",
             "main.cpp",
             "qusb2snes.rc",
             "ressources.qrc",

@@ -44,6 +44,7 @@ SOURCES += adevice.cpp \
           rommapping/rominfo.c \
           devices/sd2snesdevice.cpp \
           devices/snesclassic.cpp \
+          localstorage.cpp \
           wsserver.cpp \
           wsservercommands.cpp
 
@@ -64,6 +65,7 @@ HEADERS += adevice.h \
           rommapping/rominfo.h \
           devices/sd2snesdevice.h \
           devices/snesclassic.h \
+          localstorage.h \
           usb2snes.h \
           wsserver.h
 

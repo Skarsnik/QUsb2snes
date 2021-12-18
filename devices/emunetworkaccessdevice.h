@@ -2,6 +2,7 @@
 #define EMUNETWORKACCESSDEVICE_H
 
 #include <QObject>
+#include <QTimer>
 /*
  * Copyright (c) 2018 Sylvain "Skarsnik" Colinet.
  *
@@ -24,6 +25,7 @@
 
 
 #include "../adevice.h"
+#include "../localstorage.h"
 #include "emunwaccessclient.h"
 
 class EmuNetworkAccessDevice : public ADevice
@@ -62,6 +64,13 @@ private:
     QString             emuVersion;
     QString             whatRunning;
     QString             myName;
+    bool                doingPutFile;
+    QFile*              uploadedFile;
+    QString             uploadedFileName;
+    unsigned int        uploadedFileSizeWritten;
+    unsigned int        uploadedFileSize;
+    QList<LocalStorage::FileInfo>   fileInfos;
+    QTimer              timerFakeComandFinish;
 
 
     unsigned int            getAddressSizeRequested;
