@@ -37,11 +37,9 @@ public:
 
     QStringList devices;
 
-private slots:
-    void on_buttonBox_accepted();
-
 private:
     Ui::TempDeviceSelector *ui;
+    void    accept();
 };
 
 #endif // TEMPDEVICESELECTOR_H

@@ -247,11 +247,25 @@ void AppUi::init()
 #endif
             }
             if (selector.devices.contains("LUA"))
+            {
+                luaBridgeAction->setChecked(true);
                 onLuaBridgeTriggered(true);
+            }
             if (selector.devices.contains("RETROARCH"))
+            {
+                retroarchAction->setChecked(true);
                 onRetroarchTriggered(true);
+            }
             if (selector.devices.contains("CLASSIC"))
+            {
+                snesClassicAction->setChecked(true);
                 onSNESClassicTriggered(true);
+            }
+            if (selector.devices.contains("NWA"))
+            {
+                emuNWAccessAction->setChecked(true);
+                onEmuNWAccessTriggered(true);
+            }
         }
     }
     startWServer();
