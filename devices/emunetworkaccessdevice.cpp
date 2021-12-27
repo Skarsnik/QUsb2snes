@@ -174,7 +174,10 @@ void EmuNetworkAccessDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
 void EmuNetworkAccessDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
     if (space != SD2Snes::SNES)
+    {
         emit protocolError();
+        return ;
+    }
     m_state = BUSY;
     std::function<void()> F([this, addr, size] {
         currentCmd = USB2SnesWS::GetAddress;
