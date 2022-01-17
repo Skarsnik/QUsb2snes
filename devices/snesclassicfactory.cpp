@@ -147,7 +147,7 @@ void SNESClassicFactory::onReadyRead()
         }
         canoePid = dataRecv;
         // Canoe still running, everything should be fine
-        //sDebug() << canoePid << dataRecv;
+        //sDebug() << canoePid << oldCanoePid;
         if (canoePid == oldCanoePid)
         {
             //sDebug() << "Pid is same, nice";
@@ -166,8 +166,8 @@ void SNESClassicFactory::onReadyRead()
             checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_CANOE_NOT_RUNNING);
             break;
         }
-        oldCanoePid = canoePid;
         canoePid = dataRecv.trimmed();
+        oldCanoePid = canoePid;
         executeCommand("canoe-shvc --version");
         checkState = StatusState::CHECK_CANOE_VERSION;
         break;
@@ -320,6 +320,8 @@ void SNESClassicFactory::checkSuccess()
         {
             sDebug() << "Creating SNES Classic device";
             device = new SNESClassic();
+            device->canoePid = canoePid;
+            device->setMemoryLocation(ramLocation, sramLocation, romLocation);
             m_devices.append(device);
         }
         if (device->state() == ADevice::CLOSED)
