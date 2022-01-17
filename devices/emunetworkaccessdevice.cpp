@@ -21,7 +21,7 @@
 
 
 #include "emunetworkaccessdevice.h"
-#include <QApplication>
+#include <QCoreApplication>
 #include <QLoggingCategory>
 
 Q_LOGGING_CATEGORY(log_emunwaccessdevice, "Emu NWA Device")
