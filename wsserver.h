@@ -165,6 +165,7 @@ private:
     QMetaEnum                           cmdMetaEnum;
     QMetaEnum                           spaceMetaEnum;
     QMetaEnum                           flagsMetaEnum;
+    QMetaEnum                           errTypeMetaEnum;
     QList<QWebSocketServer*>            wsServers;
     //QWebSocketServer*                   wsServer;
     QMap<QWebSocket*, WSInfos>          wsInfos;
@@ -205,13 +206,18 @@ private:
     void        processIpsData(QWebSocket* ws);
     void        sendReply(QWebSocket* ws, const QStringList& args);
     void        sendReply(QWebSocket* ws, QString args);
+    void        sendReplyV2(QWebSocket *ws, QString args);
 
 
-    void cmdInfo(MRequest *req);
-    bool isFileCommand(USB2SnesWS::opcode opcode);
-    bool isControlCommand(USB2SnesWS::opcode opcode);
-    void addToPendingRequest(ADevice *device, MRequest *req);
-    void cleanUpDevice(ADevice *device);
+
+    void    cmdInfo(MRequest *req);
+    bool    isV2WebSocket(QWebSocket *ws);
+    bool    isFileCommand(USB2SnesWS::opcode opcode);
+    bool    isControlCommand(USB2SnesWS::opcode opcode);
+    void    addToPendingRequest(ADevice *device, MRequest *req);
+    void    cleanUpDevice(ADevice *device);
+    void    sendError(QWebSocket *ws, ErrorType errType, QString errorString);
+
 };
 
 #endif // WSSERVER_H

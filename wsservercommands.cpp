@@ -86,6 +86,7 @@ void WSServer::executeServerRequest(MRequest* req)
     case USB2SnesWS::Name : {
         CMD_TAKE_ONE_ARG("Name")
         wsInfos[ws].name = req->arguments.at(0);
+        sendReplyV2(ws, wsInfos[ws].name);
         break;
     }
     case USB2SnesWS::Close : {
@@ -369,9 +370,9 @@ void    WSServer::executeRequest(MRequest *req)
         }
         req->state = RequestState::WAITINGREPLY;
         wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
-        sDebug() << "Writing before cps :" << __func__ << wsInfos[ws].currentPutSize;
+        //sDebug() << "Writing before cps :" << __func__ << wsInfos[ws].currentPutSize;
         wsInfos[ws].currentPutSize = putSize;
-        sDebug() << "Writing after cps" << __func__ << wsInfos[ws].currentPutSize;
+        //sDebug() << "Writing after cps" << __func__ << wsInfos[ws].currentPutSize;
         break;
     }
 
@@ -484,6 +485,7 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
     case USB2SnesWS::Reset :
     case USB2SnesWS::Boot :
     {
+        sendReplyV2(info.currentWS, "");
         break;
     }
     case USB2SnesWS::GetAddress :
@@ -612,6 +614,7 @@ void WSServer::cmdAttach(MRequest *req)
         wsInfos[req->owner].attached = true;
         wsInfos[req->owner].attachedTo = devGet;
         wsInfos[req->owner].pendingAttach = false;
+        sendReplyV2(req->owner, devGet->name());
         if (devGet->state() == ADevice::READY)
             processCommandQueue(devGet);
         return ;

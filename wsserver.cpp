@@ -51,6 +51,7 @@ WSServer::WSServer(QObject *parent) : QObject(parent)
 
 QString WSServer::start(QHostAddress lAddress, quint16 port)
 {
+    errTypeMetaEnum = QMetaEnum::fromType<WSServer::ErrorType>();
     QWebSocketServer* newServer = new QWebSocketServer(QStringLiteral("USB2SNES Server"), QWebSocketServer::NonSecureMode, this);
     if (newServer->listen(lAddress, port))
     {
@@ -581,6 +582,7 @@ WSServer::MRequest* WSServer::requestFromJSON(const QString &str)
 void WSServer::clientError(QWebSocket *ws)
 {
     sInfo() << "Error with a ws client " << wsInfos[ws].name << m_errorType << m_errorString;
+    sendError(ws, m_errorType, m_errorString);
     ws->close();
     emit error();
 }
@@ -689,9 +691,38 @@ void        WSServer::sendReply(QWebSocket* ws, const QStringList& args)
     ws->sendTextMessage(QJsonDocument(jObj).toJson());
 }
 
-void    WSServer::sendReply(QWebSocket *ws, QString args)
+void    WSServer::sendReply(QWebSocket* ws, QString args)
 {
     sendReply(ws, QStringList() << args);
+}
+
+bool    WSServer::isV2WebSocket(QWebSocket *ws)
+{
+    return false;
+}
+
+void    WSServer::sendReplyV2(QWebSocket* ws, QString args)
+{
+    if (isV2WebSocket(ws))
+        sendReply(ws, args);
+}
+
+void    WSServer::sendError(QWebSocket* ws, ErrorType errType, QString errorString)
+{
+    if (ws == nullptr)
+    {
+        sDebug() << "NOOP: Sending error to a non existing client";
+        return ;
+    }
+    if (!isV2WebSocket(ws))
+        return ;
+    QJsonObject jObj;
+    QJsonObject jObjError;
+    jObjError["Type"] = errTypeMetaEnum.valueToKey(errType);
+    jObjError["Text"] = errorString;
+    jObj["Error"] = jObjError;
+    sDebug() << wsInfos.value(ws).name << ">>" << QJsonDocument(jObj).toJson();
+    ws->sendTextMessage(QJsonDocument(jObj).toJson());
 }
 
 QDebug operator<<(QDebug debug, const WSServer::MRequest &req)
