@@ -281,7 +281,8 @@ void RetroArchHost::onPacket(QByteArray& data)
                 plateform = infos.split(',').at(0);
                 game = infos.split(',').at(1);
             }
-            if (status == "CONTENTLESS" || plateform != "super_nes")
+            // Because obviously, this is not a consistent string, so you get the core sometime...
+            if (status == "CONTENTLESS" || (plateform != "super_nes" && !plateform.contains("snes")))
             {
                 makeInfoFail("RetroArch not running a super nintendo game");
                 break;
