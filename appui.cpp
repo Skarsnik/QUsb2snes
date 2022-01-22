@@ -116,33 +116,28 @@ void AppUi::init()
 
     if (globalSettings->value("sd2snessupport").toBool())
     {
-        sd2snesFactory = new SD2SnesFactory();
-        wsServer.addDeviceFactory(sd2snesFactory);
+        addSD2SnesFactory();
         sd2snesAction->setChecked(true);
     }
     if (globalSettings->value("retroarchdevice").toBool())
     {
-        retroarchFactory = new RetroArchFactory();
-        wsServer.addDeviceFactory(retroarchFactory);
+        addRetroarchFactory();
         retroarchAction->setChecked(true);
     }
     if (globalSettings->value("luabridge").toBool())
     {
-        luaBridge = new LuaBridge();
-        wsServer.addDeviceFactory(luaBridge);
+        addLuaBridgeFactory();
         luaBridgeAction->setChecked(true);
     }
     if (globalSettings->value("snesclassic").toBool())
     {
-        snesClassic = new SNESClassicFactory();
-        wsServer.addDeviceFactory(snesClassic);
+        addSnesClassicFactory();
         snesClassicAction->setChecked(true);
     }
     if (globalSettings->value("emunwaccess").toBool())
     {
-        emuNWAccess = new EmuNetworkAccessFactory();
-        wsServer.addDeviceFactory(emuNWAccess);
-        onEmuNWAccessTriggered(true);
+        addNWAFactory();
+        emuNWAccessAction->setChecked(true);
     }
     if (globalSettings->contains("trustedOrigin"))
     {
@@ -637,62 +632,89 @@ QDebug operator<<(QDebug debug, const AppUi::ApplicationInfo &req)
     return debug;
 }
 
+void AppUi::addSD2SnesFactory()
+{
+    if (sd2snesFactory == nullptr)
+    {
+        sd2snesFactory = new SD2SnesFactory();
+        wsServer.addDeviceFactory(sd2snesFactory);
+    }
+}
+
 void AppUi::onSD2SnesTriggered(bool checked)
 {
     if (checked == true)
     {
-        if (sd2snesFactory == nullptr)
-            sd2snesFactory = new SD2SnesFactory();
-        wsServer.addDeviceFactory(sd2snesFactory);
+        addSD2SnesFactory();
     }
     globalSettings->setValue("sd2snessupport", checked);
+}
+
+void AppUi::addRetroarchFactory()
+{
+    if (retroarchFactory == nullptr)
+    {
+        retroarchFactory = new RetroArchFactory();
+        wsServer.addDeviceFactory(retroarchFactory);
+    }
 }
 
 void AppUi::onRetroarchTriggered(bool checked)
 {
     if (checked == true)
     {
-        if (retroarchFactory == nullptr)
-            retroarchFactory = new RetroArchFactory();
-        wsServer.addDeviceFactory(retroarchFactory);
+        addRetroarchFactory();
     } else {
         //wsServer.removeDevice(retroarchFactory);
     }
     globalSettings->setValue("retroarchdevice", checked);
 }
 
+void AppUi::addLuaBridgeFactory()
+{
+    if (luaBridge == nullptr)
+    {
+        luaBridge = new LuaBridge();
+        wsServer.addDeviceFactory(luaBridge);
+    }
+}
+
 void AppUi::onLuaBridgeTriggered(bool checked)
 {
     if (checked == true)
     {
-        if (luaBridge == nullptr)
-            luaBridge = new LuaBridge();
-        wsServer.addDeviceFactory(luaBridge);
+        addLuaBridgeFactory();
     } else {
         //wsServer.removeDevice(luaBridgeDevice);
     }
     globalSettings->setValue("luabridge", checked);
 }
 
+void AppUi::addSnesClassicFactory()
+{
+    if (snesClassic == nullptr)
+    {
+        snesClassic = new SNESClassicFactory();
+        wsServer.addDeviceFactory(snesClassic);
+    }
+}
+
 void AppUi::onSNESClassicTriggered(bool checked)
 {
     if (checked == true)
     {
-        if (snesClassic == nullptr)
-            snesClassic = new SNESClassicFactory();
-        wsServer.addDeviceFactory(snesClassic);
+        addSnesClassicFactory();
     } else {
         //wsServer.removeDevice(snesClassic);
     }
     globalSettings->setValue("snesclassic", checked);
 }
 
-void AppUi::onEmuNWAccessTriggered(bool checked)
+void AppUi::addNWAFactory()
 {
-    if (checked == true)
+    if (emuNWAccess == nullptr)
     {
-        if (emuNWAccess == nullptr)
-            emuNWAccess = new EmuNetworkAccessFactory();
+        emuNWAccess = new EmuNetworkAccessFactory();
         if (!LocalStorage::isUsable())
         {
             if (!QFileInfo::exists(qApp->applicationDirPath() + "/Games"))
@@ -700,6 +722,14 @@ void AppUi::onEmuNWAccessTriggered(bool checked)
             LocalStorage::setRootPath(qApp->applicationDirPath() + "/Games");
         }
         wsServer.addDeviceFactory(emuNWAccess);
+    }
+}
+
+void AppUi::onEmuNWAccessTriggered(bool checked)
+{
+    if (checked == true)
+    {
+        addNWAFactory();
     }
     globalSettings->setValue("emunwaccess", checked);
 }
