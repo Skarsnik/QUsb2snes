@@ -471,11 +471,14 @@ bool SNESClassicFactory::devicesStatus()
 
     if (device != nullptr && device->state() == ADevice::BUSY)
     {
+        factStatus.deviceNames.append("SNES Classic");
         factStatus.status = Error::DFS_SNESCLASSIC_READY;
-        emit deviceStatusDone(factStatus);
-    } else {
-        doingDeviceStatus = true;
+        QTimer::singleShot(0, [=] {
+            emit deviceStatusDone(factStatus);}
+        );
+        return true;
     }
+    doingDeviceStatus = true;
     if (socket->state() == QAbstractSocket::ConnectingState)
     {
         sDebug() << "This should not happen, socket already trying to connect";
@@ -485,7 +488,9 @@ bool SNESClassicFactory::devicesStatus()
     if (socket->state() == QAbstractSocket::UnconnectedState)
     {
         sDebug() << "Trying to connect to serverstuff";
-        socket->connectToHost(snesclassicIP, 1042);
+        QTimer::singleShot(0, [=] {
+            socket->connectToHost(snesclassicIP, 1042);}
+        );
         QTimer::singleShot(200, this, [=] {
            sDebug() << "Timeout " << socket->state();
            if (socket->state() == QAbstractSocket::ConnectingState)

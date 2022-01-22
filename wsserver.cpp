@@ -259,6 +259,7 @@ void WSServer::requestDeviceStatus()
         if (devFac->devicesStatus())
             factoryStatusCount++;
     }
+    sDebug() << "Number of factory to check" << factoryStatusCount;
     if (factoryStatusCount == 0)
         emit deviceFactoryStatusDone();
 }
