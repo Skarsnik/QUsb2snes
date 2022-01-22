@@ -58,6 +58,8 @@ QString deviceErrorString(DeviceError er)
         return QObject::tr("Host unreachable");
     case DE_RETROARCH_NO_CONNECTION:
         return QObject::tr("Can't connect to host");
+    case DE_EMUNWA_INCOMPATIBLE_CLIENT:
+        return QObject::tr("Client not compatible");
     default: return QString();
     }
 }

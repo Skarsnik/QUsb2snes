@@ -153,6 +153,10 @@ void    EmuNetworkAccessFactory::onClientReadyRead()
     switch (info.checkState) {
     case DetectState::CHECK_EMU_INFO:
     {
+        if (rep.isError) {
+            checkFailed(client, Error::DeviceError::DE_EMUNWA_INCOMPATIBLE_CLIENT);
+            break;
+        }
         auto emuInfo = rep.toMap();
         sDebug() << emuInfo;
         QString deviceName;
