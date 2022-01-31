@@ -46,7 +46,7 @@ SNESClassicFactory::SNESClassicFactory()
 
     sInfo() << "SNES Classic device will try to connect to " << snesclassicIP;
     checkState = StatusState::NO_CHECK;
-    checkAliveTimer.setInterval(1000);
+    checkAliveTimer.setInterval(5000);
     doingDeviceList = false;
     doingDeviceStatus = false;
     connect(&checkAliveTimer, &QTimer::timeout, this, &SNESClassicFactory::aliveCheck);
@@ -444,7 +444,9 @@ bool SNESClassicFactory::asyncListDevices()
     if (socket->state() == QAbstractSocket::UnconnectedState)
     {
         sDebug() << "Trying to connect to serverstuff";
-        socket->connectToHost(snesclassicIP, 1042);
+        QTimer::singleShot(0, [=] {
+            socket->connectToHost(snesclassicIP, 1042);}
+        );
         QTimer::singleShot(200, this, [=] {
            sDebug() << "Timeout " << socket->state();
            if (socket->state() == QAbstractSocket::ConnectingState)
