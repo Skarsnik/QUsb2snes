@@ -41,6 +41,7 @@ public:
     QString name() const;
     bool asyncListDevices();
     bool devicesStatus();
+    bool hasAsyncListDevices();
 
 
 private slots:

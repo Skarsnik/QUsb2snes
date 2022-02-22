@@ -22,6 +22,7 @@
 #include <QSettings>
 
 #include <QLoggingCategory>
+#include <QTimer>
 
 Q_LOGGING_CATEGORY(log_luaBridge, "LUABridge")
 #define sDebug() qCDebug(log_luaBridge)
@@ -55,6 +56,7 @@ LuaBridge::LuaBridge()
 
 QStringList LuaBridge::listDevices()
 {
+    sDebug() << "List device";
     QStringList toret;
     foreach(ADevice* dev, m_devices)
     {
@@ -133,7 +135,14 @@ void LuaBridge::onClientDisconnected()
 
 bool LuaBridge::asyncListDevices()
 {
-    return false;
+    QTimer::singleShot(0, [=] {
+        foreach(ADevice* dev, m_devices)
+        {
+            emit newDeviceName(dev->name());
+        }
+        emit devicesListDone();
+    });
+    return true;
 }
 
 
@@ -167,5 +176,11 @@ bool LuaBridge::devicesStatus()
         sDebug() << "Lua done";
         emit deviceStatusDone(status);
     });
+    return true;
+}
+
+
+bool LuaBridge::hasAsyncListDevices()
+{
     return true;
 }

@@ -539,8 +539,8 @@ void    WSServer::asyncDeviceList()
     {
         if (devFact->hasAsyncListDevices())
         {
-            pendingDeviceListQuery++;
-            devFact->asyncListDevices();
+            if (devFact->asyncListDevices())
+                pendingDeviceListQuery++;
         }
     }
 }
