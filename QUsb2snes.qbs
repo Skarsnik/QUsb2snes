@@ -42,6 +42,7 @@ Project {
             "localstorage.cpp",
             "localstorage.h",
             "main.cpp",
+            "qskarsnikringlist.hpp",
             "qusb2snes.rc",
             "ressources.qrc",
             "devices/retroarchdevice.cpp",
