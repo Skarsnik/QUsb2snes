@@ -55,6 +55,7 @@ private:
     QRandomGenerator*           rng;
     quint32                     rngSeed;
     QMap<QTcpSocket*, LuaBridgeDevice*> mapSockDev;
+
 };
 
 #endif // LUABRIDGE_H

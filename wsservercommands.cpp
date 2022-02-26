@@ -293,6 +293,7 @@ void    WSServer::executeRequest(MRequest *req)
         }
         bool ok;
         unsigned int  putSize = 0;
+        bool spliced = false;
         // Basic usage of PutAddress
         // FIXME add flags in VPUT
         if (req->arguments.size() == 2)
@@ -331,20 +332,16 @@ void    WSServer::executeRequest(MRequest *req)
             {
                 device->putAddrCommand(req->space, vputArgs);
             } else { // Please don't use VPUT
+                sDebug() << "VPUT that get spliced";
+                spliced = true;
                 device->putAddrCommand(req->space, vputArgs.at(0).first, vputArgs.at(0).second);
                 putSize = vputArgs.at(0).second;
+                unsigned int totalSize = putSize;
+                // We should probably handle incomplete queued data, but who mad
+                // people will not send all bytes at once.
                 vputArgs.removeFirst();
                 QListIterator<QPair<unsigned int, quint8> > argsIt(vputArgs);
                 int cpt = 0;
-                // We should probably handle incomplete queued data, but who mad
-                // people will not send all bytes at once.
-                bool pendingData = req->wasPending && !wsInfos[ws].pendingPutDatas.isEmpty();
-                QByteArray reqData;
-                if (pendingData)
-                {
-                    reqData = wsInfos[ws].pendingPutDatas.takeFirst();
-                    wsInfos[ws].pendingPutDatas.prepend(reqData.remove(0, vputArgs.at(0).second));
-                }
                 while (argsIt.hasNext())
                 {
                     auto pair = argsIt.next();
@@ -353,25 +350,24 @@ void    WSServer::executeRequest(MRequest *req)
                     newReq->state = RequestState::NEW;
                     newReq->space = SD2Snes::space::SNES;
                     newReq->timeCreated = QTime::currentTime();
-                    newReq->wasPending = false;
+                    newReq->wasPending = true;
                     newReq->opcode = USB2SnesWS::PutAddress;
                     newReq->arguments.append(QString::number(pair.first, 16));
                     newReq->arguments.append(QString::number(pair.second, 16));
+                    totalSize += pair.second;
                     pendingRequests[device].insert(cpt, newReq);
-                    if (pendingData)
-                    {
-                        wsInfos[ws].pendingPutDatas.append(reqData.remove(0, pair.second));
-                    } else {
-                        wsInfos[ws].pendingPutSizes.insert(cpt, pair.second);
-                    }
                     cpt++;
                 }
+                if (!req->wasPending)
+                    wsInfos[ws].expectedDataSize = totalSize;
             }
         }
         req->state = RequestState::WAITINGREPLY;
         wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
         //sDebug() << "Writing before cps :" << __func__ << wsInfos[ws].currentPutSize;
         wsInfos[ws].currentPutSize = putSize;
+        if (wsInfos[ws].expectedDataSize == 0)
+            wsInfos[ws].expectedDataSize = putSize;
         //sDebug() << "Writing after cps" << __func__ << wsInfos[ws].currentPutSize;
         break;
     }
@@ -400,10 +396,10 @@ void    WSServer::executeRequest(MRequest *req)
     }
 
     // There are multiple case with pending put request
-    // 1A : this was the only request in queue all data are here -> send pendingData.first
+    // 1A : this was the only request in queue                   -> send recvData
     // 1B : this was the only request in queue, no data          -> do nothing
     // 1C : this was the only request in queue, missing data     -> send recvData
-    // 2A : other pending request, all data are here             -> send pendingData.first
+    // 2A : other pending request, all data are here             -> send recvData
     // 2B : other pending request, no data                       -> do nothing
     // 2C : other pending request, missing data                  -> send recvData
     /*
@@ -413,22 +409,27 @@ void    WSServer::executeRequest(MRequest *req)
     if (req->wasPending && (req->opcode == USB2SnesWS::PutFile || req->opcode == USB2SnesWS::PutAddress))
     {
         wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
-        if (!wsInfos[ws].pendingPutDatas.isEmpty()) // This cover 1A and 2A
+        if (wsInfos[ws].recvData.size() >= wsInfos[ws].currentPutSize) // This cover 1A and 2A
         {                                           // Only imcomplete data can be for later requests if this is not empty
-            sDebug() << "Pending 1A & 2A";
-            device->writeData(wsInfos[ws].pendingPutDatas.takeFirst());
+            //sDebug() << "Pending 1A & 2A";
+            sDebug() << "We have ALL data for the queued command " << wsInfos[ws].expectedDataSize;
+            QByteArray toSend = wsInfos[ws].recvData.left(wsInfos[ws].currentPutSize);
+            wsInfos[ws].recvData.remove(0, wsInfos[ws].currentPutSize);
+            wsInfos[ws].expectedDataSize -= wsInfos[ws].currentPutSize;
             wsInfos[ws].currentPutSize = 0;
+            device->writeData(toSend);
             wsInfos[ws].commandState = ClientCommandState::WAITINGREPLY;
+
         } else {
-            if (!wsInfos[ws].recvData.isEmpty()) // This cover 1C and 2C
+            if (!wsInfos[ws].recvData.isEmpty() && wsInfos[ws].recvData.size() < wsInfos[ws].currentPutSize)
             {
-                sDebug() << "Pending 1C & 2C";
+                sDebug() << "We have SOME data for the queued command " << wsInfos[ws].expectedDataSize;
                 device->writeData(wsInfos[ws].recvData);
-                wsInfos[ws].currentPutSize = wsInfos[ws].currentPutSize - wsInfos[ws].recvData.size();
-                wsInfos[ws].pendingPutSizes.takeFirst();
+                wsInfos[ws].expectedDataSize -= wsInfos[ws].recvData.size();
+                wsInfos[ws].currentPutSize -= wsInfos[ws].recvData.size();
+                wsInfos[ws].recvData.clear();
             } else {
-                sDebug() << "Pending 1B & 2B";
-                wsInfos[ws].pendingPutSizes.takeFirst();
+                // Nothing;
             }
         }
     }
@@ -652,7 +653,7 @@ void    WSServer::processIpsData(QWebSocket* ws)
         newReq->arguments << QString::number(ipsr.offset, 16) << QString::number(ipsr.size, 16);
 
         pendingRequests[infos.attachedTo].append(newReq);
-        infos.pendingPutDatas.append(ipsr.data);
+        infos.recvData.append(ipsr.data);
         //sDebug() << "IPS:" <<  QString::number(ipsr.offset, 16) << ipsr.data.toHex();
         cpt++;
     }

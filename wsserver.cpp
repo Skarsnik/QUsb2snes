@@ -23,6 +23,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLoggingCategory>
+#include <QMetaObject>
+#include <QMetaObject>
 #include <QSettings>
 
 Q_LOGGING_CATEGORY(log_wsserver, "WSServer")
@@ -93,6 +95,7 @@ void WSServer::onNewConnection()
     wi.pendingAttach = false;
     wi.recvData.clear();
     wi.ipsSize = 0;
+    wi.expectedDataSize = 0;
     wi.legacy = server->serverPort() == USB2SnesWS::legacyPort;
 
     wsInfos[newSocket] = wi;
@@ -339,8 +342,8 @@ void    WSServer::addToPendingRequest(ADevice* device, MRequest *req)
             for (int i = 0; i < req->arguments.size(); i += 2)
                 putSize += req->arguments.at(i + 1).toUShort(&ok, 16);
         }
-        wsInfos[req->owner].pendingPutSizes.append(putSize);
-        sDebug() << "Adding a Put command in queue, adding size" << wsInfos[req->owner].pendingPutSizes.last();
+        wsInfos[req->owner].expectedDataSize += putSize;
+        sDebug() << "Adding a Put command in queue, adding size" << wsInfos[req->owner].expectedDataSize;
     }
 }
 
@@ -348,96 +351,131 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
 {
     QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
     WSInfos& infos = wsInfos[ws];
-    infos.recvData.append(data);
-    infos.byteReceived += data.size();
     ADevice* dev = wsInfos.value(ws).attachedTo;
-    sDebug() << infos.name << "Received binary data" << data.size() << "Pending size: " << infos.pendingPutSizes;
-    if (infos.commandState != ClientCommandState::WAITINGBDATAREPLY && infos.pendingPutSizes.empty())
+    sDebug() << infos.name << "Received binary data" << data.size() << "Expected size: " << infos.expectedDataSize;
+    if (infos.commandState != ClientCommandState::WAITINGBDATAREPLY && infos.expectedDataSize == 0)
     {
         setError(ErrorType::ProtocolError, "Sending binary data when nothing waiting for it");
         clientError(ws);
-    } else {
-        if (infos.ipsSize != 0)
+        return;
+    }
+    // IPS stuff, please don't queue IPS data ~~
+    if (infos.ipsSize != 0)
+    {
+        sDebug() << "Data sent are IPS data";
+        infos.ipsData.append(data);
+        if (infos.ipsData.size() == infos.ipsSize)
         {
-            sDebug() << "Data sent are IPS data";
-            infos.ipsData.append(data);
-            if (infos.ipsData.size() == infos.ipsSize)
-            {
-                infos.recvData.clear();
-                infos.byteReceived = 0;
-                infos.ipsSize = 0;
-                processIpsData(ws);
-            }
-            return ;
-        }
-        QList<unsigned int>& pend = infos.pendingPutSizes;
-        sDebug() << "Pend empty : " << pend.isEmpty() << "Current PUT" << infos.currentPutSize;
-        if (pend.isEmpty() || infos.currentPutSize != 0) {
-            infos.byteReceived = 0;
             infos.recvData.clear();
-            if (data.size() == infos.currentPutSize)
+            infos.byteReceived = 0;
+            infos.ipsSize = 0;
+            processIpsData(ws);
+        }
+        return ;
+    }
+    sDebug() << "Current put size : " << infos.currentPutSize << "Expected size" << infos.expectedDataSize;
+    // There is probably code that can be merged, but it's easier to read
+    // to clearly separate all case, if only C++ has local function x)
+
+    // First case, a put command wait for its data and there is no other put queued
+    if (infos.currentPutSize == infos.expectedDataSize) {
+        /*infos.byteReceived = 0;
+        infos.recvData.clear();*/
+        /*if (data.size() == infos.currentPutSize)
+        {
+            infos.currentPutSize = 0; // the call to write data can trigger other signal.
+            infos.expectedDataSize = 0;
+            dev->writeData(data);
+            return ;
+        }*/
+        sDebug() << "Regular non queued put command";
+        if (data.size() <= infos.currentPutSize) // We need two case since the previous one can
+            // trigger the finish signal and mess up currentPutSize
+        {
+            infos.currentPutSize -= data.size();
+            infos.expectedDataSize = infos.currentPutSize;
+            dev->writeData(data);
+        } else { // There is too much data
+            dev->writeData(data.left(infos.currentPutSize));
+            setError(ErrorType::ProtocolError, "Sending too much binary data");
+            clientError(ws);
+        }
+        return ;
+    }
+    // If we are here, they are pending put requests.
+    // Remember that writeData can trigger finished on some device
+    // And that triggers the processing of queued commands.
+    // So we need to set variable before otherwise they are overwritted
+
+    // No extra data for the queued request
+    if (data.size() <= infos.currentPutSize)
+    {
+        infos.currentPutSize -= data.size();
+        infos.expectedDataSize -= data.size();
+        dev->writeData(data);
+        return ;
+    }
+
+    // We need to put data for futur request in queue before
+    // In case writedata trigger finished
+
+
+    infos.recvData.append(data.mid(infos.currentPutSize));
+    infos.byteReceived += data.mid(infos.currentPutSize).size();
+    unsigned int currentSize = infos.currentPutSize;
+    infos.currentPutSize = 0;
+    infos.expectedDataSize -= currentSize;
+    dev->writeData(data.left(currentSize));
+    return ;
+            /*QByteArray toWrite = data.left(infos.currentPutSize);
+            data = data.mid(infos.currentPutSize);
+            infos.currentPutSize = 0;
+            dev->writeData(toWrite);
+            if (!data.isEmpty()) // This is probably data for the next cmd
             {
-                infos.currentPutSize = 0; // the call to write data can trigger other signal.
-                dev->writeData(data);
-                return ;
-            }
-            if (data.size() < infos.currentPutSize) // We need two case since the previous one can
-                                                    // trigger the finish signal and mess up currentPutSize
-            {
-                dev->writeData(data);
-                infos.currentPutSize -= data.size();
-                return ;
-            } else {
-                QByteArray toWrite = data.left(infos.currentPutSize);
-                data = data.mid(infos.currentPutSize);
-                infos.currentPutSize = 0;
-                dev->writeData(toWrite);
-                if (!data.isEmpty()) // This is probably data for the next cmd
+                if (infos.pendingPutSizes.isEmpty() && infos.currentPutSize == 0)
                 {
-                    if (infos.pendingPutSizes.isEmpty() && infos.currentPutSize == 0)
+                    sDebug() << "Sending too much data to Websocket";
+                    ws->close();
+                    cleanUpSocket(ws);
+                    return ;
+                }
+                while (infos.currentPutSize != 0 && !data.isEmpty()) // the previous writeData triggered a request in queue
+                {
+                    toWrite = data.left(infos.currentPutSize);
+                    data = data.mid(infos.currentPutSize);
+                    infos.currentPutSize = 0;
+                    dev->writeData(toWrite);
+                }
+                if (!data.isEmpty()) // we should probably move that highter
+                {
+                    QByteArray nextData = data.left(infos.pendingPutSizes.first());
+                    qDebug() << "Next data : "<< nextData.size();
+                    while (!nextData.isEmpty() && !infos.pendingPutSizes.isEmpty() &&
+                           nextData.size() == infos.pendingPutSizes.first())
                     {
-                        sDebug() << "Sending too much data to Websocket";
-                        ws->close();
-                        cleanUpSocket(ws);
-                        return ;
-                    }
-                    while (infos.currentPutSize != 0 && !data.isEmpty()) // the previous writeData triggered a request in queue
-                    {
-                        toWrite = data.left(infos.currentPutSize);
-                        data = data.mid(infos.currentPutSize);
-                        infos.currentPutSize = 0;
-                        dev->writeData(toWrite);
-                    }
-                    if (!data.isEmpty()) // we should probably move that highter
-                    {
-                        QByteArray nextData = data.left(infos.pendingPutSizes.first());
-                        qDebug() << "Next data : "<< nextData.size();
-                        while (!nextData.isEmpty() && !infos.pendingPutSizes.isEmpty() &&
-                                nextData.size() == infos.pendingPutSizes.first())
-                        {
-                            infos.pendingPutDatas.append(nextData);
-                            nextData = data.left(infos.pendingPutSizes.first());
-                        }
+                        infos.pendingPutDatas.append(nextData);
+                        nextData = data.left(infos.pendingPutSizes.first());
                     }
                 }
-                //sDebug() << "Wriging before cps :" << __func__ << infos.currentPutSize;
-                infos.currentPutSize = 0;
-                //sDebug() << "Wriging after cps :" << __func__ << infos.currentPutSize;
             }
-        }
-        sDebug() << "Data for pending request" << infos.byteReceived << pend.first();
-        sDebug() << infos.name << "Putting data in queue";
-        //infos.pendingPutDatas.append(data);
-        if (pend.first() == infos.byteReceived)
-        {
-            sDebug() << infos.name << "Putting data in queue";
-            infos.pendingPutDatas.append(infos.recvData);
-            pend.removeFirst();
-            //infos.pendingPutReqWithNoData.removeFirst();
-            infos.byteReceived = 0;
-            infos.recvData.clear();
+            //sDebug() << "Wriging before cps :" << __func__ << infos.currentPutSize;
+            infos.currentPutSize = 0;
+            //sDebug() << "Wriging after cps :" << __func__ << infos.currentPutSize;
         }
     }
+    sDebug() << "Data for pending request" << infos.byteReceived << pend.first();
+    sDebug() << infos.name << "Putting data in queue";
+    //infos.pendingPutDatas.append(data);
+    if (infos.byteReceived != 0 && pend.first() == infos.byteReceived)
+    {
+        sDebug() << infos.name << "Putting data in queue";
+        infos.pendingPutDatas.append(infos.recvData);
+        pend.removeFirst();
+        //infos.pendingPutReqWithNoData.removeFirst();
+        infos.byteReceived = 0;
+        infos.recvData.clear();
+    }*/
 }
 
 void WSServer::onClientDisconnected()
@@ -459,6 +497,8 @@ void WSServer::onDeviceCommandFinished()
     if (devicesInfos[device].currentWS != nullptr)
     {
         processDeviceCommandFinished(device);
+        // This should avoid too much recursion
+        //QMetaObject::invokeMethod(this, "processCommandQueue", Qt::QueuedConnection, Q_ARG(ADevice*, device));
         processCommandQueue(device);
     }
     else

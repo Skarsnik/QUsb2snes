@@ -228,6 +228,7 @@ void LuaBridgeDevice::writeData(QByteArray data)
     static QByteArray received = QByteArray();
     receivedSize += static_cast<unsigned int>(data.size());
     received += data;
+    sDebug() << "Write data" << receivedSize << putSize;
     if (receivedSize == putSize)
     {
         QByteArray toSend;

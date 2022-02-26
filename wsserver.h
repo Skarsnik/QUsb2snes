@@ -92,8 +92,9 @@ private:
         ADevice*                attachedTo;
         ClientCommandState      commandState;
         unsigned int            currentPutSize;
-        QList<unsigned int>     pendingPutSizes;
-        QList<QByteArray>       pendingPutDatas;
+        unsigned int            expectedDataSize;
+        //QList<unsigned int>     pendingPutSizes;
+        //QList<QByteArray>       pendingPutDatas;
         QByteArray              recvData;
         QByteArray              ipsData;
         unsigned int            ipsSize;
@@ -198,7 +199,7 @@ private:
     void        executeRequest(MRequest* req);
     void        executeServerRequest(MRequest *req);
     void        processDeviceCommandFinished(ADevice* device);
-    void        processCommandQueue(ADevice* device);
+    Q_INVOKABLE void        processCommandQueue(ADevice* device);
 
     void        asyncDeviceList();
     QStringList getDevicesList();
