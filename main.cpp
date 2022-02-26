@@ -94,7 +94,10 @@ static QSkarsnikRingList<QString> logDebugCrash(500);
 static void onCrash()
 {
     QFile crashLog(qApp->applicationDirPath() + "/crash-log.txt");
-    crashLog.open(QIODevice::WriteOnly | QIODevice::Text);
+    if (!crashLog.open(QIODevice::WriteOnly | QIODevice::Text))
+        exit(1);
+    crashLog.write(QString("Runing QUsb2Snes version " + qApp->applicationVersion() + "\n").toUtf8());
+    crashLog.write(QString("Compiled against Qt" + QString(QT_VERSION_STR) + ", running" + qVersion() + "\n").toUtf8());
     for (unsigned int i = 0; i < logDebugCrash.size(); i++)
     {
         crashLog.write(logDebugCrash.at(i).toUtf8() + "\n");
