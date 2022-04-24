@@ -74,7 +74,7 @@ ADevice *EmuNetworkAccessFactory::attach(QString deviceName)
                 return ci.device;
             sDebug() << "Attach, Checking stuff";
             ci.doingAttach = true;
-            ci.client->cmdEmuStatus();
+            ci.client->cmdEmulationStatus();
             ci.client->waitForReadyRead(100);
             auto rep = ci.client->readReply();
             ADevice* toret = nullptr;
@@ -205,7 +205,7 @@ void    EmuNetworkAccessFactory::checkStatus()
             });
         } else {
             info.checkState = DetectState::CHECK_EMU_INFO;
-            client->cmdEmuInfo();
+            client->cmdEmulatorInfo();
         }
         cpt++;
     }
@@ -322,7 +322,7 @@ void EmuNetworkAccessFactory::onClientConnected()
     if (clientInfos[client].checkState == DetectState::CHECK_CONNECTION)
     {
         clientInfos[client].checkState = DetectState::CHECK_EMU_INFO;
-        client->cmdEmuInfo();
+        client->cmdEmulatorInfo();
     }
 }
 

@@ -48,6 +48,7 @@ EmuNetworkAccessDevice::EmuNetworkAccessDevice(QString _name)
         timerFakeComandFinish.stop();
     });
     doingPutFile = false;
+    currentMemorieToWrite = nullptr;
 }
 
 
@@ -93,7 +94,7 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
                 sDebug() << "No emu info, checking them";
                 if (step == 0)
                 {
-                    emu->cmdEmuInfo();
+                    emu->cmdEmulatorInfo();
                     step = 1;
                     return ;
                 }
@@ -101,7 +102,7 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
                 {
                     emuVersion = rep["version"];
                     emuName = rep["name"];
-                    emu->cmdEmuStatus();
+                    emu->cmdEmulatorInfo();
                     step = 0;
                 }
             }
@@ -112,22 +113,47 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
             if (rep.isError)
             {
                 emit protocolError();
+                NWAMemoriesToGet.clear();
                 return ;
             }
-            if (rep.binary.size() != getAddressSizeRequested)
+            /*if (rep.binary.size() != getAddressSizeRequested)
             {
                 emit protocolError();
                 return ;
-            }
+            }*/
             emit getDataReceived(rep.binary);
-            m_state = READY;
-            emit commandFinished();
+            if (NWAMemoriesToGet.isEmpty())
+            {
+                m_state = READY;
+                emit commandFinished();
+            } else {
+                nwaGetMemory(NWAMemoriesToGet.takeFirst());
+            }
             break;
         }
         case USB2SnesWS::PutAddress:
         {
-            m_state = READY;
-            emit commandFinished();
+            NWAMemoriesToWrite.takeFirst();
+            if (NWAMemoriesToWrite.isEmpty())
+            {
+                m_state = READY;
+                emit commandFinished();
+                break;
+            }
+            currentMemorieToWrite = &NWAMemoriesToWrite.first();
+            prepareWriteMemory(currentMemorieToWrite->mems);
+            if (!cachedData.isEmpty())
+            {
+                if (currentMemorieToWrite->totalSize <= cachedData.size())
+                {
+                    emu->cmdCoreWriteMemoryData(cachedData.left(currentMemorieToWrite->totalSize));
+                    cachedData = cachedData.mid(currentMemorieToWrite->totalSize);
+                } else {
+                    emu->cmdCoreWriteMemoryData(cachedData);
+                    currentMemorieToWrite->sizeWritten += cachedData.size();
+                    cachedData.clear();
+                }
+            }
             break;
         }
         default:
@@ -144,23 +170,23 @@ void EmuNetworkAccessDevice::onEmuDisconnected()
 
 
 
-QPair<QString, unsigned int>    EmuNetworkAccessDevice::sd2snesToDomain(unsigned int sd2snesAddr)
+EmuNetworkAccessDevice::MemoryAddress    EmuNetworkAccessDevice::sd2snesToDomain(unsigned int sd2snesAddr)
 {
-    QPair<QString, unsigned int> toret;
+    MemoryAddress   toret;
     if (sd2snesAddr >= 0xF50000 && sd2snesAddr < 0xF70000)
     {
-        toret.first = "WRAM";
-        toret.second = sd2snesAddr - 0xF50000;
+        toret.domain = "WRAM";
+        toret.offset = sd2snesAddr - 0xF50000;
         return toret;
     }
     if (sd2snesAddr >= 0xE00000)
     {
-        toret.first = "SRAM";
-        toret.second = sd2snesAddr - 0xE00000;
+        toret.domain = "SRAM";
+        toret.offset = sd2snesAddr - 0xE00000;
         return toret;
     }
-    toret.first = "CARTROM";
-    toret.second = sd2snesAddr;
+    toret.domain = "CARTROM";
+    toret.offset = sd2snesAddr;
     return toret;
 }
 
@@ -170,6 +196,36 @@ void EmuNetworkAccessDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
     Q_UNUSED(args)
 }
 
+
+void EmuNetworkAccessDevice::nwaGetMemory(const MemoryAddress& memAdd)
+{
+    sDebug() << "NWA get Memory single : " << memAdd;
+    emu->cmdCoreReadMemory(memAdd.domain, memAdd.offset, memAdd.size);
+}
+
+void EmuNetworkAccessDevice::nwaGetMemory(const QList<MemoryAddress>& list)
+{
+    QList<QPair<int, int> >mems;
+    const QString domain = list.first().domain;
+    for (auto memAdd : list)
+    {
+        sDebug() << "NWa get memory multiple : " << memAdd;
+        mems.append(QPair<int, int>(memAdd.offset, memAdd.size));
+    }
+    emu->cmdCoreReadMemory(domain, mems);
+}
+
+void EmuNetworkAccessDevice::prepareWriteMemory(const QList<MemoryAddress>& list)
+{
+    QList<QPair<int, int> >mems;
+    const QString domain = list.first().domain;
+    for (auto memAdd : list)
+    {
+        sDebug() << "NWa put memory multiple : " << memAdd;
+        mems.append(QPair<int, int>(memAdd.offset, memAdd.size));
+    }
+    emu->cmdCoreWriteMemoryPrepare(domain, mems);
+}
 
 void EmuNetworkAccessDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
@@ -182,11 +238,12 @@ void EmuNetworkAccessDevice::getAddrCommand(SD2Snes::space space, unsigned int a
     std::function<void()> F([this, addr, size] {
         currentCmd = USB2SnesWS::GetAddress;
         auto newAddr = sd2snesToDomain(addr);
-        sDebug() << "Get address" << newAddr;
+        newAddr.size = size;
+        sDebug() << "Get address" << newAddr.domain << newAddr.offset;
         getAddressSizeRequested = size;
-        if (memoryAccess[newAddr.first].contains("r"))
+        if (memoryAccess[newAddr.domain].contains("r"))
         {
-            emu->cmdCoreReadMemory(newAddr.first, newAddr.second, size);
+            nwaGetMemory(newAddr);
         } else {
             emit protocolError();
         }
@@ -202,42 +259,73 @@ void EmuNetworkAccessDevice::getAddrCommand(SD2Snes::space space, unsigned int a
 }
 
 
-// TODO later, we don't support it for now
 void EmuNetworkAccessDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
 {
-    Q_UNUSED(space)
-    Q_UNUSED(args)
+    if (space != SD2Snes::SNES)
+    {
+        emit protocolError();
+        return ;
+    }
+    m_state = BUSY;
+    std::function<void()> F([this, args] {
+        currentCmd = USB2SnesWS::GetAddress;
+        getAddressSizeRequested = 0;
+        NWAMemoriesToGet.append(QList<MemoryAddress>());
+        QString domain = "";
+        for (auto pairing : args)
+        {
+            auto newAddr = sd2snesToDomain(pairing.first);
+            if (!memoryAccess[newAddr.domain].contains("r"))
+            {
+                emit protocolError();
+                return;
+            }
+            newAddr.size = pairing.second;
+            sDebug() << "Get address" << newAddr;
+            getAddressSizeRequested += pairing.second;
+            if (domain != "" && newAddr.domain != domain)
+            {
+                NWAMemoriesToGet.append(QList<MemoryAddress>());
+            }
+            domain = newAddr.domain;
+            NWAMemoriesToGet.last().append(newAddr);
+        }
+        nwaGetMemory(NWAMemoriesToGet.takeFirst());
+
+    });
+    if (!memoryAccess.contains("WRAM"))
+    {
+        currentCmd = USB2SnesWS::Attach;
+        emu->cmdCoreMemories();
+        afterMemoryAccess = F;
+    } else {
+        F();
+    }
 }
 
 void EmuNetworkAccessDevice::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
 {
-    putAddrCommand(space, 0, addr, size);
-}
-
-void EmuNetworkAccessDevice::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
-{
-    Q_UNUSED(space)
-    Q_UNUSED(args)
-}
-
-void EmuNetworkAccessDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
-{
+    // Don't call the "generic" qpair variant, as the size is limited to quint8
     if (space != SD2Snes::SNES)
         emit protocolError();
     m_state = BUSY;
     std::function<void()> F([this, addr, size] {
         currentCmd = USB2SnesWS::PutAddress;
+        NWAMemoriesToWrite.append(PutAddressEntry());
         auto newAddr = sd2snesToDomain(addr);
-        sDebug() << "Put address" << newAddr;
-        getAddressSizeRequested = size;
-        if (memoryAccess[newAddr.first].contains("r"))
+        currentMemorieToWrite = &NWAMemoriesToWrite.last();
+        if (!memoryAccess[newAddr.domain].contains("w"))
         {
-            putAddressSize = size;
-            putAddressSizeSent = 0;
-            emu->cmdCoreWriteMemoryPrepare(newAddr.first, QString::number(newAddr.second), size);
-        } else {
             emit protocolError();
+            NWAMemoriesToWrite.clear();
+            return;
         }
+        newAddr.size = size;
+        currentMemorieToWrite->mems.append(newAddr);
+        NWAMemoriesToWrite.last().totalSize += newAddr.size;
+        NWAMemoriesToWrite.last().domain = newAddr.domain;
+        putAddressTotalSent = 0;
+        prepareWriteMemory(currentMemorieToWrite->mems);
     });
     if (!memoryAccess.contains("WRAM"))
     {
@@ -247,6 +335,58 @@ void EmuNetworkAccessDevice::putAddrCommand(SD2Snes::space space, unsigned char 
     } else {
         F();
     }
+}
+
+void EmuNetworkAccessDevice::putAddrCommand(SD2Snes::space space, QList<QPair<unsigned int, quint8> > &args)
+{
+    if (space != SD2Snes::SNES)
+        emit protocolError();
+    m_state = BUSY;
+    std::function<void()> F([this, args] {
+        currentCmd = USB2SnesWS::PutAddress;
+        NWAMemoriesToWrite.append(PutAddressEntry());
+        QString domain = "";
+        sDebug() << "Should be 1" << NWAMemoriesToWrite.size();
+        currentMemorieToWrite = &NWAMemoriesToWrite.last();
+        for (auto pairing : args)
+        {
+            auto newAddr = sd2snesToDomain(pairing.first);
+            if (!memoryAccess[newAddr.domain].contains("w"))
+            {
+                emit protocolError();
+                NWAMemoriesToWrite.clear();
+                return;
+            }
+            newAddr.size = pairing.second;
+            putAddressTotalSize += newAddr.size;
+            if (domain != "" && newAddr.domain != domain)
+            {
+                NWAMemoriesToWrite.append(PutAddressEntry());
+                sDebug() << "Adding new putaddressentry" << NWAMemoriesToWrite.size() << NWAMemoriesToWrite.last().totalSize;
+            }
+            domain = newAddr.domain;
+            NWAMemoriesToWrite.last().totalSize += newAddr.size;
+            NWAMemoriesToWrite.last().domain = newAddr.domain;
+            NWAMemoriesToWrite.last().mems.append(newAddr);
+        }
+        putAddressTotalSent = 0;
+        prepareWriteMemory(currentMemorieToWrite->mems);
+    });
+    if (!memoryAccess.contains("WRAM"))
+    {
+        currentCmd = USB2SnesWS::Attach;
+        emu->cmdCoreMemories();
+        afterMemoryAccess = F;
+    } else {
+        F();
+    }
+}
+
+void EmuNetworkAccessDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, unsigned int addr, unsigned int size)
+{
+    QList<QPair<unsigned int, quint8> > plop;
+    plop.append(QPair<unsigned int, quint8>(addr, size));
+    putAddrCommand(space, plop);
 }
 
 void EmuNetworkAccessDevice::infoCommand()
@@ -255,7 +395,7 @@ void EmuNetworkAccessDevice::infoCommand()
     std::function<void()> F([this] {
         currentCmd = USB2SnesWS::Info;
         sDebug() << "Info command";
-        emu->cmdEmuStatus();
+        emu->cmdEmulationStatus();
     });
     if (memoryAccess.isEmpty())
     {
@@ -283,10 +423,31 @@ void EmuNetworkAccessDevice::writeData(QByteArray data)
         }
         return ;
     }
-    putAddressSizeSent += data.size();
-    if (putAddressSizeSent > putAddressSize)
+    putAddressTotalSent += data.size();
+    if (putAddressTotalSent > putAddressTotalSize)
         emit protocolError();
-    emu->cmdCoreWriteMemoryData(data);
+    // If we get data but the emu still has not confirm the previous write
+    if (currentMemorieToWrite->totalSize == currentMemorieToWrite->sizeWritten && NWAMemoriesToWrite.size() > 1)
+    {
+        cachedData += data;
+        return ;
+    }
+    int remainingWrite = currentMemorieToWrite->totalSize - currentMemorieToWrite->sizeWritten;
+    sDebug() << "Remaining to write : " << remainingWrite;
+    if (data.size() < remainingWrite)
+    {
+        emu->cmdCoreWriteMemoryData(data);
+        currentMemorieToWrite->sizeWritten += data.size();
+    }
+    if (data.size() >= remainingWrite)
+    {
+        emu->cmdCoreWriteMemoryData(data.left(remainingWrite));
+        currentMemorieToWrite->sizeWritten += remainingWrite;
+        if (data.size() > remainingWrite)
+        {
+            cachedData += data.mid(remainingWrite);
+        }
+    }
 }
 
 QString EmuNetworkAccessDevice::name() const
@@ -333,6 +494,12 @@ void EmuNetworkAccessDevice::close()
     if (m_state != CLOSED)
         emu->disconnectFromHost();
     m_state = CLOSED;
+}
+
+QDebug operator<<(QDebug debug, const EmuNetworkAccessDevice::MemoryAddress &ma)
+{
+    debug << ma.domain << " : " << ma.offset << ":" <<ma.size;
+    return debug;
 }
 
 void EmuNetworkAccessDevice::putFile(QByteArray name, unsigned int size)
@@ -428,4 +595,10 @@ QList<ADevice::FileInfos> EmuNetworkAccessDevice::parseLSCommand(QByteArray &dat
     }
     fileInfos.clear();
     return toret;
+}
+
+
+bool EmuNetworkAccessDevice::hasVariaditeCommands()
+{
+    return true;
 }

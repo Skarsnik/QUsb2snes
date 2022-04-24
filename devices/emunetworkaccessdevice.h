@@ -51,6 +51,7 @@ public:
     QString name() const;
     bool hasFileCommands();
     bool hasControlCommands();
+    bool hasVariaditeCommands();
     USB2SnesInfo parseInfo(const QByteArray &data);
     QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI);
 
@@ -72,16 +73,44 @@ private:
     QList<LocalStorage::FileInfo>   fileInfos;
     QTimer              timerFakeComandFinish;
 
+    struct MemoryAddress
+    {
+        QString domain;
+        quint32 offset;
+        quint32 size;
+        friend QDebug              operator<<(QDebug debug, const MemoryAddress& ma);
+    };
+    friend QDebug              operator<<(QDebug debug, const EmuNetworkAccessDevice::MemoryAddress& ma);
 
+    struct PutAddressEntry
+    {
+        PutAddressEntry ()
+        {
+            totalSize = 0;
+            sizeWritten = 0;
+        }
+        unsigned int sizeWritten;
+        unsigned int totalSize;
+        QList<MemoryAddress>    mems;
+        QString domain;
+    };
+
+    QList<QList<MemoryAddress>> NWAMemoriesToGet;
+    QList<PutAddressEntry>  NWAMemoriesToWrite;
+    PutAddressEntry*        currentMemorieToWrite;
     unsigned int            getAddressSizeRequested;
-    unsigned int            putAddressSize;
-    unsigned int            putAddressSizeSent;
+    unsigned int            putAddressTotalSize;
+    unsigned int            putAddressTotalSent;
+    QByteArray              cachedData;
     QMap<QString, QString>  memoryAccess;
     std::function<void()>   afterMemoryAccess;
 
     USB2SnesWS::opcode  currentCmd;
 
-    QPair<QString, unsigned int> sd2snesToDomain(unsigned int sd2snesAddr);
+    MemoryAddress sd2snesToDomain(unsigned int sd2snesAddr);
+    void nwaGetMemory(const MemoryAddress &memAdd);
+    void nwaGetMemory(const QList<MemoryAddress> &list);
+    void prepareWriteMemory(const QList<MemoryAddress> &list);
 private slots:
     void onEmuReadyRead();
     void onEmuDisconnected();
