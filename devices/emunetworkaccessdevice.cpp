@@ -116,11 +116,12 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
                 NWAMemoriesToGet.clear();
                 return ;
             }
-            /*if (rep.binary.size() != getAddressSizeRequested)
+            if (rep.binary.size() != getAddressSizeRequested)
             {
                 emit protocolError();
+                NWAMemoriesToGet.clear();
                 return ;
-            }*/
+            }
             emit getDataReceived(rep.binary);
             if (NWAMemoriesToGet.isEmpty())
             {
@@ -200,6 +201,7 @@ void EmuNetworkAccessDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
 void EmuNetworkAccessDevice::nwaGetMemory(const MemoryAddress& memAdd)
 {
     sDebug() << "NWA get Memory single : " << memAdd;
+    getAddressSizeRequested = memAdd.size;
     emu->cmdCoreReadMemory(memAdd.domain, memAdd.offset, memAdd.size);
 }
 
@@ -207,10 +209,12 @@ void EmuNetworkAccessDevice::nwaGetMemory(const QList<MemoryAddress>& list)
 {
     QList<QPair<int, int> >mems;
     const QString domain = list.first().domain;
+    getAddressSizeRequested = 0;
     for (auto memAdd : list)
     {
         sDebug() << "NWa get memory multiple : " << memAdd;
         mems.append(QPair<int, int>(memAdd.offset, memAdd.size));
+        getAddressSizeRequested += memAdd.size;
     }
     emu->cmdCoreReadMemory(domain, mems);
 }
@@ -240,7 +244,6 @@ void EmuNetworkAccessDevice::getAddrCommand(SD2Snes::space space, unsigned int a
         auto newAddr = sd2snesToDomain(addr);
         newAddr.size = size;
         sDebug() << "Get address" << newAddr.domain << newAddr.offset;
-        getAddressSizeRequested = size;
         if (memoryAccess[newAddr.domain].contains("r"))
         {
             nwaGetMemory(newAddr);
@@ -269,7 +272,6 @@ void EmuNetworkAccessDevice::getAddrCommand(SD2Snes::space space, QList<QPair<un
     m_state = BUSY;
     std::function<void()> F([this, args] {
         currentCmd = USB2SnesWS::GetAddress;
-        getAddressSizeRequested = 0;
         NWAMemoriesToGet.append(QList<MemoryAddress>());
         QString domain = "";
         for (auto pairing : args)
@@ -282,7 +284,6 @@ void EmuNetworkAccessDevice::getAddrCommand(SD2Snes::space space, QList<QPair<un
             }
             newAddr.size = pairing.second;
             sDebug() << "Get address" << newAddr;
-            getAddressSizeRequested += pairing.second;
             if (domain != "" && newAddr.domain != domain)
             {
                 NWAMemoriesToGet.append(QList<MemoryAddress>());
