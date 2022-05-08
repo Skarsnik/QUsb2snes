@@ -114,6 +114,11 @@ private:
     ApplicationInfo     parseJsonAppInfo(QString fileName);
     void                checkForNewVersion(bool manual = false);
     void startWServer();
+    void addSD2SnesFactory();
+    void addRetroarchFactory();
+    void addLuaBridgeFactory();
+    void addSnesClassicFactory();
+    void addNWAFactory();
 };
 
 #endif // APPUI_H

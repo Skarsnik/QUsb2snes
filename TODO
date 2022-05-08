@@ -1,0 +1,7 @@
+This is not a ROADMAP
+This is more a place to write small stuff that need to be verified or done.
+
+DeviceList :
+
+Check what happen with the async api if 2 clients ask DeviceList at the same time
+Normaly the code will send the DeviceList to both when it's over.

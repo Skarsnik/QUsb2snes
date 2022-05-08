@@ -47,7 +47,7 @@ class WSServer : public QObject
 {
     Q_OBJECT
 private:
-    friend QDebug              Core::operator<<(QDebug debug, const MRequest& req);
+
     struct DeviceInfos {
         AClient*            currentClient;
         USB2SnesWS::opcode  currentCommand;
@@ -109,7 +109,8 @@ private:
     QMetaEnum                           cmdMetaEnum;
     QMetaEnum                           spaceMetaEnum;
     QMetaEnum                           flagsMetaEnum;
-    QList<WebSocketProvider*>           wsServers;
+    QList<QWebSocketServer*>            wsServers;
+    //QWebSocketServer*                   wsServer;
     QList<ADevice*>                     devices; // Mostly used to keep tracks of signal/slots connection
     QList<DeviceFactory*>               deviceFactories;
     QList<AClient*>                     clients;
@@ -140,7 +141,7 @@ private:
     void        executeRequest(MRequest* req);
     void        executeServerRequest(MRequest *req);
     void        processDeviceCommandFinished(ADevice* device);
-    void        processCommandQueue(ADevice* device);
+    Q_INVOKABLE void        processCommandQueue(ADevice* device);
 
     void        asyncDeviceList();
     QStringList getDevicesList();
@@ -150,11 +151,14 @@ private:
     void        sendReply(AClient* client, QString args);
 
 
-    void cmdInfo(MRequest *req);
-    bool isFileCommand(USB2SnesWS::opcode opcode);
-    bool isControlCommand(USB2SnesWS::opcode opcode);
-    void addToPendingRequest(ADevice *device, MRequest *req);
-    void cleanUpDevice(ADevice *device);
+    void    cmdInfo(MRequest *req);
+    bool    isV2WebSocket(QWebSocket *ws);
+    bool    isFileCommand(USB2SnesWS::opcode opcode);
+    bool    isControlCommand(USB2SnesWS::opcode opcode);
+    void    addToPendingRequest(ADevice *device, MRequest *req);
+    void    cleanUpDevice(ADevice *device);
+    void    sendError(QWebSocket *ws, ErrorType errType, QString errorString);
+
 };
 
 #endif // WSSERVER_H

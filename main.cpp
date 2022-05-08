@@ -45,6 +45,7 @@
 #endif
 
 
+#include "qskarsnikringlist.hpp"
 #include "core/wsserver.h"
 #include "devices/sd2snesfactory.h"
 #include "devices/luabridge.h"
@@ -83,7 +84,35 @@ static QTextStream debugLogFile;
 
 static QTextStream cout(stdout);
 
+#else
+
 #endif
+
+static QSkarsnikRingList<QString> logDebugCrash(500);
+
+
+static void onCrash()
+{
+    QFile crashLog(qApp->applicationDirPath() + "/crash-log.txt");
+    if (!crashLog.open(QIODevice::WriteOnly | QIODevice::Text))
+        exit(1);
+    crashLog.write(QString("Runing QUsb2Snes version " + qApp->applicationVersion() + "\n").toUtf8());
+    crashLog.write(QString("Compiled against Qt" + QString(QT_VERSION_STR) + ", running" + qVersion() + "\n").toUtf8());
+    for (unsigned int i = 0; i < logDebugCrash.size(); i++)
+    {
+        crashLog.write(logDebugCrash.at(i).toUtf8() + "\n");
+    }
+    crashLog.flush();
+    crashLog.close();
+    exit(1);
+}
+
+static void seg_handler(int sig)
+{
+    Q_UNUSED(sig);
+    onCrash();
+}
+
 
 // Set this to true if you expect lot of flood message
 // It's used for example on the snes classic device that check stuff on a timer
@@ -105,14 +134,18 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
     switch (type)
     {
         case QtDebugMsg:
+            logDebugCrash.append(logString.arg("Debug"));
             break;
         case QtCriticalMsg:
+            logDebugCrash.append(logString.arg("Critical"));
             *log << logString.arg("Critical");
             break;
         case QtWarningMsg:
+            logDebugCrash.append(logString.arg("Warning"));
             *log << logString.arg("Warning");
             break;
         case QtFatalMsg:
+            logDebugCrash.append(logString.arg("Fatal"));
             *log << logString.arg("Fatal");
             *log<< "\n"; log->flush();
             #ifndef QUSB2SNES_NOGUI
@@ -123,6 +156,7 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
             qApp->exit(1);
             break;
         case QtInfoMsg:
+            logDebugCrash.append(logString.arg("Info"));
             *log << logString.arg("Info");
             break;
     }
@@ -160,8 +194,12 @@ void    startServer()
     }
 }
 
+#include <signal.h>
+
 int main(int ac, char *ag[])
 {
+    signal(SIGSEGV, seg_handler);
+    std::set_terminate(onCrash);
 #ifndef QUSB2SNES_NOGUI
     QApplication app(ac, ag);
 #else

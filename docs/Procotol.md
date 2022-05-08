@@ -6,7 +6,7 @@ It's better to use the USB2snes websocket protocol to access usb2snes as it allo
 
 The server is accessible on `ws://localhost:8080`. It's a regular no encrypted websocket server.
 
-Request are send in json format. Data must be send in binary
+Request are sent as json in text messages. Data must be sent in binary messages.
 
 ## Performing a Request
 
@@ -136,7 +136,7 @@ The server will reply directly with binary data corresponding to what you reques
 
 ### PutAddress [offset, size]
 
-This work like GetAddress for argument. After sending the json request, send your binary data. Again with the original usb2snes server don't send more than 1024 bytes per binary send, send the data per chunk of 1024.
+The arguments work like GetAddress. After sending the json request as text message, send your binary data as binary message(s). Again with the original usb2snes server don't send more than 1024 bytes per binary message, send the data in chunks of 1024.
 
 ## Usb2snes address
 

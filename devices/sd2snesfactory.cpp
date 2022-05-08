@@ -107,6 +107,8 @@ bool SD2SnesFactory::devicesStatus()
         status.status = Error::DeviceFactoryStatusEnum::DFS_SD2SNES_NO_DEVICE;
         status.generalError = Error::DeviceFactoryError::DFE_SD2SNES_NO_DEVICE;
         status.name = "SD2Snes";
+        status.deviceNames.clear();
+        status.deviceStatus.clear();
         foreach (QSerialPortInfo usbinfo, sinfos)
         {
             sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();

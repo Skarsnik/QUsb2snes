@@ -36,7 +36,22 @@ const quint16 emuNetworkAccessStartPort = 65400;
 
 EmuNetworkAccessFactory::EmuNetworkAccessFactory()
 {
-
+    for (int i = 0; i < 5; i++)
+    {
+        auto piko = new EmuNWAccessClient(this);
+        connect(piko, &EmuNWAccessClient::connected, this, &EmuNetworkAccessFactory::onClientConnected);
+        connect(piko, &EmuNWAccessClient::connectError, this, &EmuNetworkAccessFactory::onClientConnectionError);
+        connect(piko, &EmuNWAccessClient::readyRead, this, &EmuNetworkAccessFactory::onClientReadyRead);
+        clientInfos[piko].checkState = DetectState::NO_CHECK;
+        clientInfos[piko].device = nullptr;
+        clientInfos[piko].client = piko;
+        clientInfos[piko].doingAttach = false;
+        clientInfos[piko].port = emuNetworkAccessStartPort + i;
+    }
+    doingDeviceList = false;
+    doingDeviceStatus = false;
+    checkedCount = 0;
+    devFacStatus.name = "Emu Network Access";
 }
 
 
@@ -58,7 +73,8 @@ ADevice *EmuNetworkAccessFactory::attach(QString deviceName)
             if (ci.device->state() == ADevice::BUSY)
                 return ci.device;
             sDebug() << "Attach, Checking stuff";
-            ci.client->cmdEmuStatus();
+            ci.doingAttach = true;
+            ci.client->cmdEmulationStatus();
             ci.client->waitForReadyRead(100);
             auto rep = ci.client->readReply();
             ADevice* toret = nullptr;
@@ -75,13 +91,14 @@ ADevice *EmuNetworkAccessFactory::attach(QString deviceName)
                     {
                        toret = ci.device;
                     } else {
-                        ci.lastError = "Emulator is running a no SNES game";
+                        //ci.lastError = "Emulator is running a no SNES game";
                         toret = nullptr;
                     }
                 }
             } else {
                 toret = nullptr;
             }
+            ci.doingAttach = false;
             return toret;
         }
     }
@@ -91,44 +108,25 @@ ADevice *EmuNetworkAccessFactory::attach(QString deviceName)
 bool EmuNetworkAccessFactory::deleteDevice(ADevice *device)
 {
     sDebug() << "request for deleting device";
-    return false;
-    QMutableListIterator<ClientInfo> it(clientInfos);
+    QMutableMapIterator<EmuNWAccessClient*, ClientInfo> it(clientInfos);
     while (it.hasNext())
     {
         it.next();
         if (it.value().device == device)
         {
             device->deleteLater();
-            it.value().client->deleteLater();
-            it.remove();
-            return false;
+            it.value().device = nullptr;
+            //it.value().client->deleteLater();
+            it.value().deviceName.clear();
+            return true;
         }
     }
     return false;
 }
 
-// FIXME, this is a placeholder and need to be removed when the full async
-// API is rewritten
-
 QString EmuNetworkAccessFactory::status()
 {
-    QString toret;
-    if (clientInfos.isEmpty())
-        return "Unknow (device status not implemented)";
-    for (ClientInfo ci : clientInfos)
-    {
-        if (ci.device != nullptr)
-            toret.append(ci.deviceName + " Ready");
-        else {
-            if (!ci.lastError.isEmpty())
-                toret.append(ci.deviceName + " " + ci.lastError);
-            else {
-                toret.append("Unknow (device status not implemented)");
-            }
-        }
-        toret.append(" - ");
-    }
-    return toret;
+    return QString();
 }
 
 QString EmuNetworkAccessFactory::name() const
@@ -142,91 +140,161 @@ bool EmuNetworkAccessFactory::hasAsyncListDevices()
     return true;
 }
 
+
+// FIXME If a wsclient does Attach and another DeviceList
+// This will received the Attach async reply code
+void    EmuNetworkAccessFactory::onClientReadyRead()
+{
+    EmuNWAccessClient* client = qobject_cast<EmuNWAccessClient*>(sender());
+    ClientInfo &info = clientInfos[client];
+    if (info.doingAttach)
+        return ;
+    auto rep = client->readReply();
+    switch (info.checkState) {
+    case DetectState::CHECK_EMU_INFO:
+    {
+        if (rep.isError) {
+            checkFailed(client, Error::DeviceError::DE_EMUNWA_INCOMPATIBLE_CLIENT);
+            break;
+        }
+        auto emuInfo = rep.toMap();
+        sDebug() << emuInfo;
+        QString deviceName;
+        if (emuInfo.contains("id"))
+            deviceName = QString("%1 - %2").arg(emuInfo["name"], emuInfo["id"]);
+        else
+            deviceName =  QString("%1 - %2").arg(emuInfo["name"], emuInfo["version"]);
+        info.deviceName = deviceName;
+        info.checkState = DetectState::CHECK_CORE_LIST;
+        client->cmdCoresList("SNES");
+        break;
+    }
+    case DetectState::CHECK_CORE_LIST:
+    {
+        if (rep.isValid && rep.isAscii)
+        {
+            checkSuccess(client);
+        } else {
+            checkFailed(client, Error::DeviceError::DE_EMUNWA_NO_SNES_CORE);
+        }
+        break;
+    }
+    default:
+        break;
+    }
+
+}
+
+void    EmuNetworkAccessFactory::checkStatus()
+{
+    int cpt = 0;
+    checkedCount = 0;
+    QMutableMapIterator<EmuNWAccessClient*, ClientInfo> it(clientInfos);
+    while (it.hasNext())
+    {
+        it.next();
+        EmuNWAccessClient* client = it.key();
+        ClientInfo& info = it.value();
+        if (!client->isConnected())
+        {
+            info.checkState = DetectState::CHECK_CONNECTION;
+            client->connectToHost("127.0.0.1", info.port);
+            QTimer::singleShot(100, this, [=] {
+                if (!client->isConnected())
+                    checkFailed(client, Error::DeviceError::DE_EMUNWA_NO_CLIENT);
+            });
+        } else {
+            info.checkState = DetectState::CHECK_EMU_INFO;
+            client->cmdEmulatorInfo();
+        }
+        cpt++;
+    }
+}
+
+void EmuNetworkAccessFactory::checkFailed(EmuNWAccessClient *client, Error::DeviceError err)
+{
+    sDebug() << "Check failed : " << err << "checked " << checkedCount + 1 << " / 5";
+    clientInfos[client].checkState = DetectState::NO_CHECK;
+    checkedCount++;
+    if (doingDeviceStatus)
+    {
+        if (err != Error::DeviceError::DE_EMUNWA_NO_CLIENT)
+        {
+            QString piko = QString("Client %1").arg(clientInfos[client].port);
+            devFacStatus.deviceNames.append(piko);
+            devFacStatus.deviceStatus[piko].error = err;
+            clientInfos[client].deviceName.clear();
+        }
+    }
+    if (checkedCount == 5)
+    {
+        if (doingDeviceList)
+        {
+            doingDeviceList = false;
+            clientInfos[client].deviceName.clear();
+            emit devicesListDone();
+        }
+        if (doingDeviceStatus)
+        {
+            doingDeviceStatus = false;
+            if (devFacStatus.deviceNames.isEmpty())
+                devFacStatus.generalError = Error::DeviceFactoryError::DFE_EMUNWA_NO_CLIENT;
+            emit deviceStatusDone(devFacStatus);
+        }
+    }
+}
+
+void EmuNetworkAccessFactory::checkSuccess(EmuNWAccessClient *client)
+{
+    sDebug() << "Check success : checked " << checkedCount + 1 << " / 5";
+    clientInfos[client].checkState = DetectState::NO_CHECK;
+    // The device is created by attach
+    if (doingDeviceList)
+        emit newDeviceName(clientInfos[client].deviceName);
+    if (doingDeviceStatus)
+    {
+        QString &piko = clientInfos[client].deviceName;
+        devFacStatus.deviceNames.append(piko);
+        devFacStatus.deviceStatus[piko].error = Error::DeviceError::DE_NO_ERROR;
+    }
+    checkedCount++;
+    if (checkedCount == 5)
+    {
+        if (doingDeviceList)
+        {
+            doingDeviceList = false;
+            emit devicesListDone();
+        }
+        if (doingDeviceStatus)
+        {
+            doingDeviceStatus = false;
+            emit deviceStatusDone(devFacStatus);
+        }
+    }
+}
+
 bool EmuNetworkAccessFactory::asyncListDevices()
 {
     sDebug() << "Device list";
-
-    if (!clientInfos.isEmpty())
-    {
-        QTimer::singleShot(0, this, [=] {
-            for (auto ci : clientInfos)
-            {
-                emit newDeviceName(ci.deviceName);
-            }
-            emit devicesListDone();
-        });
+    if (doingDeviceList)
         return true;
-    }
-    EmuNWAccessClient* client = new EmuNWAccessClient(this);
-    m_state = BUSYDEVICELIST;
-    QTimer::singleShot(5000, this, [=] {
-        if (m_state == BUSYDEVICELIST)
-        {
-            sDebug() << "Device list timer timeout the request";
-            client->deleteLater();
-            emit devicesListDone();
-            m_state = NONE;
-        }
-    });
-    QTimer::singleShot(200, this, [=] {
-        if (m_state == BUSYDEVICELIST && !client->isConnected())
-        {
-            sDebug() << "Connection timeout triggered";
-            client->deleteLater();
-            emit devicesListDone();
-            m_state = NONE;
-        }
-    });
-    sDebug() << "Trying localhost:" << emuNetworkAccessStartPort << QTime::currentTime();
-    connect(client, &EmuNWAccessClient::connectError, this, [=] {
-        sDebug() << "Connection error " << client->error() << QTime::currentTime();
-        client->deleteLater();
-        emit devicesListDone();
-        m_state = NONE;
-    });
-    client->connectToHost("127.0.0.1", emuNetworkAccessStartPort);
-    connect(client, &EmuNWAccessClient::connected, this, [=] {
-        sDebug()  << "Connected" << QTime::currentTime();
-        client->cmdEmuInfo();
-        connect(client, &EmuNWAccessClient::readyRead, this, [=]
-        {
-            disconnect(client, &EmuNWAccessClient::readyRead, this, nullptr);
-            auto rep = client->readReply();
-            auto emuInfo = rep.toMap();
-            sDebug() << emuInfo;
-            client->cmdCoresList("SNES");
-            QString deviceName;
-            if (emuInfo.contains("id"))
-                deviceName = QString("%1 - %2").arg(emuInfo["name"], emuInfo["id"]);
-            else
-                deviceName =  QString("%1 - %2").arg(emuInfo["name"], emuInfo["version"]);
-            connect(client, &EmuNWAccessClient::readyRead, this, [=]
-            {
-                disconnect(client, &EmuNWAccessClient::readyRead, this, nullptr);
-                auto rep = client->readReply();
-                if (rep.isValid && rep.isAscii)
-                {
-                    ClientInfo newInfo;
-                    newInfo.client = client;
-                    newInfo.device = nullptr;
-                    newInfo.deviceName = deviceName;
-                    clientInfos.append(newInfo);
-                    connect(client, &EmuNWAccessClient::disconnected, this, &EmuNetworkAccessFactory::onClientDisconnected);
-                    emit newDeviceName(deviceName);
-                } else {
-                    client->deleteLater();
-                }
-                m_state = NONE;
-                emit devicesListDone();
-            }, Qt::UniqueConnection);
-        }, Qt::UniqueConnection);
-    });
+    doingDeviceList = true;
+    checkStatus();
     return true;
 }
 
 bool EmuNetworkAccessFactory::devicesStatus()
 {
-    return false;
+    sDebug() << "Devices State";
+    if (doingDeviceStatus)
+        return true;
+    doingDeviceStatus = true;
+    devFacStatus.deviceNames.clear();
+    devFacStatus.deviceStatus.clear();
+    devFacStatus.status = Error::DeviceFactoryStatusEnum::DFS_EMUNWA_NO_CLIENT;
+    devFacStatus.generalError = Error::DeviceFactoryError::DFE_NO_ERROR;
+    checkStatus();
+    return true;
 }
 
 void EmuNetworkAccessFactory::onClientDisconnected()
@@ -234,18 +302,34 @@ void EmuNetworkAccessFactory::onClientDisconnected()
     sDebug() << "Client disconnected";
     //return ; // this is kinda useless?
     EmuNWAccessClient* client = qobject_cast<EmuNWAccessClient*>(sender());
-    QMutableListIterator<ClientInfo> it(clientInfos);
+    QMutableMapIterator<EmuNWAccessClient*, ClientInfo> it(clientInfos);
     while (it.hasNext())
     {
         it.next();
         if (it.value().client == client)
         {
             sDebug()  << "Client disconnected, closing " << it.value().deviceName;
-            if (it.value().device != nullptr)
+            if (it.value().device != nullptr && it.value().device->state() != ADevice::CLOSED)
                 it.value().device->close();
-            client->deleteLater();
-            it.remove();
             return;
         }
     }
+}
+
+void EmuNetworkAccessFactory::onClientConnected()
+{
+    EmuNWAccessClient* client = qobject_cast<EmuNWAccessClient*>(sender());
+    if (clientInfos[client].checkState == DetectState::CHECK_CONNECTION)
+    {
+        clientInfos[client].checkState = DetectState::CHECK_EMU_INFO;
+        client->cmdEmulatorInfo();
+    }
+}
+
+void EmuNetworkAccessFactory::onClientConnectionError()
+{
+    EmuNWAccessClient* client = qobject_cast<EmuNWAccessClient*>(sender());
+    sDebug() << "Client connection error" << client->error();
+    if (clientInfos[client].checkState != DetectState::NO_CHECK)
+        checkFailed(client, Error::DeviceError::DE_EMUNWA_NO_CLIENT);
 }

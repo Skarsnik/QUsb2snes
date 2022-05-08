@@ -228,6 +228,7 @@ void LuaBridgeDevice::writeData(QByteArray data)
     static QByteArray received = QByteArray();
     receivedSize += static_cast<unsigned int>(data.size());
     received += data;
+    sDebug() << "Write data" << receivedSize << putSize;
     if (receivedSize == putSize)
     {
         QByteArray toSend;
@@ -239,7 +240,7 @@ void LuaBridgeDevice::writeData(QByteArray data)
             toSend = "Write|" + QByteArray::number(getSnes9xAddress(putAddr));
         }
         for (int i = 0; i < received.size(); i++)
-            toSend += "|" + QByteArray::number(static_cast<unsigned char>(data.at(i)));
+            toSend += "|" + QByteArray::number(static_cast<unsigned char>(received.at(i)));
         toSend += "\n";
         sDebug() << ">>" << toSend;
         m_socket->write(toSend);

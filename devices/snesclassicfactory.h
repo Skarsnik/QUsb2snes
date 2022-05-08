@@ -43,32 +43,61 @@ public:
     QString name() const;
     bool devicesStatus();
 
+    enum class StatusState {
+        NO_CHECK,
+        CHECK_ALIVE,
+        CHECK_PIDCANOE,
+        CHECK_CANOE_VERSION,
+        CHECK_CANOE_MODE,
+        CHECK_MEMORY_LOCATION_READ_RAM_LOC,
+        CHECK_MEMORY_LOCATION_PMAP,
+        CHECK_MEMORY_LOCATION_READ_ROM_CHECK1,
+        CHECK_MEMORY_LOCATION_READ_ROM_CHECK2
+    };
+    Q_ENUM(StatusState)
+
 private:
     QTcpSocket*         socket = nullptr;
     QByteArray          canoePid;
+    QByteArray          oldCanoePid;
+    QByteArray          dataRecv;
     SNESClassic*        device = nullptr;
     QTimer              checkAliveTimer;
     unsigned int        romLocation = 0;
     unsigned int        sramLocation = 0;
     unsigned int        ramLocation = 0;
+    unsigned int        lastPmapLocation = 0;
+    unsigned int        readMemSize;
     QString             snesclassicIP;
+    bool                checkingState;
+    bool                doingDeviceList;
+    bool                doingDeviceStatus;
+    bool                doingCommand;
+    StatusState         checkState;
+    DeviceFactoryStatus factStatus;
 
-    void executeCommand(QByteArray toExec);
-    void writeSocket(QByteArray toWrite);
-    QByteArray readCommandReturns(QTcpSocket *msocket);
-    QByteArray readSocketReturns(QTcpSocket* msocket);
+    void    executeCommand(QByteArray toExec);
+    void    writeSocket(QByteArray toWrite);
+    /*QByteArray readCommandReturns(QTcpSocket *msocket);
+    QByteArray readSocketReturns(QTcpSocket* msocket);*/
+    bool    checkStuff();
+    void    aliveCheck();
 
-    void findMemoryLocations();
-    bool tryRomLocation(unsigned int pid, unsigned int location);
-    bool checkStuff();
-    void aliveCheck();
+    bool    hasValidMemory();
 
-    bool hasValidMemory();
-    void resetMemoryAddresses();
+    void    resetMemoryAddresses();
 
-    // DeviceFactory interface
+    void    onReadyRead();
+    void    onSocketConnected();
+    void    onSocketError(QAbstractSocket::SocketError err);
+
+    void    checkSuccess();
+    void    checkFailed(Error::DeviceFactoryError err, QString extra = QString());
+
 public:
-    bool asyncListDevices();
+    bool    asyncListDevices();
+    bool    hasAsyncListDevices();
+
 };
 
 #endif // SNESCLASSICFACTORY_H

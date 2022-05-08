@@ -41,6 +41,7 @@ public:
     QString name() const;
     bool asyncListDevices();
     bool devicesStatus();
+    bool hasAsyncListDevices();
 
 
 private slots:
@@ -54,6 +55,7 @@ private:
     QRandomGenerator*           rng;
     quint32                     rngSeed;
     QMap<QTcpSocket*, LuaBridgeDevice*> mapSockDev;
+
 };
 
 #endif // LUABRIDGE_H

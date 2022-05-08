@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>414</width>
-    <height>250</height>
+    <width>421</width>
+    <height>280</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -70,10 +70,17 @@
    <item>
     <widget class="QRadioButton" name="classicRradioButton">
      <property name="text">
-      <string>SNES CLassic - experimental</string>
+      <string>SNES Classic - experimental</string>
      </property>
      <property name="autoExclusive">
       <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QRadioButton" name="nwaRadioButton">
+     <property name="text">
+      <string>Emulator with NWA support - experimental</string>
      </property>
     </widget>
    </item>

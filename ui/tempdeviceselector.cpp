@@ -20,6 +20,7 @@
 
 #include "tempdeviceselector.h"
 #include "ui_tempdeviceselector.h"
+#include <QMessageBox>
 
 TempDeviceSelector::TempDeviceSelector(QWidget *parent) :
     QDialog(parent),
@@ -33,7 +34,7 @@ TempDeviceSelector::~TempDeviceSelector()
     delete ui;
 }
 
-void TempDeviceSelector::on_buttonBox_accepted()
+void TempDeviceSelector::accept()
 {
     if (ui->sd2snesRadioButton->isChecked())
         devices.append("SD2SNES");
@@ -43,5 +44,12 @@ void TempDeviceSelector::on_buttonBox_accepted()
         devices.append("CLASSIC");
     if (ui->retroarchRadioButton->isChecked())
         devices.append("RETROARCH");
-    accept();
+    if (ui->nwaRadioButton->isChecked())
+        devices.append("NWA");
+    if (devices.isEmpty())
+    {
+        QMessageBox::warning(this, "No device selected", "You need to select a device to continue");
+        return ;
+    }
+    QDialog::accept();
 }
