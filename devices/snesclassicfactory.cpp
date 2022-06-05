@@ -458,7 +458,7 @@ bool SNESClassicFactory::asyncListDevices()
     } else {
         checkStuff();
     }
-    return false;
+    return true;
 }
 
 
