@@ -36,6 +36,7 @@ public:
     enum DetectState {
         NO_CHECK,
         CHECK_CONNECTION,
+        DOING_NAME,
         CHECK_EMU_INFO,
         CHECK_CORE_LIST,
     };

@@ -68,7 +68,7 @@ ADevice *EmuNetworkAccessFactory::attach(QString deviceName)
         {
             if (ci.device == nullptr)
             {
-                ci.device = new EmuNetworkAccessDevice(deviceName);
+                ci.device = new EmuNetworkAccessDevice(deviceName, ci.port);
             }
             if (ci.device->state() == ADevice::BUSY)
                 return ci.device;
@@ -150,7 +150,18 @@ void    EmuNetworkAccessFactory::onClientReadyRead()
     if (info.doingAttach)
         return ;
     auto rep = client->readReply();
+    sDebug() << rep;
     switch (info.checkState) {
+    case DetectState::DOING_NAME:
+    {
+        if (rep.isError) {
+            checkFailed(client, Error::DeviceError::DE_EMUNWA_INCOMPATIBLE_CLIENT);
+            break;
+        }
+        clientInfos[client].checkState = DetectState::CHECK_EMU_INFO;
+        client->cmdEmulatorInfo();
+        break;
+    }
     case DetectState::CHECK_EMU_INFO:
     {
         if (rep.isError) {
@@ -321,8 +332,9 @@ void EmuNetworkAccessFactory::onClientConnected()
     EmuNWAccessClient* client = qobject_cast<EmuNWAccessClient*>(sender());
     if (clientInfos[client].checkState == DetectState::CHECK_CONNECTION)
     {
-        clientInfos[client].checkState = DetectState::CHECK_EMU_INFO;
-        client->cmdEmulatorInfo();
+
+        clientInfos[client].checkState = DetectState::DOING_NAME;
+        client->cmdMyNameIs("QUsb2Snes control connection");
     }
 }
 

@@ -33,7 +33,7 @@ class EmuNetworkAccessDevice : public ADevice
     Q_OBJECT
 
 public:
-    EmuNetworkAccessDevice(QString name);
+    EmuNetworkAccessDevice(QString name, uint port);
 
     // ADevice interface
 public:

@@ -28,13 +28,15 @@ Q_LOGGING_CATEGORY(log_emunwaccessdevice, "Emu NWA Device")
 #define sDebug() qCDebug(log_emunwaccessdevice)
 #define sInfo() qCInfo(log_emunwaccessdevice)
 
-EmuNetworkAccessDevice::EmuNetworkAccessDevice(QString _name)
+EmuNetworkAccessDevice::EmuNetworkAccessDevice(QString _name, uint port)
 {
     myName = _name;
     emu = new EmuNWAccessClient(this);
-    emu->connectToHost("127.0.0.1", 65400);
+    emu->connectToHost("127.0.0.1", port);
     connect(emu, &EmuNWAccessClient::connected, this, [=]() {
         sDebug() << "Connected";
+        emu->cmdMyNameIs("QUsb2Snes Device");
+        currentCmd = USB2SnesWS::Name;
         m_state = READY;
     });
     connect(emu, &EmuNWAccessClient::readyRead, this, &EmuNetworkAccessDevice::onEmuReadyRead, Qt::UniqueConnection);
@@ -58,8 +60,16 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
     auto rep = emu->readReply();
     sDebug() << "Reply ready";
     sDebug() << rep;
+    if (rep.cmd == "MY_NAME_IS")
+    {
+        return ;
+    }
     switch(currentCmd)
     {
+        case USB2SnesWS::Name:
+        {
+            break;
+        }
         // This is actually memory access request
         case USB2SnesWS::Attach:
         {
@@ -85,7 +95,11 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
                         emu->cmdGameInfo();
                     }
                 } else {
-                    whatRunning = rep["file"];
+                    if (rep.contains("file"))
+                        whatRunning = rep["file"];
+                    else {
+                        whatRunning = rep["name"];
+                    }
                     step = 0;
                     emit commandFinished();
                     return;
@@ -94,6 +108,8 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
                 sDebug() << "No emu info, checking them";
                 if (step == 0)
                 {
+                    if (rep["state"] == "running")
+                        whatRunning = rep["game"];
                     emu->cmdEmulatorInfo();
                     step = 1;
                     return ;
@@ -102,7 +118,7 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
                 {
                     emuVersion = rep["version"];
                     emuName = rep["name"];
-                    emu->cmdEmulatorInfo();
+                    emu->cmdEmulationStatus();
                     step = 0;
                 }
             }
@@ -326,6 +342,7 @@ void EmuNetworkAccessDevice::putAddrCommand(SD2Snes::space space, unsigned int a
         NWAMemoriesToWrite.last().totalSize += newAddr.size;
         NWAMemoriesToWrite.last().domain = newAddr.domain;
         putAddressTotalSent = 0;
+        putAddressTotalSize = size;
         prepareWriteMemory(currentMemorieToWrite->mems);
     });
     if (!memoryAccess.contains("WRAM"))
@@ -425,8 +442,12 @@ void EmuNetworkAccessDevice::writeData(QByteArray data)
         return ;
     }
     putAddressTotalSent += data.size();
+    sDebug() << "Total Sent : " << putAddressTotalSent << "Total Size" << putAddressTotalSize;
     if (putAddressTotalSent > putAddressTotalSize)
+    {
         emit protocolError();
+        return;
+    }
     // If we get data but the emu still has not confirm the previous write
     if (currentMemorieToWrite->totalSize == currentMemorieToWrite->sizeWritten && NWAMemoriesToWrite.size() > 1)
     {
@@ -486,8 +507,9 @@ USB2SnesInfo EmuNetworkAccessDevice::parseInfo(const QByteArray &data)
 
 bool EmuNetworkAccessDevice::open()
 {
-    m_state = READY;
-    return true;
+    //m_state = READY;
+    return emu->waitForConnected(20);
+    //return true;
 }
 
 void EmuNetworkAccessDevice::close()
