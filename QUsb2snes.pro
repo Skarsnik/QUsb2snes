@@ -7,9 +7,11 @@ DEFINES += GIT_TAG_VERSION=\\\"$$GIT_TAG_VERSION\\\"
 
 
 UISOURCES = appui.cpp \
-            tempdeviceselector.cpp
+            tempdeviceselector.cpp \
+            diagnosticdialog.cpp
 UIHEADERS = appui.h \
-            tempdeviceselector.h
+            tempdeviceselector.h \
+            diagnosticdialog.h
 
 equals(QUSB2SNES_NOGUI, 1) {
     message("building QUsb2Snes in NOGUI mode")
@@ -17,7 +19,8 @@ equals(QUSB2SNES_NOGUI, 1) {
     QT -= gui
 } else {
     QT += gui widgets
-    FORMS =  tempdeviceselector.ui
+    FORMS =  tempdeviceselector.ui \
+             diagnosticdialog.ui
     SOURCES = $$UISOURCES
     HEADERS = $$UIHEADERS
 }

@@ -128,6 +128,7 @@ public:
     void        addDevice(ADevice* device);
     void        removeDevice(ADevice* device);
     void        addDeviceFactory(DeviceFactory* devFact);
+    QStringList deviceFactoryNames() const;
     void        removeDeviceFactory(DeviceFactory* devFact);
     QStringList getClientsName(ADevice* dev);
     QStringList getClientsName(const QString devName) const;

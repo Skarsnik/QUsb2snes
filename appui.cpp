@@ -45,6 +45,7 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #include "devices/snesclassic.h"
 #include "wsserver.h"
 #include "tempdeviceselector.h"
+#include "diagnosticdialog.h"
 
 const  QString             applicationJsonFileName = "qusb2snesapp.json";
 
@@ -209,6 +210,11 @@ void AppUi::init()
             sInfo() << "Debug log disabled";
             globalSettings->setValue("debugLog", false);
         }
+    });
+    QObject::connect(miscMenu->addAction(tr("Diagnostic tool")), &QAction::triggered, this, [=] {
+       DiagnosticDialog diag;
+       diag.setWSServer(&wsServer);
+       diag.exec();
     });
     QObject::connect(menu->addAction(tr("Exit")), &QAction::triggered, qApp, &QApplication::exit);
     appsMenu->addSeparator();

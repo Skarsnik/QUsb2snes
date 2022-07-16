@@ -146,6 +146,16 @@ void WSServer::addDeviceFactory(DeviceFactory *devFact)
     deviceFactories.append(devFact);
 }
 
+QStringList WSServer::deviceFactoryNames() const
+{
+    QStringList toret;
+    for (auto devFact : deviceFactories)
+    {
+        toret << devFact->name();
+    }
+    return toret;
+}
+
 // TODO: this is bad if you do it during a devicelist request x)
 
 void WSServer::removeDeviceFactory(DeviceFactory *devFact)
