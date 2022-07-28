@@ -6,12 +6,13 @@ GIT_TAG_VERSION=$$system(git describe --always --tags)
 DEFINES += GIT_TAG_VERSION=\\\"$$GIT_TAG_VERSION\\\"
 
 
-UISOURCES = appui.cpp \
-            tempdeviceselector.cpp \
-            diagnosticdialog.cpp
-UIHEADERS = appui.h \
-            tempdeviceselector.h \
-            diagnosticdialog.h
+UISOURCES = ui/appui.cpp \
+            ui/appuimenu.cpp \
+            ui/tempdeviceselector.cpp \
+            ui/diagnosticdialog.cpp
+UIHEADERS = ui/appui.h \
+            ui/tempdeviceselector.h \
+            ui/diagnosticdialog.h
 
 equals(QUSB2SNES_NOGUI, 1) {
     message("building QUsb2Snes in NOGUI mode")
@@ -19,8 +20,8 @@ equals(QUSB2SNES_NOGUI, 1) {
     QT -= gui
 } else {
     QT += gui widgets
-    FORMS =  tempdeviceselector.ui \
-             diagnosticdialog.ui
+    FORMS =  ui/tempdeviceselector.ui \
+             ui/diagnosticdialog.ui
     SOURCES = $$UISOURCES
     HEADERS = $$UIHEADERS
 }

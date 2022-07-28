@@ -1,7 +1,7 @@
 #ifndef DIAGNOSTICDIALOG_H
 #define DIAGNOSTICDIALOG_H
 
-#include "wsserver.h"
+#include "../wsserver.h"
 
 #include <QDialog>
 

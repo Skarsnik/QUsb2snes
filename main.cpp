@@ -24,7 +24,7 @@
 #ifndef QUSB2SNES_NOGUI
   #include <QApplication>
   #include <QMessageBox>
-  #include "appui.h"
+  #include "ui/appui.h"
 #else
   #include <QCoreApplication>
 #endif

@@ -21,11 +21,11 @@
 #ifndef APPUI_H
 #define APPUI_H
 
-#include "devices/luabridge.h"
-#include "devices/snesclassicfactory.h"
-#include "devices/sd2snesfactory.h"
-#include "devices/retroarchfactory.h"
-#include "devices/emunetworkaccessfactory.h"
+#include "../devices/luabridge.h"
+#include "../devices/snesclassicfactory.h"
+#include "../devices/sd2snesfactory.h"
+#include "../devices/retroarchfactory.h"
+#include "../devices/emunetworkaccessfactory.h"
 
 #include <QMenu>
 #include <QObject>
@@ -56,7 +56,6 @@ private slots:
     void    onLuaBridgeTriggered(bool checked);
     void    onSNESClassicTriggered(bool checked);
     void    onEmuNWAccessTriggered(bool checked);
-    void    onMenuAboutToshow();
     void    onAppsMenuTriggered(QAction* action);
     void    onMagic2SnesMenuTriggered(QAction*action);
     void    addWindowsSendToEntry();
@@ -106,6 +105,8 @@ private:
     QWidget*                        dlWindow;
     bool                            checkingDeviceInfos;
 
+    quint8                          linuxActionPos;
+
     void                checkForApplications();
     void                handleMagic2Snes(QString path);
 
@@ -119,6 +120,9 @@ private:
     void addLuaBridgeFactory();
     void addSnesClassicFactory();
     void addNWAFactory();
+    void setLinuxDeviceMenu();
+    void setMenu();
+    void setDeviceEntry(const QString str);
 };
 
 #endif // APPUI_H
