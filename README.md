@@ -136,10 +136,6 @@ Only the non gui version take arguments, It still use the config file but you ca
 * `-retroarch` : for the retroarch support
 * `-snesclassic` :  for the snes classic support
 
-#### NO GUI
-
-To configure QUsb2snes for RetroArch when using `-nogui` option
-
 ---
 
 ## Compiling from source
