@@ -261,6 +261,7 @@ int main(int ac, char *ag[])
     wsServer.addTrusted("https://multiworld.samus.link/");
     wsServer.addTrusted("http://usb2snes.com");
     wsServer.addTrusted("https://samus.link");
+    wsServer.addTrusted("https://funtoon.party");
     QLoggingCategory::setFilterRules("EmuNWAccessClient.debug=true\n");
 
 #ifndef QUSB2SNES_NOGUI
