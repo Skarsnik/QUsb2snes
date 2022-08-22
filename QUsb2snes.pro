@@ -79,7 +79,7 @@ macx: {
 	HEADERS += osx/appnap.h
 	LIBS += -framework Foundation
 	QMAKE_INFO_PLIST = osx/Info.plist
-	ICON = cheer128x128.icns
+        ICON = ui/icons/cheer128x128.icns
 }
 
 RESOURCES = ressources.qrc

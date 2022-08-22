@@ -1,21 +1,21 @@
 <RCC>
     <qresource prefix="/img">
-        <file>cheer.png</file>
-        <file>icon64x64.ico</file>
-        <file>deviceicon.svg</file>
-        <file>appicon.svg</file>
-        <file>quiticon.svg</file>
-        <file>magic2snesicon.png</file>
-        <file>retroarch.png</file>
-        <file>icone-snes9x.gif</file>
-        <file>chrysalis.png</file>
-        <file>multitroid.png</file>
-        <file>updateicon.svg</file>
-        <file>microsoft-windows-logo.svg</file>
-        <file>BK small.png</file>
-        <file>ikari.ico</file>
-        <file>mr chip.png</file>
-        <file>poptrackericon.png</file>
+        <file alias="cheer.png">ui/icons/cheer.png</file>
+        <file alias="icon64x64.ico">ui/icons/icon64x64.ico</file>
+        <file alias="deviceicon.svg">ui/icons/deviceicon.svg</file>
+        <file alias="appicon.svg">ui/icons/appicon.svg</file>
+        <file alias="quiticon.svg">ui/icons/quiticon.svg</file>
+        <file alias="magic2snesicon.png">ui/icons/magic2snesicon.png</file>
+        <file alias="retroarch.png">ui/icons/retroarch.png</file>
+        <file alias="icone-snes9x.gif">ui/icons/icone-snes9x.gif</file>
+        <file alias="chrysalis.png">ui/icons/chrysalis.png</file>
+        <file alias="multitroid.png">ui/icons/multitroid.png</file>
+        <file alias="updateicon.svg">ui/icons/updateicon.svg</file>
+        <file alias="microsoft-windows-logo.svg">ui/icons/microsoft-windows-logo.svg</file>
+        <file alias="BK small.png">ui/icons/BK small.png</file>
+        <file alias="ikari.ico">ui/icons/ikari.ico</file>
+        <file alias="mr chip.png">ui/icons/mr chip.png</file>
+        <file alias="poptrackericon.png">ui/icons/poptrackericon.png</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>
