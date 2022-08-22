@@ -79,11 +79,20 @@ private:
         friend QDebug              operator<<(QDebug debug, const ApplicationInfo& req);
     };
 
+    struct PopTrackerPackInfo
+    {
+        QString id;
+        QVersionNumber version;
+        QString description;
+        friend QDebug              operator<<(QDebug debug, const PopTrackerPackInfo& req);
+    };
+    friend QDebug              operator<<(QDebug debug, const AppUi::PopTrackerPackInfo& req);
     friend QDebug              operator<<(QDebug debug, const AppUi::ApplicationInfo& req);
     QMenu*              menu;
     QMenu*              deviceMenu;
     QMenu*              appsMenu;
     QMenu*              magic2SnesMenu;
+    QMenu*              popTrackerMenu;
     QMenu*              miscMenu;
     QString             magic2SnesExe;
     QAction*            sd2snesAction;
@@ -104,6 +113,7 @@ private:
     QProgressBar*                   dlProgressBar;
     QWidget*                        dlWindow;
     bool                            checkingDeviceInfos;
+    QString                         popTrackerExePath;
 
     quint8                          linuxActionPos;
 
@@ -123,6 +133,9 @@ private:
     void setLinuxDeviceMenu();
     void setMenu();
     void setDeviceEntry(const QString str);
+    QList<PopTrackerPackInfo> poptrackerScanPack();
+    bool checkPopTracker();
+    void addPopTrackerMenu();
 };
 
 #endif // APPUI_H

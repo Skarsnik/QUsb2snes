@@ -17,6 +17,7 @@ Project {
             "ui/appui.cpp",
             "ui/appuimenu.cpp",
             "ui/appui.h",
+            "ui/appuipoptracker.cpp",
             "ui/tempdeviceselector.cpp",
             "ui/tempdeviceselector.h",
             "ui/tempdeviceselector.ui",

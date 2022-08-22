@@ -25,6 +25,10 @@ void    AppUi::setMenu()
         handleMagic2Snes(qApp->applicationDirPath() + "/Magic2Snes");
     if (!QFile::exists(qApp->applicationDirPath() + "/Magic2Snes") && globalSettings->value("Magic2SnesLocation").toString().isEmpty())
         handleMagic2Snes("");
+    if (checkPopTracker())
+    {
+        addPopTrackerMenu();
+    }
     if (!globalSettings->value("Magic2SnesLocation").toString().isEmpty())
         handleMagic2Snes(globalSettings->value("Magic2SnesLocation").toString());
     menu->addSeparator();
@@ -114,7 +118,7 @@ void AppUi::setLinuxDeviceMenu()
 
 void AppUi::onMenuHovered(QAction* action)
 {
-    sDebug() << "Menu hovered";
+    //sDebug() << "Menu hovered";
     if (action != deviceMenu->menuAction())
         return ;
     if (checkingDeviceInfos)
