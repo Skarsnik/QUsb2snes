@@ -175,7 +175,7 @@ void AppUi::onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus sta
             statusString.append(QString("%1").arg(status.errorString()));
         }
     } else {
-        for(QString name : status.deviceNames)
+        for(QString& name : status.deviceNames)
         {
             statusString = "       ";
             auto& deviceStatus = status.deviceStatus[name];
