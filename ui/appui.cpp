@@ -157,7 +157,7 @@ void AppUi::init()
 
 #
 
-    connect(qApp, &QCoreApplication::aboutToQuit, [=]() {
+    connect(qApp, &QCoreApplication::aboutToQuit, this, [=]() {
       sysTray->hide();
     });
     if (!globalSettings->contains("FirstTime"))
@@ -280,7 +280,7 @@ void AppUi::checkForNewVersion(bool manual)
     if (!QSslSocket::supportsSsl())
         return;
     QNetworkAccessManager* manager = new QNetworkAccessManager();
-    QObject::connect(manager, &QNetworkAccessManager::finished, [=](QNetworkReply* reply)
+    QObject::connect(manager, &QNetworkAccessManager::finished, this, [=](QNetworkReply* reply)
     {
         sDebug() << "Finished" << reply->size();
         QByteArray data = reply->readAll();
@@ -573,7 +573,7 @@ void    AppUi::DLManagerRequestFinished(QNetworkReply* reply)
                 QObject::connect(dlReply, &QNetworkReply::redirected, [=] {
                    sDebug() << "DL reply redirected";
                 });
-                QObject::connect(dlReply, &QNetworkReply::downloadProgress, [=](qint64 bytesRcv, qint64 bytesTotal)
+                QObject::connect(dlReply, &QNetworkReply::downloadProgress, this, [=](qint64 bytesRcv, qint64 bytesTotal)
                 {
                     qDebug() << 20 + (bytesRcv / bytesTotal) * 80;
                     dlProgressBar->setValue(20 + (bytesRcv / bytesTotal) * 80);
@@ -601,7 +601,7 @@ void    AppUi::DLManagerRequestFinished(QNetworkReply* reply)
             file.close();
             dlLabel->setText(QObject::tr("Starting the Windows Updater"));
             QProcess::startDetached(qApp->applicationDirPath() + "/WinUpdater.exe");
-            QTimer::singleShot(200, [=] {qApp->exit(0);});
+            QTimer::singleShot(200, this, [=] {qApp->exit(0);});
          } else {
              dlWindow->hide();
              QMessageBox::warning(nullptr, tr("Error downloading the updater"), tr("There was an error downloading or writing the updater file, please try to download it manually on the release page"));

@@ -73,7 +73,7 @@ RetroArchFactory::RetroArchFactory()
         } else {
             RetroArchHost* old = new RetroArchHost(oldEntry);
             QHostInfo::lookupHost(oldEntry, this, [old](QHostInfo hinfo){
-                old->setHostAddress(hinfo.addresses()[0]);
+                old->setHostAddress(hinfo.addresses().at(0));
             });
            addHost(old);
         }
@@ -84,19 +84,18 @@ RetroArchFactory::RetroArchFactory()
         sDebug() << hostString;
         QStringList hosts = hostString.split(';');
         foreach(QString host, hosts) {
-            QString name;
             RetroArchHost* newHost;
             if (host.contains('=')) {
                 newHost = new RetroArchHost(host.split('=').at(0));
                 QHostInfo::lookupHost(host.split('=').at(1), this, [newHost](QHostInfo hinfo){
                     sDebug() << "RetroArchHost [" << newHost->name() << "] get IP [" << newHost->address() << "].";
-                    newHost->setHostAddress(hinfo.addresses()[0]);
+                    newHost->setHostAddress(hinfo.addresses().at(0));
                 });
             } else {
                 newHost = new RetroArchHost(host);
                 QHostInfo::lookupHost(host, this, [newHost](QHostInfo hinfo){
                     sDebug() << "RetroArchHost [" << newHost->name() << "] get IP [" << newHost->address() << "].";
-                    newHost->setHostAddress(hinfo.addresses()[0]);
+                    newHost->setHostAddress(hinfo.addresses().at(0));
                 });
             }
             addHost(newHost);
@@ -127,7 +126,6 @@ void    RetroArchFactory::checkDevices()
     while (it.hasNext())
     {
         it.next();
-        QString name = it.key();
         HostData& data = it.value();
         // Device exist and it's doing something, yay
         if (data.device != nullptr && data.device->state() == ADevice::BUSY)
