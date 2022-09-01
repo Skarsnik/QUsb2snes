@@ -374,6 +374,12 @@ bool SNESClassicFactory::checkStuff()
     {
         checkState = StatusState::CHECK_PIDCANOE;
         executeCommand("pidof canoe-shvc");
+        QTimer::singleShot(200, this, [=] {
+            if (checkState == StatusState::CHECK_PIDCANOE)
+            {
+                checkFailed(Error::DFE_SNESCLASSIC_NO_DEVICE, "Connected but canoe check timeout");
+            }
+        });
     }
     if (checkState == StatusState::CHECK_ALIVE)
     {
