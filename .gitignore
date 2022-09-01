@@ -53,5 +53,9 @@ compile_commands.json
 
 *_qmlcache.qrc
 
+# Macos specific files
+/.DS_Store
+/QUsb2Snes.app
+
 /QUsb2Snes
 /QUsb2Snes.conf
