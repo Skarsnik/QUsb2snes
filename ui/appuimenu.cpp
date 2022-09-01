@@ -38,7 +38,7 @@ void    AppUi::setMenu()
         bool noUpdate = globalSettings->contains("windowNoUpdate") && globalSettings->value("windowNoUpdate").toBool();
         if (!noUpdate)
         {
-            QObject::connect(miscMenu->addAction(QIcon(":/img/updateicon.svg"), tr( "Check for Update")), &QAction::triggered, [this] {
+            QObject::connect(miscMenu->addAction(QIcon(":/img/updateicon.svg"), tr( "Check for Update")), &QAction::triggered, this, [this] {
                 this->checkForNewVersion(true);
             });
         }
@@ -62,7 +62,7 @@ void    AppUi::setMenu()
         debugLogAction->setCheckable(true);
         debugLogAction->setChecked(globalSettings->value("debugLog").toBool());
         debugLogAction->setToolTip(tr("Enable the creation of a log file with lot of debug informations"));
-        QObject::connect(debugLogAction, &QAction::changed, [=]() {
+        QObject::connect(debugLogAction, &QAction::changed, this, [=]() {
             if (debugLogAction->isChecked())
             {
                 QMessageBox msg;

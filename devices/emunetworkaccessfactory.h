@@ -65,6 +65,7 @@ private:
     bool    doingDeviceStatus;
     bool    doingDeviceList;
     DeviceFactoryStatus  devFacStatus;
+    unsigned short          startingPort;
 
     void    checkStatus();
     void    checkFailed(EmuNWAccessClient* client, Error::DeviceError);

@@ -110,7 +110,7 @@ void DiagnosticDialog::setWSServer(WSServer *serv)
                 statusString.append(QString("%1").arg(status.errorString()));
             }
         } else {
-            for(QString name : status.deviceNames)
+            for(const QString& name : qAsConst(status.deviceNames))
             {
                 statusString.append("\n       ");
                 auto& deviceStatus = status.deviceStatus[name];
@@ -154,7 +154,7 @@ int DiagnosticDialog::exec()
     sDebug() << "Started";
     ui->deviceInternalInfosLabel->setText("Checking device status");
     socketState = TestSocketState::DEVICELIST;
-    for (QString devFactName : server->deviceFactoryNames())
+    for (const QString& devFactName : server->deviceFactoryNames())
     {
         sDebug() << ui->groupBox->layout();
         ui->groupBox->layout()->addWidget(new QLabel(devFactName));

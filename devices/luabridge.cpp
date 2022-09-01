@@ -135,7 +135,7 @@ void LuaBridge::onClientDisconnected()
 
 bool LuaBridge::asyncListDevices()
 {
-    QTimer::singleShot(0, [=] {
+    QTimer::singleShot(0, this, [=] {
         foreach(ADevice* dev, m_devices)
         {
             emit newDeviceName(dev->name());

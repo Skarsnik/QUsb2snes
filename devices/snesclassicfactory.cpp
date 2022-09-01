@@ -229,7 +229,7 @@ void SNESClassicFactory::onReadyRead()
         romLocation = 0;
         sramLocation = 0;
         bool ok;
-        for (const QByteArray& memEntry : memEntries)
+        for (const QByteArray& memEntry : qAsConst(memEntries))
         {
             sDebug() << memEntry;
             if (memEntry.isEmpty())
@@ -374,6 +374,12 @@ bool SNESClassicFactory::checkStuff()
     {
         checkState = StatusState::CHECK_PIDCANOE;
         executeCommand("pidof canoe-shvc");
+        QTimer::singleShot(200, this, [=] {
+            if (checkState == StatusState::CHECK_PIDCANOE)
+            {
+                checkFailed(Error::DFE_SNESCLASSIC_NO_DEVICE, "Connected but canoe check timeout");
+            }
+        });
     }
     if (checkState == StatusState::CHECK_ALIVE)
     {
@@ -444,7 +450,7 @@ bool SNESClassicFactory::asyncListDevices()
     if (socket->state() == QAbstractSocket::UnconnectedState)
     {
         sDebug() << "Trying to connect to serverstuff";
-        QTimer::singleShot(0, [=] {
+        QTimer::singleShot(0, this, [=] {
             socket->connectToHost(snesclassicIP, 1042);}
         );
         QTimer::singleShot(200, this, [=] {
@@ -475,7 +481,7 @@ bool SNESClassicFactory::devicesStatus()
     {
         factStatus.deviceNames.append("SNES Classic");
         factStatus.status = Error::DFS_SNESCLASSIC_READY;
-        QTimer::singleShot(0, [=] {
+        QTimer::singleShot(0, this, [=] {
             emit deviceStatusDone(factStatus);}
         );
         return true;
@@ -490,7 +496,7 @@ bool SNESClassicFactory::devicesStatus()
     if (socket->state() == QAbstractSocket::UnconnectedState)
     {
         sDebug() << "Trying to connect to serverstuff";
-        QTimer::singleShot(0, [=] {
+        QTimer::singleShot(0, this, [=] {
             socket->connectToHost(snesclassicIP, 1042);}
         );
         QTimer::singleShot(200, this, [=] {

@@ -31,11 +31,18 @@ Q_LOGGING_CATEGORY(log_emunwafactory, "Emu NWA Factory")
 #define sDebug() qCDebug(log_emunwafactory)
 
 
-// Placeholder
-const quint16 emuNetworkAccessStartPort = 65400;
 
 EmuNetworkAccessFactory::EmuNetworkAccessFactory()
 {
+    startingPort = 0xBEEF;
+    QByteArray envPort = qgetenv("NWA_PORT_RANGE");
+    if (!envPort.isEmpty())
+    {
+        bool ok;
+        unsigned short p = envPort.toUShort(&ok);
+        if (ok)
+            startingPort = p;
+    }
     for (int i = 0; i < 5; i++)
     {
         auto piko = new EmuNWAccessClient(this);
@@ -46,7 +53,7 @@ EmuNetworkAccessFactory::EmuNetworkAccessFactory()
         clientInfos[piko].device = nullptr;
         clientInfos[piko].client = piko;
         clientInfos[piko].doingAttach = false;
-        clientInfos[piko].port = emuNetworkAccessStartPort + i;
+        clientInfos[piko].port = startingPort + i;
     }
     doingDeviceList = false;
     doingDeviceStatus = false;
@@ -209,7 +216,7 @@ void    EmuNetworkAccessFactory::checkStatus()
         if (!client->isConnected())
         {
             info.checkState = DetectState::CHECK_CONNECTION;
-            client->connectToHost("127.0.0.1", info.port);
+            client->connectToHost("localhost", info.port);
             QTimer::singleShot(100, this, [=] {
                 if (!client->isConnected())
                     checkFailed(client, Error::DeviceError::DE_EMUNWA_NO_CLIENT);

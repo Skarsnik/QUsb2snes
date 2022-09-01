@@ -267,7 +267,7 @@ void WSServer::requestDeviceStatus()
 {
     factoryStatusCount = 0;
     factoryStatusDoneCount = 0;
-    for (DeviceFactory* devFac : deviceFactories)
+    for (DeviceFactory* devFac : qAsConst(deviceFactories))
     {
         if (devFac->devicesStatus())
             factoryStatusCount++;
