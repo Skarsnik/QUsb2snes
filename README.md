@@ -26,12 +26,27 @@ Installation via other means (homebrew, chocolatey, etc.) is not planned at the 
 ### Configuration files
 
 Logs are put in the standard path for application data.
-It should be: `$HOME/.local/share/QUsb2Snes` on Linux and `%APPDATA/QUsb2Snes` on Windows.
+It should be:
 
+|    OS    |                    Location                     |
+|:-------: |:----------------------------------------------: |
+| Windows  | `%APPDATA%\QUsb2Snes`                           |
+| Linux    | `$HOME/.local/share/QUsb2Snes`                  |
+| Macos    | `$HOME/Library/Application\ Support/QUsb2Snes`  |
+
+\
 Please note that the directory will be named after the binary file. If you create a symlink on Linux (e.g. qusb2snes.exe), the directory will change accordingly.
 
-And the settings file is into
-`$HOME/.config/skarsnik.nyo.fr/QUsb2Snes.conf`
+And the settings file is default to these locations:
+
+|    OS    |                    Location                                  |
+|:-------: |:-----------------------------------------------------------: |
+| Windows  | `%APPDATA%\QUsb2Snes\QUsb2Snes.ini`                          |
+| Linux    | `$HOME/.config/skarsnik.nyo.fr/QUsb2Snes.conf`              |
+| Macos    | `$HOME/Library/Preferences/fr.nyo.skarsnik.QUsb2Snes.plist`  |
+
+\
+Please review the logs to verify it it being read from default location, or another one set by the local system.
 
 ### Enabling/Disabling emulators
 
@@ -52,7 +67,6 @@ To make your sd2snes device work, you will need to set some tty setting
 
 Replace `/dev/ttyACM0` with the correct device.
 
-
 ### Emulator configuration
 
 #### SD2Snes
@@ -62,14 +76,12 @@ Just follows the instruction provided.
 Don't start `usb2snes.exe` since QUsb2snes do the same thing that the original software.
 Your sd2snes device should show up on the Devices menu when connected.
 
-
 #### SNES9x Rerecording
 
-Snes9x-rr allows to run Lua scripts in the emulator, that allows the emulator to connect to QUsb2snes. You can use the Multitroid version of Snes9x-rr (http://multitroid.com/) or use Snes9x-rr 1.60 https://github.com/gocha/snes9x-rr/releases. Older version of Snes9x-rr does not allow to write to ROM from Lua so some application will not work.
+Snes9x-rr allows to run Lua scripts in the emulator, that allows the emulator to connect to QUsb2snes. You can use the Multitroid version of Snes9x-rr (<http://multitroid.com/>) or use Snes9x-rr 1.60 <https://github.com/gocha/snes9x-rr/releases>. Older version of Snes9x-rr does not allow to write to ROM from Lua so some application will not work.
 
 Activate the `Lua bridge` on the device menu of QUsb2Snes.
 Then run the luabridge.lua script from the LuaBridge folder from the Lua console window in Snes9x
-
 
 #### BizHawk 2.3.1 (bsnes core recommanded)
 
@@ -79,7 +91,6 @@ You will need to change the Lua support on the emulator. Go into the `Config -> 
 In the Lua directory of BizHawk create a `lua_bridge` directory (or a similar name) then copy the content of the LuaBridge directory from QUsb2Snes (the lua file and the dll file).
 Run your game and then in the `Tools` menu start the `Lua console` click on the folder icon to load the `multibridge.lua` file. You need to close the Lua console if you want to disconnect properly.
 
-
 #### RetroArch with Snes9x core
 
 You can use Snex9x (not recommanded) or bsnes-mercury cores. You need to activate the network command support, etheir in the configuration menu of RetroArch or editing your `retroarch.cfg` file (can be found in %appData%\RetroArch) to set `network_cmd_enable = "true"` (default is false). Then you need to activate the RetroArch virtual device on the devices menu. Any flavor of bsnes-mercury is prefered as we can access the ROM data.
@@ -88,11 +99,9 @@ Snex9x core : For software needing to the patch the ROM (multitroid for example)
 
 You can connect to a remote RetroArch by adding a `RetroArchHosts="remoteName=ip"` in the config file. If you want to add multiple hosts, just add ; between each host definition.
 
-
 #### SNES classic (called also SNES mini)
 
 If for some reason your SNES classic does not have the expected IP address (connected via wifi or something) you can add a `SNESClassicIP=myip` in the config.ini file.
-
 
 #### Native emulator (canoe)
 
@@ -100,14 +109,13 @@ Mostly tested with Super Metroid.
 
 Enable the SNES classic support on the device menu.
 
-You need to 'hack' your SNES classic with the Hakchi2 CE version (https://github.com/TeamShinkansen/hakchi2/releases/) then remove the covershell mod if needed (as explained in https://github.com/TeamShinkansen/hakchi2/releases/tag/v3.4.0).
+You need to 'hack' your SNES classic with the Hakchi2 CE version (<https://github.com/TeamShinkansen/hakchi2/releases/>) then remove the covershell mod if needed (as explained in <https://github.com/TeamShinkansen/hakchi2/releases/tag/v3.4.0>).
 
 Install the `serverstuff` mod provided by QUsb2snes: copy the `serverstuff.hmod` to the `user_mods` directory on Hakchi2, then install the mod with Hakchi2
 
 Start the game and check if the SNES classic appear on the Devices menu, it should display something like `SNES classic : no client connected`. If not, try restarting the game.
 
 It will not work with the 'normal' Hakchi2 version as the Hakchi2 CE provide a more stable way to access the SNES Classic.
-
 
 #### RetroArch
 
@@ -116,7 +124,6 @@ Open Hakchi2 CE and in the menu go to 'tools -> open ftp client' it should open 
 Go into the `/etc/libretro/` folder and copy the `retroarch.cfg` file somewhere.
 Open the copy with a text editor and search for the `network_cmd_enable` entry, replace `false` with `true`, save.
 Then now put your copy in place of the original one.
-
 
 #### BSnes-AS
 
@@ -152,7 +159,7 @@ QUsb2snes project follow the GPL version 3 licence, you can find the full versio
 
 ## Icons
 
-* Flat style icons are from google https://material.io/tools/icons/?style=baseline and under Apache Licence 2.0
+* Flat style icons are from google <https://material.io/tools/icons/?style=baseline> and under Apache Licence 2.0
 * Snes9x and RetroArch icon are from their respective project
 * QUsb2Snes icon is from TrenteR_TR on FrankerFaceZ with changed contrast/light.
 * Most pony icons are from FrankerFaceZ.
