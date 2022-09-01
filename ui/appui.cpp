@@ -101,21 +101,21 @@ void AppUi::init()
 {
     sd2snesAction = new QAction(QIcon(":/img/ikari.ico"), tr("Enable SD2SNES/FxPak pro Support"));
     sd2snesAction->setCheckable(true);
-    connect(sd2snesAction, SIGNAL(triggered(bool)), this, SLOT(onSD2SnesTriggered(bool)));
+    connect(sd2snesAction, &QAction::triggered, this, &AppUi::onSD2SnesTriggered);
 
     retroarchAction = new QAction(QIcon(":/img/retroarch.png"), tr("Enable RetroArch virtual device (use bsnes-mercury if possible)"));
     retroarchAction->setCheckable(true);
-    connect(retroarchAction, SIGNAL(triggered(bool)), this, SLOT(onRetroarchTriggered(bool)));
+    connect(retroarchAction, &QAction::triggered, this, &AppUi::onRetroarchTriggered);
 
-    luaBridgeAction = new QAction(QIcon(":/img/icone-snes9x.gif"), tr("Enable Lua bridge (Snes9x-rr/BizHawk)"));
+    luaBridgeAction = new QAction(QIcon(":/img/icone-snes9x.gif"), tr("Enable Lua bridge - DEPECRATED"));
     luaBridgeAction->setCheckable(true);
-    connect(luaBridgeAction, SIGNAL(triggered(bool)), this, SLOT(onLuaBridgeTriggered(bool)));
+    connect(luaBridgeAction, &QAction::triggered, this, &AppUi::onLuaBridgeTriggered);
 
-    snesClassicAction = new QAction(QIcon(":/img/chrysalis.png"), tr("Enable SNES Classic support (experimental)"));
+    snesClassicAction = new QAction(QIcon(":/img/chrysalis.png"), tr("Enable SNES Classic support"));
     snesClassicAction->setCheckable(true);
-    connect(snesClassicAction, SIGNAL(triggered(bool)), this, SLOT(onSNESClassicTriggered(bool)));
+    connect(snesClassicAction, &QAction::triggered, this, &AppUi::onSNESClassicTriggered);
 
-    emuNWAccessAction = new QAction(QIcon(":/img/mr chip.png"), tr("Enable EmuNetworkAccess (experimental)"));
+    emuNWAccessAction = new QAction(QIcon(":/img/mr chip.png"), tr("Enable EmuNetworkAccess"));
     emuNWAccessAction->setCheckable(true);
     connect(emuNWAccessAction, &QAction::triggered, this, &AppUi::onEmuNWAccessTriggered);
 
