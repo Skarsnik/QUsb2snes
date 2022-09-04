@@ -208,7 +208,7 @@ int main(int ac, char *ag[])
 #ifdef Q_OS_WIN
     QFile   mlog(qApp->applicationDirPath() + "/log.txt");
     QFile   mDebugLog(qApp->applicationDirPath() + "/log-debug.txt");
-    QString crashFileQPath = qApp->applicationDirPath() + "/crash-log.txt";
+    //QString crashFileQPath = qApp->applicationDirPath() + "/crash-log.txt";
     //QByteArray bacf = crashFileQPath.toLocal8Bit();
     //char* crashFilePath = bacf.data();
 
