@@ -46,7 +46,6 @@ public:
     QStringList listDevices();
     ADevice *attach(QString deviceName);
     bool deleteDevice(ADevice *);
-    QString status();
     QString name() const;
     bool hasAsyncListDevices();
     bool asyncListDevices();

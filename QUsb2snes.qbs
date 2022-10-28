@@ -93,7 +93,7 @@ Project {
         }
     }
 
-    QtApplication {
+    /*QtApplication {
         condition: qbs.targetPlatform.contains("windows")
         name : "TestQUsb2Snes"
         cpp.cxxLanguageVersion: "c++11"
@@ -112,7 +112,7 @@ Project {
             name: "Qt"
             submodules: ["core", "network", "websockets"]
         }
-    }
+    }*/
 
     /*
     Product {

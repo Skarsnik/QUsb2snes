@@ -333,7 +333,7 @@ void    WSServer::executeRequest(MRequest *req)
                 device->putAddrCommand(req->space, vputArgs);
             } else { // Please don't use VPUT
                 sDebug() << "VPUT that get spliced";
-                spliced = true;
+                //spliced = true;
                 device->putAddrCommand(req->space, vputArgs.at(0).first, vputArgs.at(0).second);
                 putSize = vputArgs.at(0).second;
                 unsigned int totalSize = putSize;

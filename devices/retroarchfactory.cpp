@@ -176,37 +176,6 @@ bool RetroArchFactory::deleteDevice(ADevice *dev)
     return true;
 }
 
-QString RetroArchFactory::status()
-{
-    QString status;
-    QMapIterator<QString, HostData> i(raHosts);
-    while (i.hasNext())
-    {
-        i.next();
-        const HostData& host = i.value();
-        if (host.device != nullptr && host.device->state() == ADevice::BUSY)
-            status += QString("RetroArch %1").arg(i.key());
-        if (host.device == nullptr)
-        {
-            if (host.error == false)
-            {
-                if (host.host->version().toString().isEmpty() == false)
-                {
-                    status += QString("RetroArch %1 - Version %2").arg(i.key(), host.host->version().toString());
-                } else {
-                    status += QString("RetroArch %1 not running").arg(i.key());
-                }
-            } else {
-                status += QString("RetroArch %1: %2").arg(i.key(), host.host->lastInfoError());
-            }
-        }
-        if (i.hasNext())
-            status += " | ";
-    }
-    sDebug() << status;
-    return status;
-}
-
 QString RetroArchFactory::name() const
 {
     return "RetroArch";

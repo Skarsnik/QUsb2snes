@@ -43,12 +43,11 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 
 #include "../usb2snes.h"
 #include "appui.h"
-#include "../devices/snesclassic.h"
 #include "../wsserver.h"
 #include "tempdeviceselector.h"
 
 
-const  QString             applicationJsonFileName = "qusb2snesapp.json";
+static const  QString             applicationJsonFileName = "qusb2snesapp.json";
 extern QSettings*          globalSettings;
 extern WSServer            wsServer;
 
@@ -649,6 +648,7 @@ static bool    searchForQUsb2snesEntry(QString qmlFile)
 
 static QString  searchWindowTitle(QString qmlFile)
 {
+    static QRegularExpression exp("windowTitle\\s*\\:\\s*\"(.+)\"");
     QFile f(qmlFile);
     sDebug() << "Searching in " << qmlFile;
     if (f.open(QIODevice::Text | QIODevice::ReadOnly))
@@ -661,11 +661,11 @@ static QString  searchWindowTitle(QString qmlFile)
             if (line.indexOf("windowTitle") != -1)
             {
                 sDebug() << line;
-                QRegExp exp("windowTitle\\s*\\:\\s*\"(.+)\"");
-                if (exp.indexIn(line) != -1)
+                auto match = exp.match(line);
+                if (match.hasMatch())
                 {
-                    sDebug() << "Found : " << exp.cap(1);
-                    return exp.cap(1);
+                    sDebug() << "Found : " << match.captured(1);
+                    return match.captured(1);
                 }
             }
          }

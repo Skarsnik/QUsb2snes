@@ -207,7 +207,7 @@ void SNESClassicFactory::onReadyRead()
             uint32_t pid = canoePid.toULong(&ok);
             QString s;
             //(*0x1dff84) + 0x20BEC
-            s.sprintf("READ_MEM %u %zx %u\n", pid, 0x1dff84, 4);
+            s.asprintf("READ_MEM %u %zx %u\n", pid, 0x1dff84, 4);
             readMemSize = 4;
             writeSocket(s.toUtf8());
         } else {
@@ -235,7 +235,7 @@ void SNESClassicFactory::onReadyRead()
             if (memEntry.isEmpty())
                 continue;
             QString s = memEntry;
-            QStringList ls = s.split(" ", QString::SkipEmptyParts);
+            QStringList ls = s.split(" ", Qt::SkipEmptyParts);
 
             if (ls.at(1) == "5092")
             {
@@ -260,7 +260,7 @@ void SNESClassicFactory::onReadyRead()
                 unsigned int location = ls.at(0).toULong(&ok, 16);
                 lastPmapLocation = location;
                 QString s;
-                s.sprintf("READ_MEM %u %x %u\n", pid, location + 2044 * 1024, 20);
+                s.asprintf("READ_MEM %u %x %u\n", pid, location + 2044 * 1024, 20);
                 readMemSize = 20;
                 writeSocket(s.toUtf8());
                 checkState = StatusState::CHECK_MEMORY_LOCATION_READ_ROM_CHECK1;
@@ -285,7 +285,7 @@ void SNESClassicFactory::onReadyRead()
             bool ok;
             uint32_t pid = canoePid.toULong(&ok);
             QString s;
-            s.sprintf("READ_MEM %u %x %u\n", pid, lastPmapLocation, 20);
+            s.asprintf("READ_MEM %u %x %u\n", pid, lastPmapLocation, 20);
             readMemSize = 20;
             writeSocket(s.toUtf8());
             checkState = StatusState::CHECK_MEMORY_LOCATION_READ_ROM_CHECK2;
@@ -426,11 +426,6 @@ ADevice *SNESClassicFactory::attach(QString deviceName)
 bool SNESClassicFactory::deleteDevice(ADevice *)
 {
     return false;
-}
-
-QString SNESClassicFactory::status()
-{
-    return QString();
 }
 
 QString SNESClassicFactory::name() const

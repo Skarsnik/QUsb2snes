@@ -43,8 +43,16 @@ QStringList SD2SnesFactory::listDevices()
     QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
     foreach (QSerialPortInfo usbinfo, sinfos)
     {
-        sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
-        if (usbinfo.serialNumber() == "DEMO00000000")
+        bool isBusy = false;
+        QString name = "SD2SNES " + usbinfo.portName();
+        if (mapPortDev.contains(name) == false)
+        {
+            QSerialPort sPort(usbinfo);
+            isBusy = sPort.open(QIODevice::ReadWrite);
+            sPort.close();
+        }
+        sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Used by other software " << isBusy;
+        if (isBusy == false && usbinfo.serialNumber() == "DEMO00000000")
                 toret << "SD2SNES " + usbinfo.portName();
     }
     return toret;
@@ -66,18 +74,6 @@ ADevice *SD2SnesFactory::attach(QString deviceName)
     mapPortDev[deviceName] = newDev;
     m_devices.append(newDev);
     return newDev;
-}
-
-QString SD2SnesFactory::status()
-{
-    QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
-    foreach (QSerialPortInfo usbinfo, sinfos)
-    {
-        sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
-        if (usbinfo.serialNumber() == "DEMO00000000")
-                return QString(tr("SD2SNES detected on %1", "Arg is port name")).arg(usbinfo.portName());
-    }
-    return tr("No SD2Snes device detected.");
 }
 
 QString SD2SnesFactory::name() const
@@ -111,13 +107,20 @@ bool SD2SnesFactory::devicesStatus()
         status.deviceStatus.clear();
         foreach (QSerialPortInfo usbinfo, sinfos)
         {
-            sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
+            bool isBusy = false;
+            QString name = "SD2SNES " + usbinfo.portName();
+            if (mapPortDev.contains(name) == false)
+            {
+                QSerialPort sPort(usbinfo);
+                isBusy = sPort.open(QIODevice::ReadWrite);
+                sPort.close();
+            }
+            sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Used by other software " << isBusy;
             if (usbinfo.serialNumber() == "DEMO00000000")
             {
-                QString name = "SD2SNES " + usbinfo.portName();
                 status.deviceNames.append(name);
                 status.deviceStatus[name].state = ADevice::CLOSED;
-                status.deviceStatus[name].error = Error::DeviceError::DE_NO_ERROR;
+                status.deviceStatus[name].error = isBusy ? Error::DeviceError::DE_SD2SNES_BUSY : Error::DeviceError::DE_NO_ERROR;
                 status.status = Error::DeviceFactoryStatusEnum::DFS_SD2SNES_READY;
                 status.generalError = Error::DeviceFactoryError::DFE_NO_ERROR;
             }
@@ -134,8 +137,16 @@ bool SD2SnesFactory::asyncListDevices()
          QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
         foreach (QSerialPortInfo usbinfo, sinfos)
         {
-            sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << usbinfo.isBusy();
-            if (usbinfo.serialNumber() == "DEMO00000000")
+            bool isBusy = false;
+            QString name = "SD2SNES " + usbinfo.portName();
+            if (mapPortDev.contains(name) == false)
+            {
+                QSerialPort sPort(usbinfo);
+                isBusy = sPort.open(QIODevice::ReadWrite);
+                sPort.close();
+            }
+            sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << isBusy;
+            if (isBusy == false && usbinfo.serialNumber() == "DEMO00000000")
                 emit newDeviceName("SD2SNES " + usbinfo.portName());
         }
         emit devicesListDone();

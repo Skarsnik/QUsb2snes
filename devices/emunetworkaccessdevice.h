@@ -1,8 +1,3 @@
-#ifndef EMUNETWORKACCESSDEVICE_H
-#define EMUNETWORKACCESSDEVICE_H
-
-#include <QObject>
-#include <QTimer>
 /*
  * Copyright (c) 2018 Sylvain "Skarsnik" Colinet.
  *
@@ -22,6 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with QUsb2Snes.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+
+#ifndef EMUNETWORKACCESSDEVICE_H
+#define EMUNETWORKACCESSDEVICE_H
+
+#include <QObject>
+#include <QTimer>
 
 
 #include "../adevice.h"

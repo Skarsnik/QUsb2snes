@@ -37,7 +37,6 @@ public:
 public:
     QStringList listDevices();
     bool deleteDevice(ADevice *);
-    QString status();
     QString name() const;
     bool asyncListDevices();
     bool devicesStatus();

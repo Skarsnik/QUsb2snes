@@ -131,10 +131,6 @@ bool EmuNetworkAccessFactory::deleteDevice(ADevice *device)
     return false;
 }
 
-QString EmuNetworkAccessFactory::status()
-{
-    return QString();
-}
 
 QString EmuNetworkAccessFactory::name() const
 {

@@ -54,6 +54,8 @@ QString deviceErrorString(DeviceError er)
 {
     switch(er)
     {
+    case DE_SD2SNES_BUSY:
+        return QObject::tr("Sd2Snes/FxPak pro device is busy");
     case DE_RETROARCH_UNREACHABLE:
         return QObject::tr("Host unreachable");
     case DE_RETROARCH_NO_CONNECTION:
