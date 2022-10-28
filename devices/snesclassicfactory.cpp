@@ -235,7 +235,11 @@ void SNESClassicFactory::onReadyRead()
             if (memEntry.isEmpty())
                 continue;
             QString s = memEntry;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14 ,0)
             QStringList ls = s.split(" ", Qt::SkipEmptyParts);
+#else
+            QStringList ls = s.split(" ", QString::SkipEmptyParts);
+#endif
 
             if (ls.at(1) == "5092")
             {
