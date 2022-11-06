@@ -208,7 +208,7 @@ void RetroArchHost::onReadyRead()
 void RetroArchHost::onPacket(QByteArray& data)
 {
     // GET_STATUS PAUSED super_nes,Secret of Evermore,crc32=5756f698
-    static QRegularExpression statusExp("^GET_STATUS (\\w+)(\\s.+)?");
+    static const QRegularExpression statusExp("^GET_STATUS (\\w+)(\\s.+)?");
     commandTimeoutTimer.stop();
 
     switch(state)
@@ -267,7 +267,7 @@ void RetroArchHost::onPacket(QByteArray& data)
         case ReqInfoStatus:
         {
             QRegularExpressionMatch match = statusExp.match(data);
-            if (match.hasMatch())
+            if (!match.hasMatch())
             {
                 makeInfoFail("RetroArch did not return a proper formated status reply");
                 break;
