@@ -28,6 +28,8 @@ public:
 private:
     Ui::DeviceSetupWizard *ui;
 
+    bool    showQuitMessage();
+
 protected:
     void closeEvent(QCloseEvent *event);
 
