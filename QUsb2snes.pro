@@ -10,10 +10,21 @@ UISOURCES = ui/appui.cpp \
             ui/appuimenu.cpp \
             ui/appuipoptracker.cpp \
             ui/tempdeviceselector.cpp \
-            ui/diagnosticdialog.cpp
+            ui/diagnosticdialog.cpp \
+            ui/wizard/deviceselectorpage.cpp \
+            ui/wizard/devicesetupwizard.cpp \
+            ui/wizard/lastpage.cpp \
+            ui/wizard/retroarchpage.cpp \
+            ui/wizard/sd2snespage.cpp
 UIHEADERS = ui/appui.h \
             ui/tempdeviceselector.h \
-            ui/diagnosticdialog.h
+            ui/diagnosticdialog.h \
+            ui/wizard/deviceselectorpage.h \
+            ui/wizard/devicesetupwizard.h \
+            ui/wizard/lastpage.h \
+            ui/wizard/retroarchpage.h \
+            ui/wizard/sd2snespage.h
+
 
 equals(QUSB2SNES_NOGUI, 1) {
     message("building QUsb2Snes in NOGUI mode")
@@ -22,7 +33,13 @@ equals(QUSB2SNES_NOGUI, 1) {
 } else {
     QT += gui widgets
     FORMS =  ui/tempdeviceselector.ui \
-             ui/diagnosticdialog.ui
+             ui/diagnosticdialog.ui \
+             ui/wizard/deviceselectorpage.ui \
+             ui/wizard/devicesetupwizard.ui \
+             ui/wizard/lastpage.ui \
+             ui/wizard/retroarchpage.ui \
+             ui/wizard/sd2snespage.ui
+
     SOURCES = $$UISOURCES
     HEADERS = $$UIHEADERS
 }
