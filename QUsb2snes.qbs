@@ -6,7 +6,7 @@ Project {
     QtApplication {
         name : "QUsb2Snes"
         cpp.cxxLanguageVersion: "c++11"
-        cpp.includePaths: ["devices/EmuNWAccess-qt"]
+        cpp.includePaths: ["devices/EmuNWAccess-qt", "./"]
         consoleApplication: false
         files: [
             "TODO",
@@ -63,6 +63,21 @@ Project {
             "devices/sd2snesdevice.h",
             "devices/snesclassic.cpp",
             "devices/snesclassic.h",
+            "ui/wizard/deviceselectorpage.cpp",
+            "ui/wizard/deviceselectorpage.h",
+            "ui/wizard/deviceselectorpage.ui",
+            "ui/wizard/devicesetupwizard.cpp",
+            "ui/wizard/devicesetupwizard.h",
+            "ui/wizard/devicesetupwizard.ui",
+            "ui/wizard/lastpage.cpp",
+            "ui/wizard/lastpage.h",
+            "ui/wizard/lastpage.ui",
+            "ui/wizard/retroarchpage.cpp",
+            "ui/wizard/retroarchpage.h",
+            "ui/wizard/retroarchpage.ui",
+            "ui/wizard/sd2snespage.cpp",
+            "ui/wizard/sd2snespage.h",
+            "ui/wizard/sd2snespage.ui",
             "usb2snes.h",
             "wsserver.cpp",
             "wsserver.h",

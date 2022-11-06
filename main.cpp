@@ -52,6 +52,7 @@
 #include "devices/retroarchfactory.h"
 #include "devices/snesclassicfactory.h"
 #include "devices/emunetworkaccessfactory.h"
+#include "ui/wizard/devicesetupwizard.h"
 
 std::ostream* stdLogStream = nullptr;
 

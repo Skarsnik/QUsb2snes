@@ -37,6 +37,8 @@
 #include <QVBoxLayout>
 #include <QSettings>
 
+#include <ui/wizard/devicesetupwizard.h>
+
 Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #define sDebug() qCDebug(log_appUi)
 #define sInfo() qCInfo(log_appUi)
@@ -152,50 +154,32 @@ void AppUi::init()
         }
     }
     checkForApplications();
-
-
-#
-
     connect(qApp, &QCoreApplication::aboutToQuit, this, [=]() {
       sysTray->hide();
     });
-    if (!globalSettings->contains("FirstTime"))
+    if (true || !globalSettings->contains("FirstTime"))
     {
         globalSettings->setValue("FirstTime", true);
-        TempDeviceSelector selector;
-        if (selector.exec() == QDialog::Accepted)
+        DeviceSetupWizard wiz;
+        if (wiz.exec() == QDialog::Accepted)
         {
-            if (selector.devices.contains("SD2SNES"))
+            if (wiz.deviceSelected() == DeviceSetupWizard::SD2SNES)
             {
                 onSD2SnesTriggered(true);
-#ifdef Q_OS_WIN
-                QMessageBox msg;
-                msg.setText(tr("Do you want to create a entry in the 'Send To' menu in the context menu of Windows to upload file to the sd2snes?"));
-                msg.setInformativeText(tr("This will only be asked once, if you want to add it later go into the Misc menu."));
-                msg.setWindowTitle("QUsb2Snes");
-                msg.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-                msg.setDefaultButton(QMessageBox::Ok);
-                int ret = msg.exec();
-                if (ret == QMessageBox::Ok)
+                if (wiz.contextMenu())
                     addWindowsSendToEntry();
-#endif
             }
-            if (selector.devices.contains("LUA"))
-            {
-                luaBridgeAction->setChecked(true);
-                onLuaBridgeTriggered(true);
-            }
-            if (selector.devices.contains("RETROARCH"))
+            if (wiz.deviceSelected() == DeviceSetupWizard::RETROARCH)
             {
                 retroarchAction->setChecked(true);
                 onRetroarchTriggered(true);
             }
-            if (selector.devices.contains("CLASSIC"))
+            if (wiz.deviceSelected() == DeviceSetupWizard::SNESCLASSIC)
             {
                 snesClassicAction->setChecked(true);
                 onSNESClassicTriggered(true);
             }
-            if (selector.devices.contains("NWA"))
+            if (wiz.deviceSelected() == DeviceSetupWizard::NWA)
             {
                 emuNWAccessAction->setChecked(true);
                 onEmuNWAccessTriggered(true);
