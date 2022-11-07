@@ -49,7 +49,7 @@ void Sd2SnesPage::refreshCOMPort()
         {
             bool isBusy = false;
             QSerialPort sPort(usbinfo);
-            isBusy = sPort.open(QIODevice::ReadWrite);
+            isBusy = !sPort.open(QIODevice::ReadWrite);
             sPort.close();
             deviceFound = true;
             if (isBusy)

@@ -48,7 +48,7 @@ QStringList SD2SnesFactory::listDevices()
         if (mapPortDev.contains(name) == false)
         {
             QSerialPort sPort(usbinfo);
-            isBusy = sPort.open(QIODevice::ReadWrite);
+            isBusy = !sPort.open(QIODevice::ReadWrite);
             sPort.close();
         }
         sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Used by other software " << isBusy;
@@ -112,7 +112,7 @@ bool SD2SnesFactory::devicesStatus()
             if (mapPortDev.contains(name) == false)
             {
                 QSerialPort sPort(usbinfo);
-                isBusy = sPort.open(QIODevice::ReadWrite);
+                isBusy = !sPort.open(QIODevice::ReadWrite);
                 sPort.close();
             }
             sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Used by other software " << isBusy;
@@ -142,7 +142,7 @@ bool SD2SnesFactory::asyncListDevices()
             if (mapPortDev.contains(name) == false)
             {
                 QSerialPort sPort(usbinfo);
-                isBusy = sPort.open(QIODevice::ReadWrite);
+                isBusy = !sPort.open(QIODevice::ReadWrite);
                 sPort.close();
             }
             sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << isBusy;
