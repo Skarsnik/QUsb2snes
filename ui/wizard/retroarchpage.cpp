@@ -7,6 +7,7 @@ RetroArchPage::RetroArchPage(QWidget *parent) :
 {
     ui->setupUi(this);
     raHost = nullptr;
+    infoDone = false;
 }
 
 RetroArchPage::~RetroArchPage()
@@ -27,6 +28,8 @@ void RetroArchPage::startCheck()
         ui->raVersionLabel->setText(QString(tr("RetroArch version : %1")).arg(raHost->version().toString()));
         ui->raContentLabel->setText(QString(tr("Current game played : %1")).arg(raHost->gameTitle()));
         ui->refreshButton->setEnabled(true);
+        infoDone = true;
+        emit completeChanged();
     });
     connect(raHost, &RetroArchHost::infoFailed, this, [=](quint64 id)
     {
@@ -34,6 +37,8 @@ void RetroArchPage::startCheck()
            ui->raVersionLabel->setText(tr("RetroArch version : %1").arg(raHost->version().toString()));
        ui->raContentLabel->setText(QString(tr("Info error : %1\nPlease insert a SNES Game, if you still see this error try another core")).arg(raHost->lastInfoError()));
        ui->refreshButton->setEnabled(true);
+       infoDone = false;
+       emit completeChanged();
     });
 
 }
@@ -45,7 +50,7 @@ void RetroArchPage::initializePage()
 
 bool RetroArchPage::isComplete() const
 {
-    return false;
+    return infoDone;
 }
 
 int RetroArchPage::nextId() const

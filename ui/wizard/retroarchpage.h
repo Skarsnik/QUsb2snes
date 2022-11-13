@@ -20,6 +20,7 @@ private:
     Ui::RetroArchPage *ui;
 
     RetroArchHost*  raHost;
+    bool            infoDone;
 
     void startCheck();
 public:
