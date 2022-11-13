@@ -64,7 +64,7 @@ jobs:
             mkdir LuaBridge
             Copy-Item ..\LuaBridge\luabridge.lua LuaBridge\
             cd LuaBridge\
-            Invoke-WebRequest -Uri http://www.nyo.fr/~skarsnik/socket.dll -OutFile socket.dll
+            Invoke-WebRequest -Uri https://shelter.mahoro-net.org/~skarsnik/project/socket.dll -OutFile socket.dll
             cd ..
             # Translations
             mkdir i18n
