@@ -52,7 +52,6 @@
 #include "devices/retroarchfactory.h"
 #include "devices/snesclassicfactory.h"
 #include "devices/emunetworkaccessfactory.h"
-#include "ui/wizard/devicesetupwizard.h"
 
 std::ostream* stdLogStream = nullptr;
 
@@ -124,9 +123,10 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 {
     QByteArray localMsg = msg.toLocal8Bit();
     QTextStream*    log = &logfile;
+    //QTextStream* log = new QTextStream();
     //cout << msg;
-    if (dontLogNext)
-        return ;
+//    if (dontLogNext)
+//        return ;
 #ifdef QT_NO_DEBUG
     QString logString = QString("%6 %5 - %7: %1").arg(localMsg.constData()).arg(context.category, 20).arg(QDateTime::currentDateTime().toString(Qt::ISODate));
 #else
@@ -173,7 +173,7 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
         log->flush();
     }
 #ifdef QUSB2SNES_DEVEL
-    cout << QString("%1 : %2").arg(context.category, 20).arg(msg) << "\n";
+    cout << QString("%3 - %1 : %2").arg(context.category, 20).arg(msg).arg(QDateTime::currentDateTime().toString(Qt::ISODate)) << "\n";
     cout.flush();
 #endif
 }
