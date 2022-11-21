@@ -50,11 +50,13 @@ void Sd2SnesPage::refreshCOMPort()
             bool isBusy = false;
             QSerialPort sPort(usbinfo);
             isBusy = !sPort.open(QIODevice::ReadWrite);
+            auto err = sPort.errorString();
             sPort.close();
             deviceFound = true;
             if (isBusy)
             {
-                ui->comStatusLabel->setText(QString(tr("SD2Snes/FXPak pro found on port %1 but the device is used by another software")).arg(usbinfo.portName()));
+                ui->comStatusLabel->setText(QString(tr("SD2Snes/FXPak Pro found on port %1, but %2")).arg(usbinfo.portName(), err.toLower()));
+                ui->refreshButton->setEnabled(true);
             } else {
                 if (sd2snesDevice != nullptr)
                 {
@@ -64,7 +66,7 @@ void Sd2SnesPage::refreshCOMPort()
                 sd2snesGetInfos();
                 ui->comStatusLabel->setText(QString(tr("SD2Snes found on port %1")).arg(usbinfo.portName()));
             }
-            return ;
+            return;
         }
     }
     ui->refreshButton->setEnabled(true);
