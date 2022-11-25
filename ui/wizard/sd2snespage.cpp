@@ -50,11 +50,20 @@ void Sd2SnesPage::refreshCOMPort()
             bool isBusy = false;
             QSerialPort sPort(usbinfo);
             isBusy = !sPort.open(QIODevice::ReadWrite);
+            auto error = sPort.error();
             sPort.close();
             deviceFound = true;
             if (isBusy)
             {
-                ui->comStatusLabel->setText(QString(tr("SD2Snes/FXPak pro found on port %1 but the device is used by another software")).arg(usbinfo.portName()));
+                QString errorString = sPort.errorString();
+                if (error == QSerialPort::PermissionError)
+                    errorString = "You don't have the permission on the device or the device is used by another program (did you run QUsb2Snes twice?)";
+#ifdef Q_OS_LINUX
+                QFileInfo fi(sPort.portName());
+                if (!fi.permission(QFile::WriteUser | QFile::WriteGroup))
+                    errorString = "You don't have permission to use the serial device, consider adding yourself to the correct group (serialport or ...)";
+#endif
+                ui->comStatusLabel->setText(QString(tr("SD2Snes/FXPak pro found on port %1 but can't use the device. %2")).arg(usbinfo.portName(), errorString));
             } else {
                 if (sd2snesDevice != nullptr)
                 {
