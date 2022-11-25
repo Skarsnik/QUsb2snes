@@ -107,48 +107,4 @@ Project {
             cpp.frameworks: ["Foundation"]
         }
     }
-
-    /*QtApplication {
-        condition: qbs.targetPlatform.contains("windows")
-        name : "TestQUsb2Snes"
-        cpp.cxxLanguageVersion: "c++11"
-        files: [
-            "testmain.cpp",
-            "client/usb2snes.h",
-            "client/usb2snes.cpp"
-        ]
-
-        Group {
-            fileTagsFilter: "application"
-            qbs.install: true
-        }
-
-        Depends {
-            name: "Qt"
-            submodules: ["core", "network", "websockets"]
-        }
-    }*/
-
-    /*
-    Product {
-        name : "deploy"
-        Depends {
-            name : "QUsb2Snes"
-        }
-        Rule {
-            inputsFromDependencies: ["application"]
-            prepare : {
-                var cmd = new Command("windeploy-qt", ["--no-translations",
-                                                       "--no-system-d3d-compiler",
-                                                       "--no-opengl",
-                                                       "--no-svg",
-                                                       "--no-webkit",
-                                                       "--no-webkit2",
-                                                       inputs[0].filePath])
-                cmd.description = "Running windeply-qt"
-                return cmd
-            }
-        }
-
-    }*/
 }
