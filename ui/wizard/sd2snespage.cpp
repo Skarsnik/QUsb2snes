@@ -59,6 +59,7 @@ void Sd2SnesPage::refreshCOMPort()
                 if (error == QSerialPort::PermissionError)
                     errorString = "You don't have the permission on the device or the device is used by another program (did you run QUsb2Snes twice?)";
 #ifdef Q_OS_LINUX
+                #include <QFileInfo>
                 QFileInfo fi(sPort.portName());
                 if (!fi.permission(QFile::WriteUser | QFile::WriteGroup))
                     errorString = "You don't have permission to use the serial device, consider adding yourself to the correct group (serialport or ...)";
