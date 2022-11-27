@@ -59,10 +59,10 @@ void Sd2SnesPage::refreshCOMPort()
             {
                 if (error == QSerialPort::PermissionError)
                     errorString = "You don't have the permission on the device or the device is used by another program (did you run QUsb2Snes twice?)";
-#if defined Q_OS_UNIX || Q_OS_MAC
+#if defined Q_OS_UNIX || defined Q_OS_MAC
                 QFileInfo fi(usbinfo.systemLocation());
                 if (!fi.permission(QFile::WriteUser | QFile::WriteGroup))
-                    errorString = "You don't have permission to use the serial device, consider adding yourself to the correct group (serialport or ...)";
+                    errorString = "You don't have permission to use the serial device, consider adding yourself to the correct group (<i>uucp</i> or <i>dialout</i> for example)";
 #endif
                 ui->comStatusLabel->setText(QString(tr("SD2Snes/FXPak pro found on port %1 but can't use the device. %2")).arg(usbinfo.portName(), errorString));
             } else {
