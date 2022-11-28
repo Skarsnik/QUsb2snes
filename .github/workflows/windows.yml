@@ -33,6 +33,7 @@ jobs:
         uses: jurplel/install-qt-action@v3
         with:
           version: '6.4.*'
+          modules: 'qtwebsocket qserialport'
       -
         name: build      
         run: | 
