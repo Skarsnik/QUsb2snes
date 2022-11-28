@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Windows build Qt6
+name: Windows build Qt5
 
 # Controls when the workflow will run
 on:
@@ -32,7 +32,7 @@ jobs:
         name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
-          version: '6.4.*'
+          version: '5.12.2'
       -
         name: build      
         run: | 
