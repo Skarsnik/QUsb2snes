@@ -157,7 +157,7 @@ void AppUi::init()
     connect(qApp, &QCoreApplication::aboutToQuit, this, [=]() {
       sysTray->hide();
     });
-    if (true || !globalSettings->contains("FirstTime"))
+    if (!globalSettings->contains("FirstTime"))
     {
         globalSettings->setValue("FirstTime", true);
         DeviceSetupWizard wiz;
