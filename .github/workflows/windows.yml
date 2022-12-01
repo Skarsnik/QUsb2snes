@@ -65,8 +65,12 @@ jobs:
             if (test-path vc_redist.x86.exe) {
             Remove-Item vc_redist.x86.exe
             }
+            if (test-path libEGL.dll) {
             Remove-Item libEGL.dll
+            }
+            if (test-path libGLESV2.dll) {
             Remove-Item libGLESV2.dll
+            }
             Copy-Item ..\LICENSE .\LICENCE-GPLV3.txt
             Copy-Item ..\README.md .\Readme.txt
             mkdir LuaBridge
