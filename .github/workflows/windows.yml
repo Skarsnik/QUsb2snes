@@ -107,7 +107,7 @@ jobs:
           path: QUsb2Snes.7z
       -
         name: Prep Release
-        if: false && startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
              Copy-Item QUsb2Snes.7z "QUsb2Snes-$env:GIT_TAG_NAME.7z"            
 
