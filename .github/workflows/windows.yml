@@ -117,7 +117,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            "QUsb2Snes-${{ steps.tagName.outputs.tag }}.7z"
+            *.7z
             QUsb2Snes\QUsb2Snes.exe
             QUsb2Snes\WinUpdater.exe
           draft: true
