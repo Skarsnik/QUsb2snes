@@ -166,8 +166,10 @@ void AppUi::onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus sta
     } else {
         statusString = status.name + " : ";
     }
+    //sDebug() << "Checking status";
     if (status.deviceNames.isEmpty())
     {
+        //sDebug() << "No device, factory status";
         if (status.generalError == Error::DeviceFactoryError::DFE_NO_ERROR)
         {
             statusString.append(QString("%1").arg(status.statusString()));
@@ -175,6 +177,7 @@ void AppUi::onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus sta
             statusString.append(QString("%1").arg(status.errorString()));
         }
     } else {
+        //sDebug() << "Each device Status" << status.deviceNames;
         for(QString& name : status.deviceNames)
         {
             statusString = "       ";
@@ -198,7 +201,6 @@ void AppUi::onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus sta
             statusString.clear();
         }
     }
-
     if (status.deviceNames.isEmpty())
     {
         deviceMenu->addAction(statusString);
