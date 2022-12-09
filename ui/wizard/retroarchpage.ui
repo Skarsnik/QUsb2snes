@@ -94,7 +94,7 @@
    <item>
     <widget class="QLabel" name="raContentLabel">
      <property name="text">
-      <string>No content</string>
+      <string>Nothing</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
