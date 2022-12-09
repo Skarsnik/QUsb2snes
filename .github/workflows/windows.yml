@@ -116,7 +116,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: "QUsb2Snes-${{ steps.tagName.outputs.tag }}.7z"
+          files: 
+            - "QUsb2Snes-${{ steps.tagName.outputs.tag }}.7z"
+            - QUsb2Snes\QUsb2Snes.exe
+            - QUsb2Snes\WinUpdater.exe
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
