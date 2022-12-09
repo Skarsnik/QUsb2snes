@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Install Qt
-        run: sudo apt-get update && sudo apt-get install qt5-default qt5-qmake libqt5serialport5-dev libqt5websockets5-dev 
+        run: sudo apt-get update && sudo apt-get install qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5serialport5-dev libqt5websockets5-dev 
         
       - uses: actions/checkout@v2
         with:
@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: Install Qt
-        run: sudo apt-get update && sudo apt-get install qt5-default qt5-qmake libqt5serialport5-dev libqt5websockets5-dev
+        run: sudo apt-get update && sudo apt-get install qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5serialport5-dev libqt5websockets5-dev
         
       - uses: actions/checkout@v2
         with:
@@ -56,7 +56,7 @@ jobs:
 
     steps:
       - name: Install Qt
-        run: sudo apt-get update && sudo apt-get install qt5-default qt5-qmake libqt5serialport5-dev libqt5websockets5-dev
+        run: sudo apt-get update && sudo apt-get install qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5serialport5-dev libqt5websockets5-dev
         
       - uses: actions/checkout@v2
         with:
@@ -76,7 +76,7 @@ jobs:
 
     steps:
       - name: Install Qt
-        run: sudo apt-get update && sudo apt-get install qt5-default qt5-qmake libqt5serialport5-dev libqt5websockets5-dev clazy
+        run: sudo apt-get update && sudo apt-get install qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libqt5serialport5-dev libqt5websockets5-dev clazy
         
       - uses: actions/checkout@v2
         with:
