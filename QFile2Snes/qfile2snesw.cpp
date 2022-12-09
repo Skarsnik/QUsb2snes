@@ -276,7 +276,7 @@ void QFile2SnesW::onLocalDirectoryLoaded(const QString& path)
     ui->currentPathLabel->setText(path.left(3) + path.mid(3).right(100));
 }
 
-void QFile2SnesW::on_driveComboBox_activated(const QString &arg1)
+void QFile2SnesW::on_driveComboBox_activated(int arg1)
 {
     Q_UNUSED(arg1)
     QFileSystemModel* mod = static_cast<QFileSystemModel*> (ui->driveComboBox->model());
