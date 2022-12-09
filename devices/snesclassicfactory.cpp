@@ -205,9 +205,8 @@ void SNESClassicFactory::onReadyRead()
             checkState = StatusState::CHECK_MEMORY_LOCATION_READ_RAM_LOC;
             bool     ok;
             uint32_t pid = canoePid.toULong(&ok);
-            QString s;
             //(*0x1dff84) + 0x20BEC
-            s.asprintf("READ_MEM %u %zx %u\n", pid, 0x1dff84, 4);
+            QString s = QString::asprintf("READ_MEM %u %zx %u\n", pid, 0x1dff84, 4);
             readMemSize = 4;
             writeSocket(s.toUtf8());
         } else {
@@ -263,8 +262,7 @@ void SNESClassicFactory::onReadyRead()
                 uint32_t pid = canoePid.toULong(&ok);
                 unsigned int location = ls.at(0).toULong(&ok, 16);
                 lastPmapLocation = location;
-                QString s;
-                s.asprintf("READ_MEM %u %x %u\n", pid, location + 2044 * 1024, 20);
+                QString s = QString::asprintf("READ_MEM %u %x %u\n", pid, location + 2044 * 1024, 20);
                 readMemSize = 20;
                 writeSocket(s.toUtf8());
                 checkState = StatusState::CHECK_MEMORY_LOCATION_READ_ROM_CHECK1;
@@ -288,8 +286,7 @@ void SNESClassicFactory::onReadyRead()
         // If it wasn't there, also check at the start of this block
             bool ok;
             uint32_t pid = canoePid.toULong(&ok);
-            QString s;
-            s.asprintf("READ_MEM %u %x %u\n", pid, lastPmapLocation, 20);
+            QString s = QString::asprintf("READ_MEM %u %x %u\n", pid, lastPmapLocation, 20);
             readMemSize = 20;
             writeSocket(s.toUtf8());
             checkState = StatusState::CHECK_MEMORY_LOCATION_READ_ROM_CHECK2;
