@@ -58,19 +58,15 @@
      <property name="title">
       <string>Websocket statut</string>
      </property>
-     <widget class="QLabel" name="deviceWebsocketInfosLabel">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>40</y>
-        <width>47</width>
-        <height>13</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Websocket devices infos</string>
-      </property>
-     </widget>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QLabel" name="deviceWebsocketInfosLabel">
+        <property name="text">
+         <string>Websocket devices infos</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
    <item>
