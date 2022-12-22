@@ -119,8 +119,13 @@ static void seg_handler(int sig)
 // and only the relevant information is logged but not the whole snes classic message exchange
 bool    dontLogNext = false;
 
+const unsigned int MAX_LINE_LOG = 2000;
+QFile*  refToLogFile;
+
 void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
+    static QString  logBuffer;
+    static quint32  logCounter = 0;
     QByteArray localMsg = msg.toLocal8Bit();
     QTextStream*    log = &logfile;
     //QTextStream* log = new QTextStream();
@@ -140,15 +145,17 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
         case QtCriticalMsg:
             logDebugCrash.append(logString.arg("Critical"));
             *log << logString.arg("Critical");
+            logBuffer.append(logString.arg("Critical"));
             break;
         case QtWarningMsg:
             logDebugCrash.append(logString.arg("Warning"));
             *log << logString.arg("Warning");
+            logBuffer.append(logString.arg("Warning"));
             break;
         case QtFatalMsg:
             logDebugCrash.append(logString.arg("Fatal"));
             *log << logString.arg("Fatal");
-            *log<< "\n"; log->flush();
+            *log << "\n"; log->flush();
             #ifndef QUSB2SNES_NOGUI
             QMessageBox::critical(nullptr, QObject::tr("Critical error"), msg);
             #else
@@ -159,6 +166,7 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
         case QtInfoMsg:
             logDebugCrash.append(logString.arg("Info"));
             *log << logString.arg("Info");
+            logBuffer.append(logString.arg("Info"));
             break;
     }
     if (debugLogFile.device() != nullptr)
@@ -170,6 +178,14 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
     if (type != QtDebugMsg)
     {
         *log << "\n";
+        logBuffer.append("\n");
+        if (logCounter == MAX_LINE_LOG) {
+            logCounter = 0;
+            refToLogFile->resize(0);
+            *log << logBuffer;
+            logBuffer.clear();
+        }
+        logCounter++;
         log->flush();
     }
 #ifdef QUSB2SNES_DEVEL
@@ -238,6 +254,7 @@ int main(int ac, char *ag[])
     if (mlog.open(QIODevice::WriteOnly | QIODevice::Text))
     {
         logfile.setDevice(&mlog);
+        refToLogFile = &mlog;
         qInstallMessageHandler(myMessageOutput);
     }
     app.setApplicationName("QUsb2Snes");
