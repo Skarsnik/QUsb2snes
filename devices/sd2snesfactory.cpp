@@ -43,17 +43,21 @@ QStringList SD2SnesFactory::listDevices()
     QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
     foreach (QSerialPortInfo usbinfo, sinfos)
     {
-        bool isBusy = false;
-        QString name = "SD2SNES " + usbinfo.portName();
-        if (mapPortDev.contains(name) == false)
+        sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber();
+        if (usbinfo.serialNumber() == "DEMO00000000")
         {
-            QSerialPort sPort(usbinfo);
-            isBusy = !sPort.open(QIODevice::ReadWrite);
-            sPort.close();
-        }
-        sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Used by other software " << isBusy;
-        if (isBusy == false && usbinfo.serialNumber() == "DEMO00000000")
+            bool isBusy = false;
+            QString name = "SD2SNES " + usbinfo.portName();
+            if (mapPortDev.contains(name) == false)
+            {
+                QSerialPort sPort(usbinfo);
+                isBusy = !sPort.open(QIODevice::ReadWrite);
+                sPort.close();
+            }
+            sDebug()  << "Used by other software " << isBusy;
+            if (isBusy == false)
                 toret << "SD2SNES " + usbinfo.portName();
+        }
     }
     return toret;
 }
@@ -107,17 +111,18 @@ bool SD2SnesFactory::devicesStatus()
         status.deviceStatus.clear();
         foreach (QSerialPortInfo usbinfo, sinfos)
         {
-            bool isBusy = false;
-            QString name = "SD2SNES " + usbinfo.portName();
-            if (mapPortDev.contains(name) == false)
-            {
-                QSerialPort sPort(usbinfo);
-                isBusy = !sPort.open(QIODevice::ReadWrite);
-                sPort.close();
-            }
-            sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Used by other software " << isBusy;
+            sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber();
             if (usbinfo.serialNumber() == "DEMO00000000")
             {
+                bool isBusy = false;
+                QString name = "SD2SNES " + usbinfo.portName();
+                if (mapPortDev.contains(name) == false)
+                {
+                    QSerialPort sPort(usbinfo);
+                    isBusy = !sPort.open(QIODevice::ReadWrite);
+                    sPort.close();
+                }
+                sDebug() << "Used by other software " << isBusy;
                 status.deviceNames.append(name);
                 status.deviceStatus[name].state = ADevice::CLOSED;
                 status.deviceStatus[name].error = isBusy ? Error::DeviceError::DE_SD2SNES_BUSY : Error::DeviceError::DE_NO_ERROR;
@@ -134,20 +139,25 @@ bool SD2SnesFactory::devicesStatus()
 bool SD2SnesFactory::asyncListDevices()
 {
     QTimer::singleShot(0, this , [=]{
-         QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
+        QList<QSerialPortInfo> sinfos = QSerialPortInfo::availablePorts();
         foreach (QSerialPortInfo usbinfo, sinfos)
         {
-            bool isBusy = false;
-            QString name = "SD2SNES " + usbinfo.portName();
-            if (mapPortDev.contains(name) == false)
+            sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber();
+            if (usbinfo.serialNumber() == "DEMO00000000")
             {
-                QSerialPort sPort(usbinfo);
-                isBusy = !sPort.open(QIODevice::ReadWrite);
-                sPort.close();
-            }
-            sDebug() << usbinfo.portName() << usbinfo.description() << usbinfo.serialNumber() << "Busy : " << isBusy;
-            if (isBusy == false && usbinfo.serialNumber() == "DEMO00000000")
+                bool isBusy = false;
+                QString name = "SD2SNES " + usbinfo.portName();
+                if (mapPortDev.contains(name) == false)
+                {
+                    QSerialPort sPort(usbinfo);
+                    isBusy = !sPort.open(QIODevice::ReadWrite);
+                    sPort.close();
+                    if (!isBusy)
+                        emit newDeviceName("SD2SNES " + usbinfo.portName());
+                    continue;
+                }
                 emit newDeviceName("SD2SNES " + usbinfo.portName());
+            }
         }
         emit devicesListDone();
     });
