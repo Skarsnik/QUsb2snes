@@ -2,8 +2,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![C/C++ CI](https://github.com/Skarsnik/QUsb2snes/actions/workflows/buildlinux.yml/badge.svg)](https://github.com/Skarsnik/QUsb2snes/actions/workflows/buildlinux.yml)
-[![Build status](https://ci.appveyor.com/api/projects/status/r8t2hpt21ux5r7mi/branch/master?svg=true)](https://ci.appveyor.com/project/Skarsnik/qusb2snes/branch/master)
-
+[![C/C++ CI](https://github.com/Skarsnik/QUsb2snes/actions/workflows/windows.yml/badge.svg)](https://github.com/Skarsnik/QUsb2snes/actions/workflows/windows.yml)
 QUsb2Snes is a websocket server that provide an unified protocol for accessing hardware/software that act like a SNES (or are a SNES).
 A classic usage is to use the FileViewer client to upload roms to your SD2SNES.
 But it allows for more advanced usage like reading/writing the memory of the SNES.
@@ -135,10 +134,6 @@ Only the non gui version take arguments, It still use the config file but you ca
 * `-luabridge` : for the lua bridge support
 * `-retroarch` : for the retroarch support
 * `-snesclassic` :  for the snes classic support
-
-#### NO GUI
-
-To configure QUsb2snes for RetroArch when using `-nogui` option
 
 ---
 

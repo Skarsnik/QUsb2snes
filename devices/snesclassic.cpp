@@ -57,7 +57,7 @@ void SNESClassic::onSocketReadReady()
     if (m_state == CLOSED)
         return;
     QByteArray data = socket->readAll();
-    sDebug() << "Read stuff on socket " << cmdWasGet << " : " << data.size();
+    //sDebug() << "Read stuff on socket " << cmdWasGet << " : " << data.size();
     sDebug() << "<<" << data << data.toHex();
     if (requestInfo)
     {

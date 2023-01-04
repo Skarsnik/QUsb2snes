@@ -1,0 +1,112 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Windows build Qt5
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+    tags:
+      - '*'
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: windows-latest
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: little-core-labs/get-git-tag@v3.0.1
+        id: tagName
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+        with: 
+          submodules : true
+      -
+       # I wish I could use Chocolatey or something else but it's a pain in the but
+        name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '5.12.2'
+      -
+        name: build      
+        run: | 
+            qmake QUsb2Snes.pro -spec win32-msvc "CONFIG+=release"
+            nmake
+            lrelease QUsb2Snes.pro
+            qmake WinUpdater.pro -spec win32-msvc "CONFIG+=release"
+            nmake
+            cd QFile2Snes
+            qmake QFile2Snes.pro -spec win32-msvc "CONFIG+=release"
+            lrelease QFile2Snes.pro
+            nmake
+            qmake SendToSd2Snes.pro -spec win32-msvc "CONFIG+=release"
+            lrelease SendToSd2Snes.pro
+            nmake
+            cd ..
+      -
+        name: Build 7zip
+        run: |
+            mkdir QUsb2Snes
+            mkdir QUsb2Snes\apps
+            xcopy release\QUsb2Snes.exe QUsb2Snes\
+            xcopy release\WinUpdater.exe QUsb2Snes\
+            cd QUsb2Snes
+            windeployqt.exe --no-translations --no-system-d3d-compiler --no-opengl-sw --no-opengl --no-webkit --no-patchqt --no-webkit2 --release  QUsb2Snes.exe
+            Remove-Item vc_redist.x64.exe
+            Remove-Item libEGL.dll
+            Remove-Item libGLESV2.dll
+            Copy-Item ..\LICENSE .\LICENCE-GPLV3.txt
+            Copy-Item ..\README.md .\Readme.txt
+            mkdir LuaBridge
+            Copy-Item ..\LuaBridge\luabridge.lua LuaBridge\
+            cd LuaBridge\
+            Invoke-WebRequest -Uri https://shelter.mahoro-net.org/~skarsnik/project/socket.dll -OutFile socket.dll
+            cd ..
+            # Translations
+            mkdir i18n
+            xcopy /y ..\Translations\qusb2snes_fr.qm i18n\
+            cd ..
+            # QFile2Snes deployment
+            Copy-Item QFile2Snes\release\SendToSd2Snes.exe .\QUsb2Snes\
+            mkdir QUsb2Snes\apps\QFile2Snes
+            xcopy QFile2Snes\release\QFile2Snes.exe QUsb2Snes\apps\QFile2Snes\
+            Copy-Item QFile2Snes\icon50x50.png QUsb2Snes\apps\QFile2Snes\icone.png
+            xcopy QFile2Snes\qusb2snesapp.json QUsb2Snes\apps\QFile2Snes\
+            # Translations
+            mkdir QUsb2Snes\apps\QFile2Snes\i18n
+            xcopy QFile2Snes\Translations\qfile2snes_fr.qm QUsb2Snes\apps\QFile2Snes\i18n\
+            xcopy QFile2Snes\Translations\sendtodialog_fr.qm QUsb2Snes\i18n\
+            Invoke-WebRequest -Uri "https://github.com/Skarsnik/snesclassicstuff/releases/download/serverstuffmod_v1/serverstuff.hmod" -OutFile "serverstuff.hmod"
+            Copy-Item serverstuff.hmod QUsb2Snes\
+            # Open SSL for the updater
+            #dir "C:\Program Files\OpenSSL-Win64\bin\"
+            Copy-Item "C:\Program Files\OpenSSL\bin\libcrypto-1_1-x64.dll" QUsb2Snes\libcrypto-1_1-x64.dll
+            Copy-Item "C:\Program Files\OpenSSL\bin\libssl-1_1-x64.dll" QUsb2Snes\libssl-1_1-x64.dll
+            7z a "QUsb2Snes.7z" QUsb2Snes
+      -
+        name: Upload 7zip
+        uses: actions/upload-artifact@v2
+        with:
+          name: QUsb2Snes.7z
+          path: QUsb2Snes.7z
+      -
+        name: Prep Release
+        if: false && startsWith(github.ref, 'refs/tags/')
+        run: |
+             Copy-Item QUsb2Snes.7z "QUsb2Snes-$env:GIT_TAG_NAME.7z"            
+
+      -
+        name: Release
+        uses: softprops/action-gh-release@v1
+        if: false && startsWith(github.ref, 'refs/tags/')
+        with:
+          files: "QUsb2Snes-${{ steps.tagName.outputs.tag }}.7z"
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

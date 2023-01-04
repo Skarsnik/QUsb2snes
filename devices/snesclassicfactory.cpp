@@ -205,9 +205,8 @@ void SNESClassicFactory::onReadyRead()
             checkState = StatusState::CHECK_MEMORY_LOCATION_READ_RAM_LOC;
             bool     ok;
             uint32_t pid = canoePid.toULong(&ok);
-            QString s;
             //(*0x1dff84) + 0x20BEC
-            s.sprintf("READ_MEM %u %zx %u\n", pid, 0x1dff84, 4);
+            QString s = QString::asprintf("READ_MEM %u %zx %u\n", pid, 0x1dff84, 4);
             readMemSize = 4;
             writeSocket(s.toUtf8());
         } else {
@@ -229,13 +228,17 @@ void SNESClassicFactory::onReadyRead()
         romLocation = 0;
         sramLocation = 0;
         bool ok;
-        for (const QByteArray& memEntry : memEntries)
+        for (const QByteArray& memEntry : qAsConst(memEntries))
         {
             sDebug() << memEntry;
             if (memEntry.isEmpty())
                 continue;
             QString s = memEntry;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14 ,0)
+            QStringList ls = s.split(" ", Qt::SkipEmptyParts);
+#else
             QStringList ls = s.split(" ", QString::SkipEmptyParts);
+#endif
 
             if (ls.at(1) == "5092")
             {
@@ -259,8 +262,7 @@ void SNESClassicFactory::onReadyRead()
                 uint32_t pid = canoePid.toULong(&ok);
                 unsigned int location = ls.at(0).toULong(&ok, 16);
                 lastPmapLocation = location;
-                QString s;
-                s.sprintf("READ_MEM %u %x %u\n", pid, location + 2044 * 1024, 20);
+                QString s = QString::asprintf("READ_MEM %u %x %u\n", pid, location + 2044 * 1024, 20);
                 readMemSize = 20;
                 writeSocket(s.toUtf8());
                 checkState = StatusState::CHECK_MEMORY_LOCATION_READ_ROM_CHECK1;
@@ -284,8 +286,7 @@ void SNESClassicFactory::onReadyRead()
         // If it wasn't there, also check at the start of this block
             bool ok;
             uint32_t pid = canoePid.toULong(&ok);
-            QString s;
-            s.sprintf("READ_MEM %u %x %u\n", pid, lastPmapLocation, 20);
+            QString s = QString::asprintf("READ_MEM %u %x %u\n", pid, lastPmapLocation, 20);
             readMemSize = 20;
             writeSocket(s.toUtf8());
             checkState = StatusState::CHECK_MEMORY_LOCATION_READ_ROM_CHECK2;
@@ -374,6 +375,12 @@ bool SNESClassicFactory::checkStuff()
     {
         checkState = StatusState::CHECK_PIDCANOE;
         executeCommand("pidof canoe-shvc");
+        QTimer::singleShot(200, this, [=] {
+            if (checkState == StatusState::CHECK_PIDCANOE)
+            {
+                checkFailed(Error::DFE_SNESCLASSIC_NO_DEVICE, "Connected but canoe check timeout");
+            }
+        });
     }
     if (checkState == StatusState::CHECK_ALIVE)
     {
@@ -422,11 +429,6 @@ bool SNESClassicFactory::deleteDevice(ADevice *)
     return false;
 }
 
-QString SNESClassicFactory::status()
-{
-    return QString();
-}
-
 QString SNESClassicFactory::name() const
 {
     return "SNES Classic (Hakchi2CE)";
@@ -444,7 +446,7 @@ bool SNESClassicFactory::asyncListDevices()
     if (socket->state() == QAbstractSocket::UnconnectedState)
     {
         sDebug() << "Trying to connect to serverstuff";
-        QTimer::singleShot(0, [=] {
+        QTimer::singleShot(0, this, [=] {
             socket->connectToHost(snesclassicIP, 1042);}
         );
         QTimer::singleShot(200, this, [=] {
@@ -458,7 +460,7 @@ bool SNESClassicFactory::asyncListDevices()
     } else {
         checkStuff();
     }
-    return false;
+    return true;
 }
 
 
@@ -475,7 +477,7 @@ bool SNESClassicFactory::devicesStatus()
     {
         factStatus.deviceNames.append("SNES Classic");
         factStatus.status = Error::DFS_SNESCLASSIC_READY;
-        QTimer::singleShot(0, [=] {
+        QTimer::singleShot(0, this, [=] {
             emit deviceStatusDone(factStatus);}
         );
         return true;
@@ -490,7 +492,7 @@ bool SNESClassicFactory::devicesStatus()
     if (socket->state() == QAbstractSocket::UnconnectedState)
     {
         sDebug() << "Trying to connect to serverstuff";
-        QTimer::singleShot(0, [=] {
+        QTimer::singleShot(0, this, [=] {
             socket->connectToHost(snesclassicIP, 1042);}
         );
         QTimer::singleShot(200, this, [=] {

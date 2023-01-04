@@ -31,11 +31,18 @@ Q_LOGGING_CATEGORY(log_emunwafactory, "Emu NWA Factory")
 #define sDebug() qCDebug(log_emunwafactory)
 
 
-// Placeholder
-const quint16 emuNetworkAccessStartPort = 65400;
 
 EmuNetworkAccessFactory::EmuNetworkAccessFactory()
 {
+    startingPort = 0xBEEF;
+    QByteArray envPort = qgetenv("NWA_PORT_RANGE");
+    if (!envPort.isEmpty())
+    {
+        bool ok;
+        unsigned short p = envPort.toUShort(&ok);
+        if (ok)
+            startingPort = p;
+    }
     for (int i = 0; i < 5; i++)
     {
         auto piko = new EmuNWAccessClient(this);
@@ -46,7 +53,7 @@ EmuNetworkAccessFactory::EmuNetworkAccessFactory()
         clientInfos[piko].device = nullptr;
         clientInfos[piko].client = piko;
         clientInfos[piko].doingAttach = false;
-        clientInfos[piko].port = emuNetworkAccessStartPort + i;
+        clientInfos[piko].port = startingPort + i;
     }
     doingDeviceList = false;
     doingDeviceStatus = false;
@@ -68,7 +75,7 @@ ADevice *EmuNetworkAccessFactory::attach(QString deviceName)
         {
             if (ci.device == nullptr)
             {
-                ci.device = new EmuNetworkAccessDevice(deviceName);
+                ci.device = new EmuNetworkAccessDevice(deviceName, ci.port);
             }
             if (ci.device->state() == ADevice::BUSY)
                 return ci.device;
@@ -124,10 +131,6 @@ bool EmuNetworkAccessFactory::deleteDevice(ADevice *device)
     return false;
 }
 
-QString EmuNetworkAccessFactory::status()
-{
-    return QString();
-}
 
 QString EmuNetworkAccessFactory::name() const
 {
@@ -150,7 +153,18 @@ void    EmuNetworkAccessFactory::onClientReadyRead()
     if (info.doingAttach)
         return ;
     auto rep = client->readReply();
+    sDebug() << rep;
     switch (info.checkState) {
+    case DetectState::DOING_NAME:
+    {
+        if (rep.isError) {
+            checkFailed(client, Error::DeviceError::DE_EMUNWA_INCOMPATIBLE_CLIENT);
+            break;
+        }
+        clientInfos[client].checkState = DetectState::CHECK_EMU_INFO;
+        client->cmdEmulatorInfo();
+        break;
+    }
     case DetectState::CHECK_EMU_INFO:
     {
         if (rep.isError) {
@@ -198,7 +212,7 @@ void    EmuNetworkAccessFactory::checkStatus()
         if (!client->isConnected())
         {
             info.checkState = DetectState::CHECK_CONNECTION;
-            client->connectToHost("127.0.0.1", info.port);
+            client->connectToHost("localhost", info.port);
             QTimer::singleShot(100, this, [=] {
                 if (!client->isConnected())
                     checkFailed(client, Error::DeviceError::DE_EMUNWA_NO_CLIENT);
@@ -321,8 +335,9 @@ void EmuNetworkAccessFactory::onClientConnected()
     EmuNWAccessClient* client = qobject_cast<EmuNWAccessClient*>(sender());
     if (clientInfos[client].checkState == DetectState::CHECK_CONNECTION)
     {
-        clientInfos[client].checkState = DetectState::CHECK_EMU_INFO;
-        client->cmdEmulatorInfo();
+
+        clientInfos[client].checkState = DetectState::DOING_NAME;
+        client->cmdMyNameIs("QUsb2Snes control connection");
     }
 }
 

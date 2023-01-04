@@ -64,7 +64,7 @@ QList<LocalStorage::FileInfo> LocalStorage::list(const QString path)
     QDir nDir(nPath);
     nDir.refresh();
     auto infoList = rootDir.entryInfoList();
-    for (QFileInfo info : infoList) {
+    for (const QFileInfo& info : qAsConst(infoList)) {
         LocalStorage::FileInfo fi;
         fi.name = info.fileName();
         if (info.isDir())

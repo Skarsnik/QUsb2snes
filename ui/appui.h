@@ -21,11 +21,11 @@
 #ifndef APPUI_H
 #define APPUI_H
 
-#include "devices/luabridge.h"
-#include "devices/snesclassicfactory.h"
-#include "devices/sd2snesfactory.h"
-#include "devices/retroarchfactory.h"
-#include "devices/emunetworkaccessfactory.h"
+#include "../devices/luabridge.h"
+#include "../devices/snesclassicfactory.h"
+#include "../devices/sd2snesfactory.h"
+#include "../devices/retroarchfactory.h"
+#include "../devices/emunetworkaccessfactory.h"
 
 #include <QMenu>
 #include <QObject>
@@ -56,7 +56,6 @@ private slots:
     void    onLuaBridgeTriggered(bool checked);
     void    onSNESClassicTriggered(bool checked);
     void    onEmuNWAccessTriggered(bool checked);
-    void    onMenuAboutToshow();
     void    onAppsMenuTriggered(QAction* action);
     void    onMagic2SnesMenuTriggered(QAction*action);
     void    addWindowsSendToEntry();
@@ -80,11 +79,20 @@ private:
         friend QDebug              operator<<(QDebug debug, const ApplicationInfo& req);
     };
 
+    struct PopTrackerPackInfo
+    {
+        QString id;
+        QVersionNumber version;
+        QString description;
+        friend QDebug              operator<<(QDebug debug, const PopTrackerPackInfo& req);
+    };
+    friend QDebug              operator<<(QDebug debug, const AppUi::PopTrackerPackInfo& req);
     friend QDebug              operator<<(QDebug debug, const AppUi::ApplicationInfo& req);
     QMenu*              menu;
     QMenu*              deviceMenu;
     QMenu*              appsMenu;
     QMenu*              magic2SnesMenu;
+    QMenu*              popTrackerMenu;
     QMenu*              miscMenu;
     QString             magic2SnesExe;
     QAction*            sd2snesAction;
@@ -105,6 +113,9 @@ private:
     QProgressBar*                   dlProgressBar;
     QWidget*                        dlWindow;
     bool                            checkingDeviceInfos;
+    QString                         popTrackerExePath;
+
+    quint8                          linuxActionPos;
 
     void                checkForApplications();
     void                handleMagic2Snes(QString path);
@@ -119,6 +130,12 @@ private:
     void addLuaBridgeFactory();
     void addSnesClassicFactory();
     void addNWAFactory();
+    void setLinuxDeviceMenu();
+    void setMenu();
+    void setDeviceEntry(const QString str);
+    QList<PopTrackerPackInfo> poptrackerScanPack();
+    bool checkPopTracker();
+    void addPopTrackerMenu();
 };
 
 #endif // APPUI_H

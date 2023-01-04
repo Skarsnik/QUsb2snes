@@ -1,20 +1,29 @@
 <RCC>
     <qresource prefix="/img">
-        <file alias="cheer.png">ui/cheer.png</file>
-        <file>icon64x64.ico</file>
-        <file alias="deviceicon.svg">ui/deviceicon.svg</file>
-        <file alias="appicon.svg">ui/appicon.svg</file>
-        <file alias="quiticon.svg">ui/quiticon.svg</file>
-        <file alias="magic2snesicon.png">ui/magic2snesicon.png</file>
-        <file alias="retroarch.png">ui/retroarch.png</file>
-        <file alias="icone-snes9x.gif">ui/icone-snes9x.gif</file>
-        <file alias="chrysalis.png">ui/chrysalis.png</file>
-        <file alias="multitroid.png">ui/multitroid.png</file>
-        <file alias="updateicon.svg">ui/updateicon.svg</file>
-        <file alias="microsoft-windows-logo.svg">ui/microsoft-windows-logo.svg</file>
-        <file alias="BK small.png">ui/BK small.png</file>
-        <file alias="ikari.ico">ui/ikari.ico</file>
-        <file alias="mr chip.png">ui/mr chip.png</file>
+        <file alias="cheer.png">ui/icons/cheer.png</file>
+        <file alias="icon64x64.ico">ui/icons/icon64x64.ico</file>
+        <file alias="deviceicon.svg">ui/icons/deviceicon.svg</file>
+        <file alias="appicon.svg">ui/icons/appicon.svg</file>
+        <file alias="quiticon.svg">ui/icons/quiticon.svg</file>
+        <file alias="magic2snesicon.png">ui/icons/magic2snesicon.png</file>
+        <file alias="retroarch.png">ui/icons/retroarch.png</file>
+        <file alias="icone-snes9x.gif">ui/icons/icone-snes9x.gif</file>
+        <file alias="chrysalis.png">ui/icons/chrysalis.png</file>
+        <file alias="multitroid.png">ui/icons/multitroid.png</file>
+        <file alias="updateicon.svg">ui/icons/updateicon.svg</file>
+        <file alias="microsoft-windows-logo.svg">ui/icons/microsoft-windows-logo.svg</file>
+        <file alias="BK small.png">ui/icons/BK small.png</file>
+        <file alias="ikari.ico">ui/icons/ikari.ico</file>
+        <file alias="mr chip.png">ui/icons/mr chip.png</file>
+        <file alias="poptrackericon.png">ui/icons/poptrackericon.png</file>
     </qresource>
-    <qresource prefix="/"/>
+    <qresource prefix="/wizardpic">
+        <file alias="ikaripic.png">ui/wizard/pictures/ikaripic.png</file>
+        <file alias="snesclassic.png">ui/wizard/pictures/snesclassic.png</file>
+        <file alias="flitter.png">ui/wizard/pictures/flitter.png</file>
+        <file alias="flitter_flying.png">ui/wizard/pictures/flitter_flying.png</file>
+        <file alias="flitter_flying_flipped.png">ui/wizard/pictures/flitter_flying_flipped.png</file>
+        <file alias="flitter_pleading.png">ui/wizard/pictures/flitter_pleading.png</file>
+        <file alias="systrayarrow.png">ui/wizard/pictures/systrayarrow.png</file>
+    </qresource>
 </RCC>

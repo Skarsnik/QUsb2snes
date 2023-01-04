@@ -73,7 +73,7 @@ RetroArchFactory::RetroArchFactory()
         } else {
             RetroArchHost* old = new RetroArchHost(oldEntry);
             QHostInfo::lookupHost(oldEntry, this, [old](QHostInfo hinfo){
-                old->setHostAddress(hinfo.addresses()[0]);
+                old->setHostAddress(hinfo.addresses().at(0));
             });
            addHost(old);
         }
@@ -84,19 +84,18 @@ RetroArchFactory::RetroArchFactory()
         sDebug() << hostString;
         QStringList hosts = hostString.split(';');
         foreach(QString host, hosts) {
-            QString name;
             RetroArchHost* newHost;
             if (host.contains('=')) {
                 newHost = new RetroArchHost(host.split('=').at(0));
                 QHostInfo::lookupHost(host.split('=').at(1), this, [newHost](QHostInfo hinfo){
                     sDebug() << "RetroArchHost [" << newHost->name() << "] get IP [" << newHost->address() << "].";
-                    newHost->setHostAddress(hinfo.addresses()[0]);
+                    newHost->setHostAddress(hinfo.addresses().at(0));
                 });
             } else {
                 newHost = new RetroArchHost(host);
                 QHostInfo::lookupHost(host, this, [newHost](QHostInfo hinfo){
                     sDebug() << "RetroArchHost [" << newHost->name() << "] get IP [" << newHost->address() << "].";
-                    newHost->setHostAddress(hinfo.addresses()[0]);
+                    newHost->setHostAddress(hinfo.addresses().at(0));
                 });
             }
             addHost(newHost);
@@ -141,7 +140,6 @@ void    RetroArchFactory::checkDevices()
     while (it.hasNext())
     {
         it.next();
-        QString name = it.key();
         HostData& data = it.value();
         // Device exist and it's doing something, yay
         if (data.device != nullptr && data.device->state() == ADevice::BUSY)
@@ -190,37 +188,6 @@ bool RetroArchFactory::deleteDevice(ADevice *dev)
     }
     raDev->deleteLater();
     return true;
-}
-
-QString RetroArchFactory::status()
-{
-    QString status;
-    QMapIterator<QString, HostData> i(raHosts);
-    while (i.hasNext())
-    {
-        i.next();
-        const HostData& host = i.value();
-        if (host.device != nullptr && host.device->state() == ADevice::BUSY)
-            status += QString("RetroArch %1").arg(i.key());
-        if (host.device == nullptr)
-        {
-            if (host.error == false)
-            {
-                if (host.host->version().toString().isEmpty() == false)
-                {
-                    status += QString("RetroArch %1 - Version %2").arg(i.key(), host.host->version().toString());
-                } else {
-                    status += QString("RetroArch %1 not running").arg(i.key());
-                }
-            } else {
-                status += QString("RetroArch %1: %2").arg(i.key(), host.host->lastInfoError());
-            }
-        }
-        if (i.hasNext())
-            status += " | ";
-    }
-    sDebug() << status;
-    return status;
 }
 
 QString RetroArchFactory::name() const

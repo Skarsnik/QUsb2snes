@@ -70,7 +70,6 @@ public:
     virtual ADevice*    attach(QString deviceName);
     virtual bool        deleteDevice(ADevice*) = 0;
     QString             attachError() const;
-    virtual QString     status() = 0;
     virtual QString     name() const = 0;
     virtual bool        hasAsyncListDevices();
     virtual bool        asyncListDevices() = 0;
@@ -82,7 +81,7 @@ signals:
     void    deviceRemoved(ADevice*);
     void    newDeviceName(QString name);
     void    devicesListDone();
-    void    deviceStatusDone(DeviceFactoryStatus status);
+    void    deviceStatusDone(DeviceFactory::DeviceFactoryStatus status);
 
 
 protected:

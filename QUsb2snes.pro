@@ -17,7 +17,7 @@ equals(QUSB2SNES_NOGUI, 1) {
     QT -= gui
 } else {
     QT += gui widgets
-    FORMS =  ui/tempdeviceselector.ui
+    FORMS =  tempdeviceselector.ui
     SOURCES = $$UISOURCES
     HEADERS = $$UIHEADERS
 }
@@ -75,7 +75,7 @@ macx: {
 	HEADERS += osx/appnap.h
 	LIBS += -framework Foundation
 	QMAKE_INFO_PLIST = osx/Info.plist
-	ICON = cheer128x128.icns
+        ICON = ui/icons/cheer128x128.icns
 }
 
 RESOURCES = ressources.qrc

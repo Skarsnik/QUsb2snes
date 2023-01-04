@@ -119,13 +119,19 @@ static void seg_handler(int sig)
 // and only the relevant information is logged but not the whole snes classic message exchange
 bool    dontLogNext = false;
 
+const unsigned int MAX_LINE_LOG = 2000;
+QFile*  refToLogFile;
+
 void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
+    static QString  logBuffer;
+    static quint32  logCounter = 0;
     QByteArray localMsg = msg.toLocal8Bit();
     QTextStream*    log = &logfile;
+    //QTextStream* log = new QTextStream();
     //cout << msg;
-    if (dontLogNext)
-        return ;
+//    if (dontLogNext)
+//        return ;
 #ifdef QT_NO_DEBUG
     QString logString = QString("%6 %5 - %7: %1").arg(localMsg.constData()).arg(context.category, 20).arg(QDateTime::currentDateTime().toString(Qt::ISODate));
 #else
@@ -139,15 +145,17 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
         case QtCriticalMsg:
             logDebugCrash.append(logString.arg("Critical"));
             *log << logString.arg("Critical");
+            logBuffer.append(logString.arg("Critical"));
             break;
         case QtWarningMsg:
             logDebugCrash.append(logString.arg("Warning"));
             *log << logString.arg("Warning");
+            logBuffer.append(logString.arg("Warning"));
             break;
         case QtFatalMsg:
             logDebugCrash.append(logString.arg("Fatal"));
             *log << logString.arg("Fatal");
-            *log<< "\n"; log->flush();
+            *log << "\n"; log->flush();
             #ifndef QUSB2SNES_NOGUI
             QMessageBox::critical(nullptr, QObject::tr("Critical error"), msg);
             #else
@@ -158,6 +166,7 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
         case QtInfoMsg:
             logDebugCrash.append(logString.arg("Info"));
             *log << logString.arg("Info");
+            logBuffer.append(logString.arg("Info"));
             break;
     }
     if (debugLogFile.device() != nullptr)
@@ -169,10 +178,18 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
     if (type != QtDebugMsg)
     {
         *log << "\n";
+        logBuffer.append("\n");
+        if (logCounter == MAX_LINE_LOG) {
+            logCounter = 0;
+            refToLogFile->resize(0);
+            *log << logBuffer;
+            logBuffer.clear();
+        }
+        logCounter++;
         log->flush();
     }
 #ifdef QUSB2SNES_DEVEL
-    cout << QString("%1 : %2").arg(context.category, 20).arg(msg) << "\n";
+    cout << QString("%3 - %1 : %2").arg(context.category, 20).arg(msg).arg(QDateTime::currentDateTime().toString(Qt::ISODate)) << "\n";
     cout.flush();
 #endif
 }
@@ -208,8 +225,8 @@ int main(int ac, char *ag[])
 #ifdef Q_OS_WIN
     QFile   mlog(qApp->applicationDirPath() + "/log.txt");
     QFile   mDebugLog(qApp->applicationDirPath() + "/log-debug.txt");
-    QString crashFileQPath = qApp->applicationDirPath() + "/crash-log.txt";
-    QByteArray bacf = crashFileQPath.toLocal8Bit();
+    //QString crashFileQPath = qApp->applicationDirPath() + "/crash-log.txt";
+    //QByteArray bacf = crashFileQPath.toLocal8Bit();
     //char* crashFilePath = bacf.data();
 
 #else
@@ -237,6 +254,7 @@ int main(int ac, char *ag[])
     if (mlog.open(QIODevice::WriteOnly | QIODevice::Text))
     {
         logfile.setDevice(&mlog);
+        refToLogFile = &mlog;
         qInstallMessageHandler(myMessageOutput);
     }
     app.setApplicationName("QUsb2Snes");
@@ -261,6 +279,7 @@ int main(int ac, char *ag[])
     wsServer.addTrusted("https://multiworld.samus.link/");
     wsServer.addTrusted("http://usb2snes.com");
     wsServer.addTrusted("https://samus.link");
+    wsServer.addTrusted("https://funtoon.party");
     QLoggingCategory::setFilterRules("EmuNWAccessClient.debug=true\n");
 
 #ifndef QUSB2SNES_NOGUI

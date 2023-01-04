@@ -71,7 +71,7 @@ private slots:
     void on_menuButton_clicked();
     void    onLocalDirectoryLoaded(const QString& path);
 
-    void on_driveComboBox_activated(const QString &arg1);
+    void on_driveComboBox_activated(int arg1);
 
     void on_patchButton_clicked();
 

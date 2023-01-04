@@ -77,11 +77,6 @@ bool LuaBridge::deleteDevice(ADevice *dev)
     return true;
 }
 
-QString LuaBridge::status()
-{
-    return "Waiting for connection on 127.0.0.1:65398";
-}
-
 QString LuaBridge::name() const
 {
     return "Lua Bridge";
@@ -122,7 +117,7 @@ void LuaBridge::onClientDisconnected()
     QTcpSocket* sock = qobject_cast<QTcpSocket*>(sender());
     LuaBridgeDevice* ldev = mapSockDev[sock];
     sDebug() << "Lua script closed the connection" << ldev->luaName();
-    ldev->closed();
+    emit ldev->closed();
     allocatedNames.removeAll(ldev->luaName());
     if (allocatedNames.isEmpty())
     {
@@ -135,7 +130,7 @@ void LuaBridge::onClientDisconnected()
 
 bool LuaBridge::asyncListDevices()
 {
-    QTimer::singleShot(0, [=] {
+    QTimer::singleShot(0, this, [=] {
         foreach(ADevice* dev, m_devices)
         {
             emit newDeviceName(dev->name());

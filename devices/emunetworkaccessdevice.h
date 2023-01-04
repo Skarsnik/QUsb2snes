@@ -1,8 +1,3 @@
-#ifndef EMUNETWORKACCESSDEVICE_H
-#define EMUNETWORKACCESSDEVICE_H
-
-#include <QObject>
-#include <QTimer>
 /*
  * Copyright (c) 2018 Sylvain "Skarsnik" Colinet.
  *
@@ -24,6 +19,12 @@
  */
 
 
+#ifndef EMUNETWORKACCESSDEVICE_H
+#define EMUNETWORKACCESSDEVICE_H
+
+#include <QObject>
+#include <QTimer>
+
 #include "core/adevice.h"
 #include "core/localstorage.h"
 #include "emunwaccessclient.h"
@@ -33,7 +34,7 @@ class EmuNetworkAccessDevice : public ADevice
     Q_OBJECT
 
 public:
-    EmuNetworkAccessDevice(QString name);
+    EmuNetworkAccessDevice(QString name, uint port);
 
     // ADevice interface
 public:

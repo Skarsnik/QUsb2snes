@@ -36,6 +36,7 @@ public:
     enum DetectState {
         NO_CHECK,
         CHECK_CONNECTION,
+        DOING_NAME,
         CHECK_EMU_INFO,
         CHECK_CORE_LIST,
     };
@@ -45,7 +46,6 @@ public:
     QStringList listDevices();
     ADevice *attach(QString deviceName);
     bool deleteDevice(ADevice *);
-    QString status();
     QString name() const;
     bool hasAsyncListDevices();
     bool asyncListDevices();
@@ -64,6 +64,7 @@ private:
     bool    doingDeviceStatus;
     bool    doingDeviceList;
     DeviceFactoryStatus  devFacStatus;
+    unsigned short          startingPort;
 
     void    checkStatus();
     void    checkFailed(EmuNWAccessClient* client, Error::DeviceError);

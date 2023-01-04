@@ -21,6 +21,7 @@
 
 
 #include <QLoggingCategory>
+#include <QRegularExpression>
 
 #include "retroarchhost.h"
 
@@ -206,6 +207,8 @@ void RetroArchHost::onReadyRead()
 
 void RetroArchHost::onPacket(QByteArray& data)
 {
+    // GET_STATUS PAUSED super_nes,Secret of Evermore,crc32=5756f698
+    static const QRegularExpression statusExp("^GET_STATUS (\\w+)(\\s.+)?");
     commandTimeoutTimer.stop();
 
     switch(state)
@@ -263,15 +266,14 @@ void RetroArchHost::onPacket(QByteArray& data)
         // These are the step for the newest RA with the READ_MEMORY api
         case ReqInfoStatus:
         {
-            // GET_STATUS PAUSED super_nes,Secret of Evermore,crc32=5756f698
-            QRegExp statusExp("^GET_STATUS (\\w+)(\\s.+)?");
-            if (statusExp.indexIn(data))
+            QRegularExpressionMatch match = statusExp.match(data);
+            if (!match.hasMatch())
             {
                 makeInfoFail("RetroArch did not return a proper formated status reply");
                 break;
             }
-            QString status = statusExp.cap(1);
-            QString infos = statusExp.cap(2).trimmed();
+            QString status = match.captured(1);
+            QString infos = match.captured(2).trimmed();
             QString plateform;
             QString game;
 

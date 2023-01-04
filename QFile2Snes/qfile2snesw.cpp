@@ -28,6 +28,7 @@
 #include <QModelIndex>
 #include <QDir>
 #include <QInputDialog>
+#include <QRegularExpression>
 #include "qfile2snesw.h"
 #include "ui_qfile2snesw.h"
 #include "myfilesystemmodel.h"
@@ -165,11 +166,12 @@ bool QFile2SnesW::listAndAttach()
 
 void QFile2SnesW::on_usb2snesListView_doubleClicked(const QModelIndex &index)
 {
+    static const QRegularExpression twoSlash("\\/\\+");
     if (!usb2snesModel->isDir(index))
         return ;
     QString newPath = usb2snesModel->currentDir() + "/" + usb2snesModel->data(index, Qt::DisplayRole).toString();
     qDebug() << "Unormalized path : " << newPath;
-    QRegExp twoSlash("\\/\\/+");
+    //QRegExp twoSlash("\\/\\/+");
     newPath.replace(twoSlash, "/");
     qDebug() << "REgexed path : " << newPath;
     QUrl baseUrl("");
@@ -274,7 +276,7 @@ void QFile2SnesW::onLocalDirectoryLoaded(const QString& path)
     ui->currentPathLabel->setText(path.left(3) + path.mid(3).right(100));
 }
 
-void QFile2SnesW::on_driveComboBox_activated(const QString &arg1)
+void QFile2SnesW::on_driveComboBox_activated(int arg1)
 {
     Q_UNUSED(arg1)
     QFileSystemModel* mod = static_cast<QFileSystemModel*> (ui->driveComboBox->model());

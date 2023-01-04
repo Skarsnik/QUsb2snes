@@ -17,6 +17,6 @@
 
 <RCC>
     <qresource prefix="/">
-        <file>icon64x64.ico</file>
+        <file alias="icon64x64.ico">ui/icons/icon64x64.ico</file>
     </qresource>
 </RCC>

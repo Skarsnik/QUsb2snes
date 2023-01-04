@@ -63,6 +63,7 @@ QString deviceFactoryStatusString(DeviceFactoryStatusEnum st);
 
 enum DeviceError {
     DE_NO_ERROR,
+    DE_SD2SNES_BUSY,
     DE_RETROARCH_INFO_FAILED,
     DE_RETROARCH_UNREACHABLE,
     DE_RETROARCH_NO_CONNECTION,

@@ -61,6 +61,21 @@ QVariant Usb2SnesFileModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
+bool sort_file_infos(Usb2Snes::FileInfo a, Usb2Snes::FileInfo b) {
+    if (a.dir && ! b.dir) {
+        return true;
+    } else if (b.dir && ! a.dir) {
+        return false;
+    } else {
+        return a.name.toLower() < b.name.toLower();
+    }
+}
+
+
+/*
+ * This sets the context to the new path, and updates the list of files
+ * shown by reading from the USB2SNES
+ */
 void Usb2SnesFileModel::setPath(QString path)
 {
     m_currentDir = path;
@@ -76,6 +91,8 @@ void Usb2SnesFileModel::setPath(QString path)
     } else {
         fileInfos = li;
     }
+    std::sort(std::begin(fileInfos), std::end(fileInfos), sort_file_infos);
+
     emit endResetModel();
 }
 

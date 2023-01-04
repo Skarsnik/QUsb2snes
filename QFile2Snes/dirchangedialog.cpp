@@ -46,10 +46,10 @@ QString DirChangeDialog::getDir()
 
 void DirChangeDialog::on_listView_doubleClicked(const QModelIndex &index)
 {
+    static const QRegularExpression twoSlash("\\/\\/+");
     if (!uModel->isDir(index))
         return ;
     QString newPath = uModel->currentDir() + "/" + uModel->data(index, Qt::DisplayRole).toString();
-    QRegExp twoSlash("\\/\\/+");
     newPath.replace(twoSlash, "/");
     QUrl baseUrl("");
     newPath = baseUrl.resolved(QUrl(newPath)).path();
