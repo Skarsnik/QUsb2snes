@@ -110,8 +110,7 @@ private:
     QMetaEnum                           cmdMetaEnum;
     QMetaEnum                           spaceMetaEnum;
     QMetaEnum                           flagsMetaEnum;
-    QList<QWebSocketServer*>            wsServers;
-    //QWebSocketServer*                   wsServer;
+    QList<WebSocketProvider*>           wsServers;
     QList<ADevice*>                     devices; // Mostly used to keep tracks of signal/slots connection
     QList<DeviceFactory*>               deviceFactories;
     QList<AClient*>                     clients;

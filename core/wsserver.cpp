@@ -164,6 +164,15 @@ QStringList WSServer::getClientsName(const QString devName) const
     return toret;
 }
 
+QStringList WSServer::deviceFactoryNames() const
+{
+    QStringList toret;
+    for (auto devFact : deviceFactories)
+    {
+        toret << devFact->name();
+    }
+    return toret;
+}
 
 void WSServer::addTrusted(QString origin)
 {

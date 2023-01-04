@@ -243,12 +243,12 @@ void    WSServer::executeRequest(MRequest *req)
                 }
                 if (usize > 255)
                 {
-                    if (wsInfos.value(ws).legacy)
+                    if (client->legacy)
                     {
                         split = true;
                     } else {
                         setError(ErrorType::CommandError, "GetAddress - VGet with a size > 255");
-                        clientError(ws);
+                        clientError(client);
                         return ;
                     }
                 }
@@ -362,7 +362,7 @@ void    WSServer::executeRequest(MRequest *req)
             }
         }
         req->state = RequestState::WAITINGREPLY;
-        client->commandState = ClientCommandState::WAITINGBDATAREPLY;
+        client->commandState = AClient::ClientCommandState::WAITINGBDATAREPLY;
         //sDebug() << "Writing before cps :" << __func__ << client->currentPutSize;
         client->currentPutSize = putSize;
         if (client->expectedDataSize == 0)
@@ -407,7 +407,7 @@ void    WSServer::executeRequest(MRequest *req)
 
     if (req->wasPending && (req->opcode == USB2SnesWS::PutFile || req->opcode == USB2SnesWS::PutAddress))
     {
-        client->commandState = ClientCommandState::WAITINGBDATAREPLY;
+        client->commandState = AClient::ClientCommandState::WAITINGBDATAREPLY;
         if (client->recvData.size() >= client->currentPutSize) // This cover 1A and 2A
         {                                           // Only imcomplete data can be for later requests if this is not empty
             //sDebug() << "Pending 1A & 2A";
@@ -417,7 +417,7 @@ void    WSServer::executeRequest(MRequest *req)
             client->expectedDataSize -= client->currentPutSize;
             client->currentPutSize = 0;
             device->writeData(toSend);
-            client->commandState = ClientCommandState::WAITINGREPLY;
+            client->commandState = AClient::ClientCommandState::WAITINGREPLY;
 
         } else {
             if (!client->recvData.isEmpty() && client->recvData.size() < client->currentPutSize)
@@ -485,7 +485,7 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
     case USB2SnesWS::Reset :
     case USB2SnesWS::Boot :
     {
-        sendReplyV2(info.currentWS, "");
+        //sendReplyV2(info.currentWS, "");
         break;
     }
     case USB2SnesWS::GetAddress :
@@ -614,7 +614,7 @@ void WSServer::cmdAttach(MRequest *req)
         req->owner->attached = true;
         req->owner->attachedTo = devGet;
         req->owner->pendingAttach = false;
-        sendReplyV2(req->owner, devGet->name());
+        //sendReplyV2(req->owner, devGet->name());
         if (devGet->state() == ADevice::READY)
             processCommandQueue(devGet);
         return ;

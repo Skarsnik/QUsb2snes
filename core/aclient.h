@@ -28,10 +28,9 @@ public:
      or weird stuff like putAddress1, putAddress2, data1, data2
     */
     unsigned int            currentPutSize;
-    QList<unsigned int>     pendingPutSizes;
-    QList<QByteArray>       pendingPutDatas;
     QByteArray              recvData;
     unsigned int            byteReceived;
+    unsigned int            expectedDataSize;
 
     // IPS Stuff
     QByteArray              ipsData;
