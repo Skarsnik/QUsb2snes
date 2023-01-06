@@ -57,14 +57,17 @@ QList<LocalStorage::FileInfo> LocalStorage::list(const QString path)
         return toret;
     QString nPath = rootDir.absoluteFilePath(rootPath + "/" + path);
     nPath = QDir::cleanPath(nPath);
-    sDebug() << nPath;
+    //sDebug() << nPath;
     QFileInfo nfi(nPath);
     if (!nfi.isDir())
         return toret;
     QDir nDir(nPath);
+    sDebug() << "Listing" << nDir.absolutePath();
     nDir.refresh();
-    auto infoList = rootDir.entryInfoList();
-    for (const QFileInfo& info : qAsConst(infoList)) {
+    auto infoList = nDir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotDot);
+    for (const QFileInfo& info : qAsConst(infoList))
+    {
+        //sDebug() << info;
         LocalStorage::FileInfo fi;
         fi.name = info.fileName();
         if (info.isDir())
@@ -74,11 +77,9 @@ QList<LocalStorage::FileInfo> LocalStorage::list(const QString path)
         toret.append(fi);
     }
     FileInfo fi;
-    fi.type = FileType::Dir;
-    fi.name = ".";
-    toret.append(fi);
-    if (nPath != rootPath)
+    if (rootDir.absolutePath() != nDir.absolutePath())
     {
+        fi.type = FileType::Dir;
         fi.name = "..";
         toret.append(fi);
     }
@@ -133,7 +134,7 @@ bool LocalStorage::makeDir(const QString path)
     sDebug() << "Creating directory " << path;
     if (violateRoot(path))
         return false;
-    return rootDir.mkdir(path);
+    return rootDir.mkdir(rootPath + "/" + path);
 }
 
 bool LocalStorage::rename(const QString path, const QString newPath)
