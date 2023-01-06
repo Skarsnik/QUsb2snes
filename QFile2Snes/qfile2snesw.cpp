@@ -65,7 +65,7 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
     ui->localFilesTreeView->setSortingEnabled(true);
     QStorageInfo si(currentDir);
     ui->driveComboBox->setCurrentIndex(ui->driveComboBox->findData(si.rootPath().left(2), Qt::DisplayRole));
-    usb2snes = new Usb2Snes(true);
+    usb2snes = new Usb2Snes(false);
     usb2snesModel = new Usb2SnesFileModel(usb2snes);
     localFileModel->setUsb2Snes(usb2snes);
     ui->usb2snesListView->setModel(usb2snesModel);
@@ -83,6 +83,41 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
     started = false;
     ui->backToolButton->setIcon(style()->standardPixmap(QStyle::SP_FileDialogToParent));
     ui->newDirButton->setIcon(style()->standardPixmap(QStyle::SP_FileDialogNewFolder));
+    setEnabledSd2SnesUI(false);
+
+    connect(usb2snes, &Usb2Snes::connected, this, [=]() {
+        usb2snes->setAppName("QFile2Snes");
+        usb2snes->deviceList();
+    });
+    connect(usb2snes, &Usb2Snes::deviceListDone, this, [=] (QStringList devices) {
+        ui->deviceComboBox->clear();
+        foreach(QString dev, devices)
+        {
+            ui->deviceComboBox->addItem(dev);
+        }
+        if (!devices.empty())
+        {
+            usb2snes->attach(devices.at(0));
+            refreshStatus();
+        } else {
+            QTimer::singleShot(1000, this, [=] {
+                if (usb2snes->state() == Usb2Snes::Connected)
+                    usb2snes->deviceList();
+            });
+        }
+    });
+    connect(usb2snes, &Usb2Snes::infoDone, this, [=] (Usb2Snes::DeviceInfo infos) {
+        ui->infoLabel->setText(QString(tr("Firmware version : %1 - Rom Playing : %2")).arg(infos.firmwareVersion, infos.romPlaying));
+        if (infos.flags.contains("NO_FILE_CMD"))
+        {
+            setEnabledSd2SnesUI(false);
+            QMessageBox::information(this, tr("Device error"), tr("The device does not support file operation"));
+        } else {
+            setEnabledSd2SnesUI(true);
+            usb2snesModel->setPath(usb2snesModel->currentDir());
+        }
+    });
+
 }
 
 QFile2SnesW::~QFile2SnesW()
@@ -106,39 +141,29 @@ void QFile2SnesW::on_localFilesTreeView_doubleClicked(const QModelIndex &index)
 
 void    QFile2SnesW::refreshStatus()
 {
-    Usb2Snes::DeviceInfo infos = usb2snes->infos();
-    ui->infoLabel->setText(QString(tr("Firmware version : %1 - Rom Playing : %2")).arg(infos.firmwareVersion, infos.romPlaying));
-    if (infos.flags.contains("NO_FILE_CMD"))
-        QMessageBox::information(this, tr("Device error"), tr("The device does not support file operation"));
+    usb2snes->infos();
+}
+
+void QFile2SnesW::setEnabledSd2SnesUI(bool enabled)
+{
+    ui->usb2snesListView->setEnabled(enabled);
+    ui->menuButton->setEnabled(enabled);
+    ui->deleteButton->setEnabled(enabled);
+    ui->newDirButton->setEnabled(enabled);
+    ui->renameButton->setEnabled(enabled);
+    ui->bootButton->setEnabled(enabled);
 }
 
 void QFile2SnesW::onUsb2SnesStateChanged()
 {
-    if (usb2snes->state() == Usb2Snes::Ready)
-    {
-        if (m_state == NOTCONNECTED)
-        {
-            m_state = IDLE;
-            usb2snes->setAppName("QFile2Snes");
-            listAndAttach();
-            refreshStatus();
-        }
-        if (m_state == SENDINDFILE || m_state == GETTINGFILE)
-        {
-            qDebug() << "requesting info";
-            usb2snes->infos();
-            ui->transfertProgressBar->setValue(100);
-            m_state = IDLE;
-        }
-        usb2snesModel->setPath(usb2snesModel->currentDir());
-        //ui->transfertProgressBar->setEnabled(false);
-    }
+    qDebug() << "State changed" << usb2snes->state();
     if (usb2snes->state() == Usb2Snes::SendingFile)
     {
         qDebug() << "Sending file";
         ui->transfertProgressBar->setVisible(true);
         ui->transfertProgressBar->setInvertedAppearance(false);
         ui->transfertProgressBar->setValue(99);
+        usb2snes->queueInfos();
         m_state = SENDINDFILE;
     }
     if (usb2snes->state() == Usb2Snes::ReceivingFile)
@@ -147,22 +172,23 @@ void QFile2SnesW::onUsb2SnesStateChanged()
         ui->transfertProgressBar->setVisible(true);
         ui->transfertProgressBar->setInvertedAppearance(true);
         ui->transfertProgressBar->setValue(99);
+        //usb2snes->queueInfos();
         m_state = GETTINGFILE;
     }
+    if (usb2snes->state() == Usb2Snes::Ready && (m_state == GETTINGFILE || m_state == SENDINDFILE))
+    {
+        if (m_state == SENDINDFILE)
+        {
+            usb2snes->infos();
+        }
+        m_state = IDLE;
+        ui->transfertProgressBar->setValue(100);
+        ui->transfertProgressBar->setEnabled(false);
+
+    }
+
 }
 
-bool QFile2SnesW::listAndAttach()
-{
-    QStringList devices = usb2snes->deviceList();
-    /*if (devices.size() != 0)
-        usb2snes->usePort(devices.at(0));*/
-    ui->deviceComboBox->clear();
-    foreach(QString dev, devices)
-    {
-        ui->deviceComboBox->addItem(dev);
-    }
-    return false;
-}
 
 void QFile2SnesW::on_usb2snesListView_doubleClicked(const QModelIndex &index)
 {
@@ -214,7 +240,6 @@ void QFile2SnesW::onSDViewCurrentChanged(const QModelIndex &current, const QMode
     QString fileName = usb2snesModel->data(ui->usb2snesListView->currentIndex()).toString();
     if (fileName.right(4) == ".smc" || fileName.right(4) == ".sfc")
         ui->bootButton->setEnabled(true);
-
 }
 
 void QFile2SnesW::on_renameButton_clicked()
@@ -333,3 +358,4 @@ void QFile2SnesW::on_backToolButton_clicked()
     qDebug() << plop.absolutePath();
     updateLocalFileView(plop.absolutePath());
 }
+

@@ -35,8 +35,7 @@ bool MyFileSystemModel::dropMimeData(const QMimeData *data, Qt::DropAction actio
     m_sizeReceived = 0;
     m_fileSize = 0;
     m_filePath = this->fileInfo(parent).absoluteFilePath() + "/" + data->urls().at(0).fileName();
-    m_fileSize = usb2snes->getFile(sd2snesFilePath);
-    qDebug() << m_fileSize;
+    usb2snes->getFile(sd2snesFilePath);
     return false;
 }
 
@@ -58,6 +57,9 @@ void MyFileSystemModel::setUsb2Snes(Usb2Snes *usb)
 {
     usb2snes = usb;
     connect(usb2snes,  &Usb2Snes::getFileDataGet, this, &MyFileSystemModel::OnUsbFileData);
+    connect(usb2snes, &Usb2Snes::getFileSizeGet, this, [=](unsigned int size) {
+        m_fileSize = size;
+    });
 }
 
 const QString &MyFileSystemModel::getFilePath() const

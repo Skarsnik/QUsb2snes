@@ -26,14 +26,16 @@ Usb2Snes::Usb2Snes(bool autoAttach) : QObject()
     m_state = None;
     m_istate = INone;
 
-    QObject::connect(&m_webSocket, SIGNAL(textMessageReceived(QString)), this, SLOT(onWebSocketTextReceived(QString)));
-    QObject::connect(&m_webSocket, SIGNAL(connected()), this, SLOT(onWebSocketConnected()));
+    QObject::connect(&m_webSocket, &QWebSocket::textMessageReceived, this, &Usb2Snes::onWebSocketTextReceived);
+    QObject::connect(&m_webSocket, &QWebSocket::connected, this, &Usb2Snes::onWebSocketConnected);
     QObject::connect(&m_webSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onWebSocketError(QAbstractSocket::SocketError)));
-    QObject::connect(&m_webSocket, SIGNAL(disconnected()), this, SLOT(onWebSocketDisconnected()));
-    QObject::connect(&m_webSocket, SIGNAL(binaryMessageReceived(QByteArray)), this, SLOT(onWebSocketBinaryReceived(QByteArray)));
-    QObject::connect(&timer, SIGNAL(timeout()), this, SLOT(onTimerTick()));
+    QObject::connect(&m_webSocket, &QWebSocket::disconnected, this, &Usb2Snes::onWebSocketDisconnected);
+    QObject::connect(&m_webSocket, &QWebSocket::binaryMessageReceived, this, &Usb2Snes::onWebSocketBinaryReceived);
+    QObject::connect(&timer, &QTimer::timeout, this, &Usb2Snes::onTimerTick);
     requestedBinaryReadSize = 0;
     m_autoAttach = autoAttach;
+    metaCommands = QMetaEnum::fromType<Usb2SnesCommand>();
+    m_queueInfo = false;
 }
 
 void    Usb2Snes::usePort(QString port)
@@ -74,12 +76,12 @@ void Usb2Snes::close()
 
 void Usb2Snes::setAppName(QString name)
 {
-    sendRequest("Name", QStringList() << name);
+    sendRequest(Name, QStringList() << name);
 }
 
 void Usb2Snes::attach(QString deviceName)
 {
-    sendRequest("Attach", QStringList() << deviceName);
+    sendRequest(Attach, QStringList() << deviceName);
     changeState(Ready);
 }
 
@@ -87,11 +89,12 @@ void Usb2Snes::onWebSocketConnected()
 {
     sDebug() << "Websocket connected";
     changeState(Connected);
+    emit connected();
     m_istate = IConnected;
     if (m_autoAttach)
     {
         m_istate = DeviceListRequested;
-        sendRequest("DeviceList");
+        sendRequest(DeviceList);
     }
 }
 
@@ -136,7 +139,7 @@ void Usb2Snes::onWebSocketTextReceived(QString message)
             {
                 timer.stop();
                 m_port = results.at(0);
-                sendRequest("Attach", QStringList() << m_port);
+                sendRequest(Attach, QStringList() << m_port);
                 m_istate = AttachSent;
                 timer.start(200);
             } else {
@@ -156,7 +159,7 @@ void Usb2Snes::onWebSocketTextReceived(QString message)
             else
                 m_firmwareVersion = QVersionNumber(m_firmwareString.right(1).toInt());
             m_istate = ServerVersionRequested;
-            sendRequest("AppVersion");
+            sendRequest(AppVersion);
         }
         break;
     }
@@ -174,6 +177,50 @@ void Usb2Snes::onWebSocketTextReceived(QString message)
     default:
         break;
     }
+    switch (m_currentCommand)
+    {
+    case DeviceList: {
+        emit deviceListDone(getJsonResults(message));
+        break;
+    }
+    case Info: {
+        Usb2Snes::DeviceInfo info;
+        QStringList results = getJsonResults(message);
+        info.firmwareVersion = results.at(0);
+        info.versionString = results.at(1);
+        info.romPlaying = results.at(2);
+        info.flags = results.mid(3);
+        emit infoDone(info);
+        break;
+    }
+    case List: {
+        QList<FileInfo> toret;
+        QStringList infos = getJsonResults(message);
+        for (int i = 0; i < infos.size(); i += 2)
+        {
+            FileInfo fi;
+            fi.dir = infos.at(i) == "0";
+            fi.name = infos.at(i + 1);
+            toret << fi;
+        }
+        emit lsDone(toret);
+        break;
+    }
+    case GetFile: {
+        QStringList result = getJsonResults(message);
+        bool    ok;
+        m_fileSize = result.at(0).toUInt(&ok, 16);
+        emit getFileSizeGet(m_fileSize);
+        changeState(ReceivingFile);
+        break;
+    }
+    }
+    if (m_queueInfo)
+    {
+        infos();
+        m_queueInfo = false;
+    }
+
     emit textMessageReceived();
 }
 
@@ -190,7 +237,6 @@ void Usb2Snes::onWebSocketBinaryReceived(QByteArray message)
         emit getFileDataGet(message);
         sDebug() << m_fileGetDataSent << m_fileSize;
         if (m_fileGetDataSent == m_fileSize)
-
             changeState(Ready);
         return ;
     }
@@ -213,24 +259,25 @@ void Usb2Snes::onTimerTick()
 {
     if (m_istate == AttachSent)
     {
-        sendRequest("Info");
+        sendRequest(Info);
         m_istate = FirmwareVersionRequested;
         timer.stop();
     }
     if (m_istate == DeviceListRequested)
     {
-        sendRequest("DeviceList");
+        sendRequest(DeviceList);
     }
 }
 
 
-void Usb2Snes::sendRequest(QString opCode, QStringList operands, Space space, QStringList flags)
+void Usb2Snes::sendRequest(Usb2SnesCommand opCode, QStringList operands, Space space, QStringList flags)
 {
     Q_UNUSED(flags)
     QJsonArray      jOp;
     QJsonObject     jObj;
 
-    jObj["Opcode"] = opCode;
+    m_currentCommand = opCode;
+    jObj["Opcode"] = metaCommands.valueToKey(opCode);
     if (space == SNES)
         jObj["Space"] = "SNES";
     if (space == CMD)
@@ -250,10 +297,23 @@ void Usb2Snes::changeState(Usb2Snes::State s)
     emit stateChanged();
 }
 
+void Usb2Snes::startSyncCall()
+{
+    QObject::disconnect(&m_webSocket, SIGNAL(textMessageReceived(QString)), this, SLOT(onWebSocketTextReceived(QString)));
+    QObject::disconnect(&m_webSocket, SIGNAL(binaryMessageReceived(QByteArray)), this, SLOT(onWebSocketBinaryReceived(QByteArray)));
+}
+
+void Usb2Snes::endSyncCall()
+{
+    QObject::connect(&m_webSocket, SIGNAL(textMessageReceived(QString)), this, SLOT(onWebSocketTextReceived(QString)));
+    QObject::connect(&m_webSocket, SIGNAL(binaryMessageReceived(QByteArray)), this, SLOT(onWebSocketBinaryReceived(QByteArray)));
+}
+
+
 QByteArray Usb2Snes::getAddress(unsigned int addr, unsigned int size, Space space)
 {
     m_istate = IBusy;
-    sendRequest("GetAddress", QStringList() << QString::number(addr, 16) << QString::number(size, 16), space);
+    sendRequest(GetAddress, QStringList() << QString::number(addr, 16) << QString::number(size, 16), space);
     requestedBinaryReadSize = size;
     QEventLoop  loop;
     QObject::connect(this, SIGNAL(binaryMessageReceived()), &loop, SLOT(quit()));
@@ -268,7 +328,7 @@ QByteArray Usb2Snes::getAddress(unsigned int addr, unsigned int size, Space spac
 void Usb2Snes::setAddress(unsigned int addr, QByteArray data, Space space)
 {
     m_istate = IBusy;
-    sendRequest("PutAddress", QStringList() << QString::number(addr, 16) << QString::number(data.size(), 16), space);
+    sendRequest(PutAddress, QStringList() << QString::number(addr, 16) << QString::number(data.size(), 16), space);
     //Dumb shit for bad win7 C# websocket api
     sDebug() << "Sending data,  size : " << data.size() << "- MD5 : " << QCryptographicHash::hash(data, QCryptographicHash::Md5).toHex();
     if (data.size() <= 1024)
@@ -287,7 +347,7 @@ void Usb2Snes::setAddress(unsigned int addr, QByteArray data, Space space)
 
 void Usb2Snes::sendFile(QString path, QByteArray data)
 {
-    sendRequest("PutFile", QStringList() << path << QString::number(data.size(), 16));
+    sendRequest(PutFile, QStringList() << path << QString::number(data.size(), 16));
     changeState(SendingFile);
     fileDataToSend = data;
     m_istate = IBusy;
@@ -309,50 +369,41 @@ void Usb2Snes::sendFile(QString path, QByteArray data)
     changeState(Ready);
 }
 
-int Usb2Snes::getFile(QString path)
+void    Usb2Snes::getFile(QString path)
 {
-    sendRequest("GetFile", QStringList() << path);
+    sendRequest(GetFile, QStringList() << path);
     m_istate = IBusy;
     m_fileGetDataSent = 0;
-    QEventLoop  loop;
-    changeState(ReceivingFile);
-    QObject::connect(this, SIGNAL(textMessageReceived()), &loop, SLOT(quit()));
-    QObject::connect(this, SIGNAL(disconnected()), &loop, SLOT(quit()));
-    loop.exec();
-    QStringList results = getJsonResults(lastTextMessage);
-    bool ok;
-    m_fileSize = results.at(0).toInt(&ok, 16);
-    return m_fileSize;
 }
 
 void Usb2Snes::renameFile(QString oldPath, QString newPath)
 {
-    sendRequest("Rename", QStringList() << oldPath << newPath);
+    sendRequest(Rename, QStringList() << oldPath << newPath);
 }
 
 void Usb2Snes::deleteFile(QString fileName)
 {
-    sendRequest("Remove", QStringList() << fileName);
+    sendRequest(Remove, QStringList() << fileName);
 }
 
 void Usb2Snes::boot(QString path)
 {
-    sendRequest("Boot", QStringList() << path);
+    sendRequest(Boot, QStringList() << path);
 }
 
 void Usb2Snes::mkdir(QString dirPath)
 {
-    sendRequest("MakeDir", QStringList() << dirPath);
+    sendRequest(MakeDir, QStringList() << dirPath);
 }
 
 void Usb2Snes::reset()
 {
-    sendRequest("Reset");
+    sendRequest(Reset);
 }
 
 void Usb2Snes::menu()
 {
-    sendRequest("Menu");
+    sendRequest(Menu);
 }
 
 
@@ -362,7 +413,7 @@ bool Usb2Snes::patchROM(QString patch)
     if (fPatch.open(QIODevice::ReadOnly))
     {
         unsigned int size = fPatch.size();
-        sendRequest("PutIPS", QStringList() << "hook" << QString::number(size, 16));
+        sendRequest(PutIPS, QStringList() << "hook" << QString::number(size, 16));
         QByteArray data = fPatch.readAll();
         m_webSocket.sendBinaryMessage(data);
         return true;
@@ -376,13 +427,18 @@ Usb2Snes::State Usb2Snes::state()
     return m_state;
 }
 
-Usb2Snes::DeviceInfo Usb2Snes::infos()
+void Usb2Snes::queueInfos()
 {
-    Usb2Snes::DeviceInfo info;
+    m_queueInfo = true;
+}
+
+void    Usb2Snes::infos()
+{
+    /*Usb2Snes::DeviceInfo info;
     if (m_istate != IReady)
-        return info;
-    sendRequest("Info");
-    QEventLoop  loop;
+        return info;*/
+    sendRequest(Info);
+    /*QEventLoop  loop;
     QObject::connect(this, SIGNAL(textMessageReceived()), &loop, SLOT(quit()));
     loop.exec();
     QStringList results = getJsonResults(lastTextMessage);
@@ -390,7 +446,7 @@ Usb2Snes::DeviceInfo Usb2Snes::infos()
     info.versionString = results.at(1);
     info.romPlaying = results.at(2);
     info.flags = results.mid(3);
-    return info;
+    return info;*/
 }
 
 int Usb2Snes::fileDataSize() const
@@ -398,22 +454,9 @@ int Usb2Snes::fileDataSize() const
     return fileDataToSend.size();
 }
 
-QList<Usb2Snes::FileInfo> Usb2Snes::ls(QString path)
+void    Usb2Snes::ls(QString path)
 {
-    QList<FileInfo> toret;
-    sendRequest("List", QStringList() << path);
-    QEventLoop  loop;
-    QObject::connect(this, SIGNAL(textMessageReceived()), &loop, SLOT(quit()));
-    loop.exec();
-    QStringList infos = getJsonResults(lastTextMessage);
-    for (int i = 0; i < infos.size(); i += 2)
-    {
-        FileInfo fi;
-        fi.dir = infos.at(i) == "0";
-        fi.name = infos.at(i + 1);
-        toret << fi;
-    }
-    return toret;
+    sendRequest(List, QStringList() << path);
 }
 
 QString Usb2Snes::firmwareString()
@@ -427,13 +470,15 @@ QVersionNumber Usb2Snes::firmwareVersion()
 }
 
 
-QStringList Usb2Snes::deviceList()
+void    Usb2Snes::deviceList()
 {
-    sendRequest("DeviceList");
+    sendRequest(DeviceList);
+    /*startSyncCall();
     QEventLoop  loop;
     QObject::connect(this, SIGNAL(textMessageReceived()), &loop, SLOT(quit()));
     loop.exec();
-    return getJsonResults(lastTextMessage);
+    endSyncCall();
+    return getJsonResults(lastTextMessage);*/
 }
 
 QVersionNumber Usb2Snes::serverVersion()

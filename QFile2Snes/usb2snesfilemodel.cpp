@@ -24,12 +24,40 @@
 #include <QDebug>
 #include <QFile>
 
+
+static bool sort_file_infos(Usb2Snes::FileInfo a, Usb2Snes::FileInfo b) {
+    if (a.dir && ! b.dir) {
+        return true;
+    } else if (b.dir && ! a.dir) {
+        return false;
+    } else {
+        return a.name.toLower() < b.name.toLower();
+    }
+}
+
+
+
 Usb2SnesFileModel::Usb2SnesFileModel(Usb2Snes *usb, QObject *parent)
     : QAbstractListModel(parent)
 {
         usb2snes = usb;
         m_currentDir = "";
         dirOnly = false;
+        connect(usb2snes, &Usb2Snes::lsDone, this, [=] (QList<Usb2Snes::FileInfo> li) {
+            if (dirOnly)
+            {
+                fileInfos.clear();
+                foreach(Usb2Snes::FileInfo fi, li)
+                {
+                    if (fi.dir)
+                        fileInfos.append(fi);
+                }
+            } else {
+                fileInfos = li;
+            }
+            std::sort(std::begin(fileInfos), std::end(fileInfos), sort_file_infos);
+            emit endResetModel();
+        });
 }
 
 
@@ -61,17 +89,6 @@ QVariant Usb2SnesFileModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-bool sort_file_infos(Usb2Snes::FileInfo a, Usb2Snes::FileInfo b) {
-    if (a.dir && ! b.dir) {
-        return true;
-    } else if (b.dir && ! a.dir) {
-        return false;
-    } else {
-        return a.name.toLower() < b.name.toLower();
-    }
-}
-
-
 /*
  * This sets the context to the new path, and updates the list of files
  * shown by reading from the USB2SNES
@@ -79,21 +96,7 @@ bool sort_file_infos(Usb2Snes::FileInfo a, Usb2Snes::FileInfo b) {
 void Usb2SnesFileModel::setPath(QString path)
 {
     m_currentDir = path;
-    QList<Usb2Snes::FileInfo> li = usb2snes->ls(path);
-    if (dirOnly)
-    {
-        fileInfos.clear();
-        foreach(Usb2Snes::FileInfo fi, li)
-        {
-            if (fi.dir)
-                fileInfos.append(fi);
-        }
-    } else {
-        fileInfos = li;
-    }
-    std::sort(std::begin(fileInfos), std::end(fileInfos), sort_file_infos);
-
-    emit endResetModel();
+    usb2snes->ls(path);
 }
 
 QString Usb2SnesFileModel::currentDir() const

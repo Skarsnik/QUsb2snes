@@ -73,6 +73,28 @@ public:
     };
     Q_ENUM(InternalState)
 
+    enum Usb2SnesCommand {
+        DeviceList,
+        Attach,
+        AppVersion,
+        Name,
+        Close,
+        Info,
+        Boot,
+        Menu,
+        Reset,
+        GetAddress,
+        PutAddress,
+        PutIPS,
+        GetFile,
+        PutFile,
+        List,
+        Remove,
+        Rename,
+        MakeDir
+    };
+    Q_ENUM(Usb2SnesCommand)
+
     Usb2Snes(bool autoAttach = true);
     void                    usePort(QString port);
     QString                 port();
@@ -84,7 +106,7 @@ public:
     QByteArray              getAddress(unsigned int addr, unsigned int size, Space space = SNES);
     void                    setAddress(unsigned int addr, QByteArray data, Space space = SNES);
     void                    sendFile(QString path, QByteArray data);
-    int                     getFile(QString path);
+    void                    getFile(QString path);
     void                    renameFile(QString oldPath, QString newPath);
     void                    deleteFile(QString fileName);
     void                    boot(QString path);
@@ -92,17 +114,19 @@ public:
     void                    reset();
     void                    menu();
     State                   state();
-    DeviceInfo              infos();
+    void                    queueInfos();
+    void                    infos();
     int                     fileDataSize() const;
-    QList<FileInfo>         ls(QString path);
+    void                    ls(QString path);
     QString                 firmwareString();
     QVersionNumber          firmwareVersion();
-    QStringList             deviceList();
+    void                    deviceList();
     QVersionNumber          serverVersion();
     bool                    patchROM(QString patch);
 
 signals:
     void    stateChanged();
+    void    connected();
     void    disconnected();
     void    binaryMessageReceived();
     void    textMessageReceived();
@@ -110,7 +134,11 @@ signals:
     void    menuStarted();
     void    fileSendProgress(int size);
     void    fileSent();
+    void    getFileSizeGet(unsigned int);
     void    getFileDataGet(QByteArray data);
+    void    deviceListDone(QStringList listDevice);
+    void    infoDone(Usb2Snes::DeviceInfo info);
+    void    lsDone(QList<Usb2Snes::FileInfo> filesInfo);
 
 
 private slots:
@@ -135,16 +163,22 @@ private:
     QStringList     m_deviceList;
     int             m_fileSize;
     int             m_fileGetDataSent;
+    Usb2SnesCommand m_currentCommand;
     QByteArray      lastBinaryMessage;
     QString         lastTextMessage;
     unsigned int    requestedBinaryReadSize;
+    QMetaEnum       metaCommands;
+    bool            m_queueInfo;
 
     QByteArray      fileDataToSend;
 
     QTimer          timer;
 
-    void            sendRequest(QString opCode, QStringList operands = QStringList(), Space = SNES, QStringList flags = QStringList());
+    void            sendRequest(Usb2SnesCommand opCode, QStringList operands = QStringList(), Space = SNES, QStringList flags = QStringList());
     void            changeState(State s);
+    void            startSyncCall();
+    void            endSyncCall();
+
     QStringList     getJsonResults(QString json);
 
 };

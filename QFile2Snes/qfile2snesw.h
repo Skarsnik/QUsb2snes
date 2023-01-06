@@ -89,8 +89,8 @@ private:
     MyFileSystemModel*  localFileModel;
 
     void    setLFilepath(QString path);
-    bool    listAndAttach();
-    void refreshStatus();
+    void    refreshStatus();
+    void    setEnabledSd2SnesUI(bool enabled);
 
     // QWidget interface
     void updateLocalFileView(QString path);
