@@ -68,6 +68,17 @@ bool SendToDialog::init()
     usb2snes = new Usb2Snes(false);
     connect(usb2snes, SIGNAL(stateChanged()), this, SLOT(onUsb2SnesStateChanged()));
     connect(usb2snes, SIGNAL(disconnect()), this, SLOT(onUsb2SnesDisconnected()));
+    connect(usb2snes, &Usb2Snes::deviceListDone, this, [=] (QStringList devList) {
+        if (devList.isEmpty() || !devList.at(0).contains("COM"))
+        {
+            setStatusLabel(tr("Can't find a sd2snes device - retrying in a second"));
+            recoTimer.start(1000);
+        } else {
+            usb2snes->attach(devList.at(0));
+            recoTimer.stop();
+        }
+    }
+    );
     usb2snes->connect();
     return true;
 }
@@ -89,7 +100,7 @@ void SendToDialog::onUsb2SnesStateChanged()
     {
         if (prevState == Usb2Snes::SendingFile)
         {
-            usb2snes->ls("/");
+            //usb2snes->ls("/");
             setStatusLabel(tr("File transfered"));
             ui->progressBar->setValue(100);
             if (ui->romStartCheckBox->isChecked() && (fileInfos.suffix() == "sfc" || fileInfos.suffix() == "smc"))
@@ -184,15 +195,7 @@ void SendToDialog::transfertFile()
 
 void SendToDialog::attachToSD2Snes()
 {
-    QStringList devList = usb2snes->deviceList();
-    if (devList.isEmpty() || !devList.at(0).contains("COM"))
-    {
-        setStatusLabel(tr("Can't find a sd2snes device - retrying in a second"));
-        recoTimer.start(1000);
-    } else {
-        usb2snes->attach(devList.at(0));
-        recoTimer.stop();
-    }
+    usb2snes->deviceList();
 }
 
 void SendToDialog::on_pushButton_clicked()
