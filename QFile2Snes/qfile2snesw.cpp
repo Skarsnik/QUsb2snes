@@ -74,10 +74,10 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
     qDebug() << localFileModel->mimeTypes();
     ui->transfertProgressBar->setVisible(false);
     ui->infoLabel->setText(tr("Trying to find the SD2Snes device"));
-    connect(usb2snes, SIGNAL(stateChanged()), this, SLOT(onUsb2SnesStateChanged()));
-    connect(usb2snes, SIGNAL(fileSendProgress(int)), this, SLOT(onUsb2SnesFileSendProgress(int)));
-    connect(ui->usb2snesListView->selectionModel(), SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)), this, SLOT(onSDViewSelectionChanged(const QItemSelection&, const QItemSelection&)));
-    connect(ui->usb2snesListView->selectionModel(), SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(onSDViewCurrentChanged(const QModelIndex&, const QModelIndex&)));
+    connect(usb2snes, &Usb2Snes::stateChanged, this, &QFile2SnesW::onUsb2SnesStateChanged);
+    connect(usb2snes, &Usb2Snes::fileSendProgress, this, &QFile2SnesW::onUsb2SnesFileSendProgress);
+    connect(ui->usb2snesListView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &QFile2SnesW::onSDViewSelectionChanged);
+    connect(ui->usb2snesListView->selectionModel(), &QItemSelectionModel::currentChanged, this, &QFile2SnesW::onSDViewCurrentChanged);
     connect(localFileModel, &MyFileSystemModel::aboutToOverwroteFile, this, &QFile2SnesW::onAboutToOverwriteFile);
     connect(localFileModel, &MyFileSystemModel::directoryLoaded, this, &QFile2SnesW::onLocalDirectoryLoaded);
     started = false;
@@ -85,9 +85,17 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
     ui->newDirButton->setIcon(style()->standardPixmap(QStyle::SP_FileDialogNewFolder));
     setEnabledSd2SnesUI(false);
 
+
     connect(usb2snes, &Usb2Snes::connected, this, [=]() {
         usb2snes->setAppName("QFile2Snes");
+        ui->infoLabel->setText(tr("Connected to usb2snes server, trying to find a suitable device"));
         usb2snes->deviceList();
+    });
+    connect(usb2snes, &Usb2Snes::disconnected, this, [=]() {
+        ui->sd2snesLabel->setText(tr("Disconnected, trying to reconnect in 1 sec"));
+        QTimer::singleShot(1000, this, [=] {
+            usb2snes->connect();
+        });
     });
     connect(usb2snes, &Usb2Snes::deviceListDone, this, [=] (QStringList devices) {
         ui->deviceComboBox->clear();
