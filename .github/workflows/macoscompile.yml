@@ -35,7 +35,6 @@ jobs:
       # Runs a single command using the runners shell
       - name: install qt
         run: |
-            brew update
             brew install qt@5
 
       # Runs a set of commands using the runners shell
