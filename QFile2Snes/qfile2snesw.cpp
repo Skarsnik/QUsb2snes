@@ -70,7 +70,6 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
     localFileModel->setUsb2Snes(usb2snes);
     ui->usb2snesListView->setModel(usb2snesModel);
     m_state = NOTCONNECTED;
-    usb2snes->connect();
     qDebug() << localFileModel->mimeTypes();
     ui->transfertProgressBar->setVisible(false);
     ui->infoLabel->setText(tr("Trying to find the SD2Snes device"));
@@ -125,7 +124,9 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
             usb2snesModel->setPath(usb2snesModel->currentDir());
         }
     });
-
+    QTimer::singleShot(0, this, [=] {
+            usb2snes->connect();
+    });
 }
 
 QFile2SnesW::~QFile2SnesW()
