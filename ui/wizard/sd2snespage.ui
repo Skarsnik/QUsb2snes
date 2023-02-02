@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;To have your Sd2Snes/FxPak pro to work you have two choice :&lt;/p&gt;&lt;p&gt;-The beta firmware that include the usb2snes support&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://sd2snes.de/files/sd2snes_firmware_v1.11.0b1.zip&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Sd2Snes firmware 1.11 - beta1&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;-The latest stable firmware with the usb2snes firmware copied on top of it.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://sd2snes.de/files/sd2snes_firmware_v1.10.3.zip&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Sd2Snes Firmware 1.10.3&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/RedGuyyyy/sd2snes/releases/download/usb2snes_v11/usb2snes_v11.zip&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Usb2Snes v11&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;To have your Sd2Snes/FxPak pro work you have need to download the latest firmware. It come with Usb2Snes support&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://sd2snes.de/files/sd2snes_firmware_v1.11.0.zip&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Sd2Snes firmware 1.11&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
