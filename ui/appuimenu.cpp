@@ -239,6 +239,12 @@ void AppUi::onAppsMenuTriggered(QAction *action)
         wDir = qApp->applicationDirPath();
 #ifdef Q_OS_WIN
         arg << "-platformpluginpath" << qApp->applicationDirPath() + "/platforms/";
+        if (!QFileInfo::exists(appInfo.folder + "/styles/"))
+        {
+            QDir d(appInfo.folder);
+            d.mkdir("styles");
+            QFile::copy(qApp->applicationDirPath() + "/styles/qwindowsvistastyle.dll", appInfo.folder + "/styles/qwindowsvistastyle.dll");
+        }
 #endif
     }
 #ifdef Q_OS_WIN
