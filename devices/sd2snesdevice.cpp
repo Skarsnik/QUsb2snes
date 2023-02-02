@@ -20,6 +20,7 @@
 
 #include <QDebug>
 #include <QLoggingCategory>
+#include <QRegularExpression>
 #include <QThread>
 #include "sd2snesdevice.h"
 
@@ -585,7 +586,9 @@ USB2SnesInfo SD2SnesDevice::parseInfo(const QByteArray& data)
 
     info.deviceName = "SD2SNES";
     info.romPlaying = data.mid(16, 100);
+    //info.romPlaying = info.romPlaying.mid(0, info.romPlaying.indexOf(QChar(0)));
     info.version = data.mid(260);
+    info.version = info.version.mid(0, info.version.indexOf(QChar(0)));
     sDebug() << QString::number(((data.at(256) << 24) | (data.at(257) << 16) | (data.at(258) << 8) | data.at(259)), 16);
     unsigned char flag = static_cast<unsigned char>(data.at(6));
     if ((flag & static_cast<unsigned char>(SD2Snes::info_flags::FEAT_DSPX)) != 0) info.flags.append("FEAT_DSPX");
