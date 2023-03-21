@@ -57,5 +57,7 @@ install -m 644 dist/rpm/QFiles2Snes.desktop %{buildroot}/usr/share/applications/
 make check
 
 %changelog
+* Tue Mar 21 2023 Thibault Delattre
+- add desktop files
 * Thu Jan 19 2023 Thibault Delattre
 - Initial version of the package
