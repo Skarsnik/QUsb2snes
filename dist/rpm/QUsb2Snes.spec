@@ -1,6 +1,6 @@
 %global debug_package %{nil}
 Name:     QUsb2snes
-Version:  0.7.26
+Version:  0.7.26.1
 Release:  1%{?dist}
 Summary:  websocket server protocol for accessing hardware/software that act like a SNES (or are a SNES)
 License:  GPLv3
@@ -35,10 +35,20 @@ cd QFile2Snes && make && cd -
 mkdir -p %{buildroot}/usr/bin/
 install -m 755 QUsb2Snes %{buildroot}/usr/bin/QUsb2Snes
 install -m 755 QFile2Snes/QFile2Snes %{buildroot}/usr/bin/QFile2Snes
+mkdir -p %{buildroot}/usr/share/pixmaps
+install -m 644 ui/icons/cheer128x128.png %{buildroot}/usr/share/pixmaps/QUsb2snes.png
+install -m 644 QFile2Snes/icon50x50.png %{buildroot}/usr/share/pixmaps/QFile2Snes.png
+mkdir -p %{buildroot}/usr/share/applications
+install -m 644 dist/rpm/QUsb2Snes.desktop %{buildroot}/usr/share/applications/QUsb2Snes.desktop
+install -m 644 dist/rpm/QFiles2Snes.desktop %{buildroot}/usr/share/applications/QFile2Snes.desktop
 
 %files
 /usr/bin/QUsb2Snes
 /usr/bin/QFile2Snes
+/usr/share/pixmaps/QUsb2snes.png
+/usr/share/pixmaps/QFile2Snes.png
+/usr/share/applications/QUsb2Snes.desktop
+/usr/share/applications/QFile2Snes.desktop
 
 %license LICENSE
 %doc COMPILING.adoc README.md CONTRIBUTING.adoc TODO
