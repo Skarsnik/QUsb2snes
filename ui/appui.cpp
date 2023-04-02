@@ -108,7 +108,7 @@ void AppUi::init()
     retroarchAction->setCheckable(true);
     connect(retroarchAction, &QAction::triggered, this, &AppUi::onRetroarchTriggered);
 
-    luaBridgeAction = new QAction(QIcon(":/img/icone-snes9x.gif"), tr("Enable Lua bridge - DEPECRATED"));
+    luaBridgeAction = new QAction(QIcon(":/img/icone-snes9x.gif"), tr("Enable Lua bridge - DEPRECATED"));
     luaBridgeAction->setCheckable(true);
     connect(luaBridgeAction, &QAction::triggered, this, &AppUi::onLuaBridgeTriggered);
 
