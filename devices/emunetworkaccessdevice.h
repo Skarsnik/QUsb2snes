@@ -29,6 +29,7 @@
 #include "../adevice.h"
 #include "../localstorage.h"
 #include "emunwaccessclient.h"
+#include "../rommapping/rommapping.h"
 
 class EmuNetworkAccessDevice : public ADevice
 {
@@ -74,6 +75,7 @@ private:
     unsigned int        uploadedFileSize;
     QList<LocalStorage::FileInfo>   fileInfos;
     QTimer              timerFakeComandFinish;
+    bool                isRetroarch;
 
     struct MemoryAddress
     {
@@ -106,6 +108,7 @@ private:
     QByteArray              cachedData;
     QMap<QString, QString>  memoryAccess;
     std::function<void()>   afterMemoryAccess;
+    rom_type                retroArchRomType;
 
     USB2SnesWS::opcode  currentCmd;
 
@@ -113,6 +116,9 @@ private:
     void nwaGetMemory(const MemoryAddress &memAdd);
     void nwaGetMemory(const QList<MemoryAddress> &list);
     void prepareWriteMemory(const QList<MemoryAddress> &list);
+    void actualGetMemory(const MemoryAddress &memAdd);
+    unsigned int toRetroArchAddressing(const MemoryAddress &memAddr);
+    void setInfoFromRomHeader(QByteArray data);
 private slots:
     void onEmuReadyRead();
     void onEmuDisconnected();

@@ -21,6 +21,7 @@
 
 
 #include "emunetworkaccessdevice.h"
+#include "rommapping/rominfo.h"
 #include <QCoreApplication>
 #include <QLoggingCategory>
 
@@ -51,6 +52,15 @@ EmuNetworkAccessDevice::EmuNetworkAccessDevice(QString _name, uint port)
     });
     doingPutFile = false;
     currentMemorieToWrite = nullptr;
+    isRetroarch = false;
+}
+
+void EmuNetworkAccessDevice::setInfoFromRomHeader(QByteArray data)
+{
+    struct rom_infos* rInfos = get_rom_info(data);
+    sDebug() << "From header : " << rInfos->title << rInfos->type;
+    retroArchRomType = rInfos->type;
+    free(rInfos);
 }
 
 
@@ -73,6 +83,34 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
         // This is actually memory access request
         case USB2SnesWS::Attach:
         {
+            if (isRetroarch)
+            {
+                if (rep.cmd == "CORE_MEMORIES")
+                {
+                    emu->cmdCoreCurrentInfo();
+                    break;
+                }
+                if (rep.cmd == "CORE_CURRENT_INFO")
+                {
+                    if (rep["name"].startsWith("bsnes-mercury"))
+                    {
+                        memoryAccess["WRAM"] = "rw";
+                        memoryAccess["CARTROM"] = "rw";
+                        memoryAccess["SRAM"] = "rw";
+                    }
+                    emu->cmd("RETROARCH_READ_CORE_MEMORY", "$40FFC0;32");
+                    break;
+                }
+                if (rep.cmd == "RETROARCH_READ_CORE_MEMORY" && step == 0)
+                {
+                    if (!rep.error.isEmpty())
+                    {
+                        setInfoFromRomHeader(rep.binary);
+                    } else {
+                        retroArchRomType = LoROM;
+                    }
+                }
+            }
             auto memAccess = rep.toMapList();
             for (auto& ma : memAccess)
                 memoryAccess[ma["name"]] = ma["access"];
@@ -118,6 +156,8 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
                 {
                     emuVersion = rep["version"];
                     emuName = rep["name"];
+                    if (emuName.toLower() == QString("RetroArch").toLower())
+                        isRetroarch = true;
                     emu->cmdEmulationStatus();
                     step = 0;
                 }
@@ -213,12 +253,40 @@ void EmuNetworkAccessDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
     Q_UNUSED(args)
 }
 
+unsigned int EmuNetworkAccessDevice::toRetroArchAddressing(const MemoryAddress& memAddr)
+{
+    if (memAddr.domain == "CARTROM" && retroArchRomType == LoROM)
+        return 0x800000 + (memAddr.offset + (0x8000 * ((memAddr.offset + 0x8000) / 0x8000)));
+    if (memAddr.domain == "CARTROM" && retroArchRomType == HiROM)
+    {
+        if (memAddr.offset < 0x400000)
+            return memAddr.offset + 0xC00000;
+        else //exhirom
+            return memAddr.offset + 0x400000;
+    }
+    if (memAddr.domain == "WRAM")
+    {
+        return memAddr.offset + 0x7E0000;
+    }
+
+}
+
+void EmuNetworkAccessDevice::actualGetMemory(const MemoryAddress& memAdd)
+{
+    if (!isRetroarch)
+    {
+        emu->cmdCoreReadMemory(memAdd.domain, memAdd.offset, memAdd.size);
+        return ;
+    }
+    // Everyone love RetroArch
+    emu->cmd("RETROARCH_READ_CORE_MEMORY", QString("%1;%2").arg(toRetroArchAddressing(memAdd)).arg(memAdd.size));
+}
 
 void EmuNetworkAccessDevice::nwaGetMemory(const MemoryAddress& memAdd)
 {
     sDebug() << "NWA get Memory single : " << memAdd;
     getAddressSizeRequested = memAdd.size;
-    emu->cmdCoreReadMemory(memAdd.domain, memAdd.offset, memAdd.size);
+    actualGetMemory(memAdd);
 }
 
 void EmuNetworkAccessDevice::nwaGetMemory(const QList<MemoryAddress>& list)
