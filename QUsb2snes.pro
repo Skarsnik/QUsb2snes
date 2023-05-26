@@ -15,7 +15,8 @@ UISOURCES = ui/appui.cpp \
             ui/wizard/devicesetupwizard.cpp \
             ui/wizard/lastpage.cpp \
             ui/wizard/retroarchpage.cpp \
-            ui/wizard/sd2snespage.cpp
+            ui/wizard/sd2snespage.cpp \
+            ui/wizard/nwapage.cpp
 UIHEADERS = ui/appui.h \
             ui/tempdeviceselector.h \
             ui/diagnosticdialog.h \
@@ -23,7 +24,8 @@ UIHEADERS = ui/appui.h \
             ui/wizard/devicesetupwizard.h \
             ui/wizard/lastpage.h \
             ui/wizard/retroarchpage.h \
-            ui/wizard/sd2snespage.h
+            ui/wizard/sd2snespage.h \
+            ui/wizard/nwapage.h
 
 
 equals(QUSB2SNES_NOGUI, 1) {
@@ -38,7 +40,8 @@ equals(QUSB2SNES_NOGUI, 1) {
              ui/wizard/devicesetupwizard.ui \
              ui/wizard/lastpage.ui \
              ui/wizard/retroarchpage.ui \
-             ui/wizard/sd2snespage.ui
+             ui/wizard/sd2snespage.ui \
+             ui/wizard/nwapage.ui
 
     SOURCES = $$UISOURCES
     HEADERS = $$UIHEADERS
