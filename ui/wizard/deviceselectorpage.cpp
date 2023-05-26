@@ -34,5 +34,7 @@ int DeviceSelectorPage::nextId() const
         return 2;
     if (ui->retroarchButton->isChecked())
         return 3;
+    if (ui->nwaButton->isChecked())
+        return 4;
     return 42;
 }
