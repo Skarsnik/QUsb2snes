@@ -396,7 +396,7 @@ void SNESClassicFactory::aliveCheck()
         dontLogNext = true;
         checkState = StatusState::CHECK_ALIVE;
         executeCommand("pidof canoe-shvc");
-     }
+    }
 }
 
 QStringList SNESClassicFactory::listDevices()

@@ -20,6 +20,7 @@ public:
     ~NWAPage();
     int nextId() const;
     bool isComplete() const;
+    void    initializePage();
 
 
 private slots:

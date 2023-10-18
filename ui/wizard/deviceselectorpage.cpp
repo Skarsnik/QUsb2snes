@@ -36,5 +36,7 @@ int DeviceSelectorPage::nextId() const
         return 3;
     if (ui->nwaButton->isChecked())
         return 4;
+    if (ui->snesClassicButton->isChecked())
+        return 5;
     return 42;
 }

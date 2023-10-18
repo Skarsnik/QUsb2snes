@@ -5,6 +5,7 @@
 #include <ui/wizard/sd2snespage.h>
 #include <ui/wizard/nwapage.h>
 #include <ui/wizard/deviceselectorpage.h>
+#include <ui/wizard/snesclassicpage.h>
 #include <QMessageBox>
 
 DeviceSetupWizard::DeviceSetupWizard(QWidget *parent) :
@@ -16,6 +17,7 @@ DeviceSetupWizard::DeviceSetupWizard(QWidget *parent) :
     setPage(2, new Sd2SnesPage(this));
     setPage(3, new RetroArchPage(this));
     setPage(4, new NWAPage(this));
+    setPage(5, new SNESClassicPage(this));
     setPage(42, new LastPage(this));
 }
 

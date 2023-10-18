@@ -7,11 +7,16 @@ NWAPage::NWAPage(QWidget *parent) :
     ui(new Ui::NWAPage)
 {
     ui->setupUi(this);
-    nwaClient = new EmuNWAccessClient(this);
+    nwaClient = new EmuNWAccessClient(this); 
+    done = false;
+    retryTimer.setInterval(1000);
+}
+
+void NWAPage::initializePage()
+{
     connect(nwaClient, &EmuNWAccessClient::connected, [=] {
         nwaClient->cmdEmulatorInfo();
     });
-    done = false;
     connect(nwaClient, &EmuNWAccessClient::readyRead, [=] {
         EmuNWAccessClient::Reply rep = nwaClient->readReply();
         if (!rep.isError)
@@ -25,7 +30,6 @@ NWAPage::NWAPage(QWidget *parent) :
         }
     });
     nwaClient->connectToHost("localhost", 0xBEEF);
-    retryTimer.setInterval(1000);
     connect(&retryTimer, &QTimer::timeout, this, [=] {
        if (!nwaClient->isConnected())
        {
@@ -34,6 +38,7 @@ NWAPage::NWAPage(QWidget *parent) :
     });
     retryTimer.start();
 }
+
 
 NWAPage::~NWAPage()
 {
@@ -49,6 +54,7 @@ bool NWAPage::isComplete() const
 {
     return done;
 }
+
 
 void NWAPage::on_refreshPushButton_clicked()
 {

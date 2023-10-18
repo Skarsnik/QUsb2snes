@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SNESClassicPage</class>
+ <widget class="QWidget" name="SNESClassicPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <spacer name="verticalSpacer_3">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;You need to have HakChi2CE installed on your SNES Classic mini. You can get it at &lt;a href=&quot;https://github.com/TeamShinkansen/Hakchi2-CE/releases&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Hakchi2CE release page&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;&lt;p&gt;You need to install the serverstuff mod provided with QUsb2snes: if you installed Hakchi2CE on your system, you need to copy the file serverstuff.hmod file in the &lt;span style=&quot; font-style:italic;&quot;&gt;Documents\hakchi2\user_mods\&lt;/span&gt; folder otherwise in the &lt;span style=&quot; font-style:italic;&quot;&gt;user_mods\&lt;/span&gt; folder of your standalone HakChi2CE folder.&lt;/p&gt;&lt;p&gt;You canoe-shvc version (the SNES Classic emulator) should also be the last version available. If this page ask you to update go to &lt;a href=&quot;https://github.com/MentalBlank/SNES-Mini-Kernels&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;SNES Classic Kernels&lt;/span&gt;&lt;/a&gt; and install the kernel-dp file 2.0.14 corresponding to your region.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="statusLabel">
+       <property name="text">
+        <string>No SNES Classic Mini with HakChi2CE found</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

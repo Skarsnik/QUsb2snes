@@ -57,6 +57,7 @@ public:
     bool hasVariaditeCommands();
     USB2SnesInfo parseInfo(const QByteArray &data);
     QList<ADevice::FileInfos> parseLSCommand(QByteArray &dataI);
+    bool                isRetroarch;
 
 public slots:
     bool open();
@@ -75,7 +76,6 @@ private:
     unsigned int        uploadedFileSize;
     QList<LocalStorage::FileInfo>   fileInfos;
     QTimer              timerFakeComandFinish;
-    bool                isRetroarch;
 
     struct MemoryAddress
     {

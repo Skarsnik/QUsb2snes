@@ -111,9 +111,12 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
                     }
                 }
             }
-            auto memAccess = rep.toMapList();
-            for (auto& ma : memAccess)
-                memoryAccess[ma["name"]] = ma["access"];
+            if (!isRetroarch)
+            {
+                auto memAccess = rep.toMapList();
+                for (auto& ma : memAccess)
+                    memoryAccess[ma["name"]] = ma["access"];
+            }
             afterMemoryAccess();
             afterMemoryAccess = [](){;};
             break;
@@ -268,7 +271,14 @@ unsigned int EmuNetworkAccessDevice::toRetroArchAddressing(const MemoryAddress& 
     {
         return memAddr.offset + 0x7E0000;
     }
-
+    if (memAddr.domain == "SRAM")
+    {
+        if (retroArchRomType == LoROM)
+            //return addr - 0xE00000 + 0x700000;
+            return lorom_sram_pc_to_snes(memAddr.offset);
+        return lorom_sram_pc_to_snes(memAddr.offset);
+        return memAddr.offset + 0x20000;
+    }
 }
 
 void EmuNetworkAccessDevice::actualGetMemory(const MemoryAddress& memAdd)
@@ -305,6 +315,11 @@ void EmuNetworkAccessDevice::nwaGetMemory(const QList<MemoryAddress>& list)
 
 void EmuNetworkAccessDevice::prepareWriteMemory(const QList<MemoryAddress>& list)
 {
+    if (isRetroarch)
+    {
+        emu->bcmdPrepare("RETROARCH_WRITE_CORE_MEMORY", QString("%1;%2").arg(toRetroArchAddressing(list.first())).arg(list.first().size), list.first().size);
+        return ;
+    }
     QList<QPair<int, int> >mems;
     const QString domain = list.first().domain;
     for (const auto& memAdd : list)
@@ -491,7 +506,6 @@ void EmuNetworkAccessDevice::infoCommand()
     } else {
         F();
     }
-
 }
 
 void EmuNetworkAccessDevice::writeData(QByteArray data)
@@ -691,5 +705,7 @@ QList<ADevice::FileInfos> EmuNetworkAccessDevice::parseLSCommand(QByteArray &dat
 
 bool EmuNetworkAccessDevice::hasVariaditeCommands()
 {
-    return true;
+    if (!isRetroarch)
+        return true;
+    return false;
 }
