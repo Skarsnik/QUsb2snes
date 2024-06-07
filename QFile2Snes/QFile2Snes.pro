@@ -27,15 +27,15 @@ CONFIG += c++11
 SOURCES += \
         main.cpp \
         qfile2snesw.cpp \
-    usb2snesfilemodel.cpp \
-    ../client/usb2snes.cpp \
-    myfilesystemmodel.cpp
+        usb2snesfilemodel.cpp \
+        ../client/usb2snes.cpp \
+        myfilesystemmodel.cpp
 
 HEADERS += \
         qfile2snesw.h \
-    usb2snesfilemodel.h \
-    ../client/usb2snes.h \
-    myfilesystemmodel.h
+        usb2snesfilemodel.h \
+        ../client/usb2snes.h \
+        myfilesystemmodel.h
 
 FORMS += \
         qfile2snesw.ui \

@@ -55,3 +55,9 @@ compile_commands.json
 
 /QUsb2Snes
 /QUsb2Snes.conf
+
+# rpm packages
+dist/rpms/QUsb2Snes
+**.rpm
+dist/rpm/results_QUsb2snes
+dist/*.tar.gz

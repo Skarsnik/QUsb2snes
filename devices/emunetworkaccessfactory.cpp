@@ -76,6 +76,10 @@ ADevice *EmuNetworkAccessFactory::attach(QString deviceName)
             if (ci.device == nullptr)
             {
                 ci.device = new EmuNetworkAccessDevice(deviceName, ci.port);
+                if (deviceName.startsWith("RetroArch", Qt::CaseInsensitive))
+                {
+                    ci.device->isRetroarch = true;
+                }
             }
             if (ci.device->state() == ADevice::BUSY)
                 return ci.device;
