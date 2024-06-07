@@ -1,9 +1,3 @@
-[submodule "extras/SNESClassicMemoryFinder/snesclassicstuff"]
-	path = extras/SNESClassicMemoryFinder/snesclassicstuff
-	url = https://github.com/Skarsnik/snesclassicstuff.git
-[submodule "EmuNWAccess-qt"]
-	path = devices/EmuNWAccess-qt
-	url = https://github.com/black-sliver/EmuNWAccess-qt.git
 [submodule "devices/EmuNWAccess-qt"]
 	path = devices/EmuNWAccess-qt
 	url = https://github.com/black-sliver/EmuNWAccess-qt.git
