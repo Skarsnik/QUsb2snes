@@ -3,6 +3,12 @@ QT       += core websockets serialport network
 TARGET = QUsb2Snes
 TEMPLATE = app
 GIT_TAG_VERSION=$$system(git describe --always --tags)
+
+exists("sq_project_forced_version.pri") {
+        include("sq_project_forced_version.pri")
+	GIT_TAG_VERSION=$$SQ_PROJECT_FORCED_VERSION
+}
+
 DEFINES += GIT_TAG_VERSION=\\\"$$GIT_TAG_VERSION\\\"
 
 
@@ -95,6 +101,7 @@ HEADERS += adevice.h \
           devices/snesclassic.h \
           localstorage.h \
           usb2snes.h \
+	  sqpath.h \
           wsserver.h
 
 macx: {

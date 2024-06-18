@@ -133,7 +133,10 @@ Q_NAMESPACE
     List, // LS command - [dirpath]->{typefile1, namefile1, typefile2, namefile2...}
     Remove, // remove a file [filepath]
     Rename, // rename a file [filepath, newfilename]
-    MakeDir // create a directory [dirpath]
+    MakeDir, // create a directory [dirpath]
+
+    QUsb2SnesRegisterApplication // Register an application to appear in QUsb2Snes device menu
+                                 // [Name, short description, exec path, icon path]
     };
     Q_ENUM_NS(opcode)
 

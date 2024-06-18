@@ -1,0 +1,13 @@
+{
+    "name" : "QFile2Snes",
+    "author" : "Sylvain Colinet",
+    "author-mail" : "scolinet@gmail.com",
+    "short-description" : "This software allow you to access your FxPak Pro files and more",
+    "description" : "QFile2Snes allow you to access your FxPak Pro files, uploading new Rom and booting them. You need a software like QU2Snes or SNI to be able to use it",
+    "org" :  "fr.nyo",
+    "icon" : "icon48x48.png",
+    "desktop-categories" : ["Game"],
+    "qt-major-version" : "qt6",
+    "pro-file" : "QFile2Snes.pro",
+    "translations" : "Translations"
+}

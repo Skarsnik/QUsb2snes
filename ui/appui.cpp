@@ -47,6 +47,7 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #include "appui.h"
 #include "../wsserver.h"
 #include "tempdeviceselector.h"
+#include "sqpath.h"
 
 
 static const  QString             applicationJsonFileName = "qusb2snesapp.json";
@@ -252,6 +253,23 @@ AppUi::ApplicationInfo AppUi::parseJsonAppInfo(QString fileName)
     info.name = job["name"].toString();
     info.folder = QFileInfo(fileName).absolutePath();
     info.description = job["description"].toString();
+    if (false)
+    {
+        QFile desktopFile(job["linux-desktop"].toString());
+        if (desktopFile.open(QIODevice::ReadOnly) == false)
+        {
+            return ApplicationInfo();
+        }
+        QTextStream fileStream(&desktopFile);
+        QString line;
+        while (fileStream.readLineInto(&line))
+        {
+            if (line.startsWith("Icon"))
+            {
+                info.icon = "/usr/share/";
+            }
+        }
+    }
     info.executable = job["executable"].toString();
     info.icon = job["icon"].toString();
     return info;
@@ -324,36 +342,50 @@ void AppUi::checkForNewVersion(bool manual)
 
 void AppUi::checkForApplications()
 {
-    QDir    appsDir(qApp->applicationDirPath() + "/apps");
-    if (!appsDir.exists())
+    QDir    appsDir(SQPath::softwareDatasPath() + "/apps");
+    if (appsDir.exists() == false)
         return ;
-    foreach (QFileInfo fi, appsDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
+    if (appsDir.exists() == true)
     {
-        sInfo() << "Scanning " << fi.absoluteFilePath();
-        ApplicationInfo appInfo;
-        sDebug() << "Searching for " << fi.absoluteFilePath() + "/" + applicationJsonFileName;
-        if (QFile::exists(fi.absoluteFilePath() + "/" + applicationJsonFileName))
+        foreach (QFileInfo fi, appsDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
         {
-            qDebug() << "Found a json description file "  + applicationJsonFileName;
-            appInfo = parseJsonAppInfo(fi.absoluteFilePath() + "/" + applicationJsonFileName);
-        } else {
-            QDir dir(fi.absoluteFilePath());
-            QFileInfoList fil = dir.entryInfoList(QDir::Files | QDir::Executable);
-            if (!fil.isEmpty())
+            sInfo() << "Scanning " << fi.absoluteFilePath();
+            ApplicationInfo appInfo;
+            sDebug() << "Searching for " << fi.absoluteFilePath() + "/" + applicationJsonFileName;
+            if (QFile::exists(fi.absoluteFilePath() + "/" + applicationJsonFileName))
             {
-                appInfo.name = fi.baseName();
-                appInfo.executable = fil.first().baseName();
-                appInfo.folder = fi.absoluteFilePath();
-                if (QFile::exists(fi.absoluteFilePath() + "/icone.png"))
-                    appInfo.icon = "icone.png";
+                qDebug() << "Found a json description file "  + applicationJsonFileName;
+                appInfo = parseJsonAppInfo(fi.absoluteFilePath() + "/" + applicationJsonFileName);
+            } else {
+                QDir dir(fi.absoluteFilePath());
+                QFileInfoList fil = dir.entryInfoList(QDir::Files | QDir::Executable);
+                if (!fil.isEmpty())
+                {
+                    appInfo.name = fi.baseName();
+                    appInfo.executable = fil.first().baseName();
+                    appInfo.folder = fi.absoluteFilePath();
+                    if (QFile::exists(fi.absoluteFilePath() + "/icone.png"))
+                        appInfo.icon = "icone.png";
+                }
+            }
+            if (!appInfo.name.isEmpty())
+            {
+                regularApps[appInfo.folder] = appInfo;
+                sInfo() << "Found an application" << appInfo;
             }
         }
-        if (!appInfo.name.isEmpty())
+    }
+/*#ifdef SQPROJECT_INSTALLED && SQPROJECT_UNIX_INSTALL_PREFIX
+    for (const QFileInfo fi : appsDir.entryInfoList(QDir::NoDotAndDotDot, QDir::Files))
+    {
+        if (fi.suffix() == "json")
         {
-            regularApps[appInfo.folder] = appInfo;
-            sInfo() << "Found an application" << appInfo;
+           ApplicationInfo appInfo = parseJsonAppInfo(fi.absoluteFilePath());
+           regularApps[appInfo.name] = appInfo;
+           sInfo() << "Found an application" << appInfo;
         }
     }
+#endif*/
     if (regularApps.isEmpty())
         return ;
     appsMenu->clear();

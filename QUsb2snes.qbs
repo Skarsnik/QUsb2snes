@@ -14,6 +14,7 @@ Project {
             "devices/EmuNWAccess-qt/emunwaccessclient.h",
             "adevice.cpp",
             "adevice.h",
+            "sqpath.h",
             "ui/appui.cpp",
             "ui/appuimenu.cpp",
             "ui/appui.h",

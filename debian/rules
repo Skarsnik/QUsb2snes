@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+#Don't edit this file in QtCreator, blank need to be tabulation and not space
+%:
+	dh $@
+override_dh_auto_configure:
+	sh ./sqpackager_unix_installer.sh --build --skip-make -qmake-cmd qmake6 --compile-prefix /usr --prefix $$(pwd)/debian/qusb2snes/usr/ 'QMAKE_STRIP=:' 'PREFIX=/usr' DEFINES+="SQPROJECT_DEBIAN_INSTALL"  CONFIG+=\'debug\'
+	cd QFile2Snes && sh ./sqpackager_unix_installer.sh --build --skip-make -qmake-cmd qmake6 --compile-prefix /usr --prefix $$(pwd)/../debian/qfile2snes/usr/ 'QMAKE_STRIP=:' 'PREFIX=/usr' DEFINES+="SQPROJECT_DEBIAN_INSTALL"  CONFIG+=\'debug\'
+
+override_dh_auto_build:
+	dh_auto_build -- --directory=project_build_dir
+	dh_auto_build -- --directory=QFile2Snes/project_build_dir
+
+override_dh_auto_install:
+	sh ./sqpackager_unix_installer.sh --install --prefix $$(pwd)/debian/qusb2snes/usr/
+	cd QFile2Snes && sh ./sqpackager_unix_installer.sh --install --prefix $$(pwd)/../debian/qfile2snes/usr/
+

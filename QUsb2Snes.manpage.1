@@ -1,0 +1,30 @@
+.TH QUsb2Snes 1 "15 Jun 2024" "version v0.7.28-2-g8bccb22"
+
+.\" The name of the executable
+.SH NAME
+QUsb2Snes - This software is a Qt based application implementing the Usb2SnesW protocol
+
+.\" This is how you start your program and if there is any additional option
+.SH SYNOPSIS
+
+QUsb2Snes
+
+.\" The complete description
+.SH DESCRIPTION
+This software is a websocket server that provide an unified protocol for accessing hardware/software that act like a SNES (or are a SNES). A classic usage is to use a File Viewer client to upload roms to your SD2SNES. But it allows for more advanced usage like reading/writing the memory of the SNES.
+
+QUsb2Snes support these devices : 
+	A real SNES with a usb2snes compatible firmware
+	A SNES Classic mini with the latest kernel with a custom mod
+	The RetroArch emulator with the network command support activated
+	An emulator supporting the NWA protocol
+
+.SH CONFIGURATION
+
+The configuration file is located in $HOME/.config/nyo.fr/QUsb2Snes.conf, you should not have to
+edit this file most of the time
+
+
+.\" Auhtor infos
+.SH AUTHOR
+Sylvain Colinet <scolinet@gmail.com>

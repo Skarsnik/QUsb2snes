@@ -1,0 +1,17 @@
+{
+    "name" : "QUsb2Snes",
+    "author" : "Sylvain Colinet",
+    "author-mail" : "scolinet@gmail.com",
+    "short-description" : "This software is a Qt based application implementing the Usb2SnesW protocol",
+    "description" : "This software is a websocket server that provide an unified protocol for accessing hardware/software that act like a SNES (or are a SNES). A classic usage is to use a File Viewer client to upload roms to your SD2SNES. But it allows for more advanced usage like reading/writing the memory of the SNES.",
+    "org" :  "fr.nyo",
+    "icon" : "ui/icons/cheer128x128.png",
+    "desktop-categories" : ["Game"],
+    "qt-major-version" : "qt6",
+    "pro-file" : "QUsb2snes.pro",
+    "translations" : "Translations",
+    "files" : {
+	"WIN32:LuaBridge/luabridge.lua" : "LuaBridge/luabridge.lua",
+	"WIN32:LuaBridge/socket.dll" : "https://shelter.mahoro-net.org/~skarsnik/project/socket.dll"
+    }
+}

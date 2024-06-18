@@ -132,11 +132,7 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
     //cout << msg;
 //    if (dontLogNext)
 //        return ;
-#ifdef QT_NO_DEBUG
     QString logString = QString("%6 %5 - %7: %1").arg(localMsg.constData()).arg(context.category, 20).arg(QDateTime::currentDateTime().toString(Qt::ISODate));
-#else
-    QString logString = QString("%6 %5 - %7: %1 \t(%2:%3, %4)").arg(localMsg.constData()).arg(context.file).arg(context.line).arg(context.function).arg(context.category, 20).arg(QDateTime::currentDateTime().toString(Qt::ISODate));
-#endif
     switch (type)
     {
         case QtDebugMsg:
@@ -239,7 +235,7 @@ int main(int ac, char *ag[])
 
     //std::filebuf crashFile;
 #ifndef Q_OS_WIN
-    globalSettings = new QSettings("skarsnik.nyo.fr", "QUsb2Snes");
+    globalSettings = new QSettings("nyo.fr", "QUsb2Snes");
 #else
     globalSettings = new QSettings("config.ini", QSettings::IniFormat);
 #endif
@@ -261,7 +257,10 @@ int main(int ac, char *ag[])
     // This is only defined in the PRO file
 #ifdef GIT_TAG_VERSION
     QString plop(GIT_TAG_VERSION);
-    plop.remove(0, 1); // Remove the v
+    if (plop.at(0) == QChar('v'))
+    {
+        plop.remove(0, 1); // Remove the v
+    }
     app.setApplicationVersion(QVersionNumber::fromString(plop).toString());
 #else
     app.setApplicationVersion("0.8");

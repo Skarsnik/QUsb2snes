@@ -1,0 +1,23 @@
+Source: qusb2snes
+Maintainer: Sylvain Colinet <scolinet@gmail.com>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 9), qt6-base-dev, libqt6websockets6-dev, libqt6serialport6-dev
+
+Package: qusb2snes
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: This software is a Qt based application implementing the Usb2SnesW protocol
+ This software is a websocket server that provide an unified protocol for acces
+ sing hardware/software that act like a SNES (or are a SNES). A classic usage is
+  to use a File Viewer client to upload roms to your SD2SNES. But it allows for 
+ more advanced usage like reading/writing the memory of the SNES.
+
+package: qfile2snes
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: A file explorer and more for your FxPak pro
+ QFile2Snes is an file explorer for your FxPak Pro, you can navigate your SD 
+ card send new rom to it, but also boot them directly. You need a software like
+ QUsb2Snes or SNI running to be able use it.
