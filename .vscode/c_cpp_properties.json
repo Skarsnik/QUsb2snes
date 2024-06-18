@@ -1,0 +1,13 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "intelliSenseMode": "clang-x64",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/opt/homebrew/Cellar/qt@5/**"
+            ]
+        }
+    ],
+    "version": 4
+}
