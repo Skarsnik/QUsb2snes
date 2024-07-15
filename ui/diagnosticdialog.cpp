@@ -31,8 +31,14 @@ void DiagnosticDialog::sendRequest(QString opCode, QStringList operands)
     QJsonObject     jObj;
 
     jObj["Opcode"] = opCode;
-    if (!operands.isEmpty())
+    if (operands.isEmpty() == false)
+    {
+        for(const QString& sops :  operands)
+        {
+            jOp.append(QJsonValue(sops));
+        }
         jObj["Operands"] = jOp;
+    }
     testSocket.sendTextMessage(QJsonDocument(jObj).toJson());
 }
 
@@ -82,13 +88,14 @@ DiagnosticDialog::DiagnosticDialog(QWidget *parent) :
                 ui->deviceWebsocketInfosLabel->setText("Founds devices : " + devices.join("-"));
                 socketState = TestSocketState::INFO;
                 sendRequest("Attach", QStringList() << devices.first());
+                sendRequest("Info");
             }
             break;
         }
         case TestSocketState::INFO :
         {
             QStringList devices = getJsonResults(msg);
-            ui->deviceInternalInfosLabel->setText("Type : " + devices.at(1) + " - Version : " + devices.at(0) + " - Rom : " + devices.at(2));
+            ui->deviceWebsocketInfosLabel->setText(ui->deviceWebsocketInfosLabel->text() + "\nType : " + devices.at(1) + " - Version : " + devices.at(0) + " - Rom : " + devices.at(2));
             break;
         }
         }
@@ -161,7 +168,7 @@ int DiagnosticDialog::exec()
     }
     sDebug() << "Opening websocket";
     server->requestDeviceStatus();
-    ui->deviceInternalInfosLabel->setText("");
+    ui->deviceWebsocketInfosLabel->setText("Connecting to the Websocket server");
     testSocket.open(QUrl("ws://localhost:" + QString::number(USB2SnesWS::defaultPort)));
     return QDialog::exec();
 }
