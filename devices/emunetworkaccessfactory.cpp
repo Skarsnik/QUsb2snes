@@ -178,10 +178,11 @@ void    EmuNetworkAccessFactory::onClientReadyRead()
         auto emuInfo = rep.toMap();
         sDebug() << emuInfo;
         QString deviceName;
+        sDebug() << "==Emu ID : " << emuInfo["id"];
         if (emuInfo.contains("id"))
-            deviceName = QString("%1 - %2").arg(emuInfo["name"], emuInfo["id"]);
+            deviceName = QString("%1 - %2").arg(emuInfo["name"]).arg(emuInfo["id"]);
         else
-            deviceName =  QString("%1 - %2").arg(emuInfo["name"], emuInfo["version"]);
+            deviceName =  QString("%1 - %2").arg(emuInfo["name"]).arg(emuInfo["version"]);
         info.deviceName = deviceName;
         info.checkState = DetectState::CHECK_CORE_LIST;
         client->cmdCoresList("SNES");
@@ -218,8 +219,12 @@ void    EmuNetworkAccessFactory::checkStatus()
             info.checkState = DetectState::CHECK_CONNECTION;
             client->connectToHost("localhost", info.port);
             QTimer::singleShot(100, this, [=] {
+                //sDebug() << "Tiemout timer" << client->isConnected();
                 if (!client->isConnected())
+                {
+                    client->disconnectFromHost();
                     checkFailed(client, Error::DeviceError::DE_EMUNWA_NO_CLIENT);
+                }
             });
         } else {
             info.checkState = DetectState::CHECK_EMU_INFO;

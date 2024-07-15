@@ -136,9 +136,10 @@ void EmuNetworkAccessDevice::onEmuReadyRead()
                         emu->cmdGameInfo();
                     }
                 } else {
-                    if (rep.contains("file"))
-                        whatRunning = rep["file"];
-                    else {
+                    if (rep.contains("file") && LocalStorage::isInStorage(rep["file"]))
+                    {
+                        whatRunning = LocalStorage::storagePath(rep["file"]);
+                    } else {
                         whatRunning = rep["name"];
                     }
                     step = 0;

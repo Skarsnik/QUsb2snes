@@ -49,6 +49,8 @@ public:
     static bool             remove(const QString path);
     static bool             makeDir(const QString path);
     static bool             rename(const QString path, const QString newPath);
+    static bool             isInStorage(const QString path);
+    static QString          storagePath(const QString path);
 
 private:
     LocalStorage();

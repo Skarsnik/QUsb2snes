@@ -144,6 +144,22 @@ bool LocalStorage::rename(const QString path, const QString newPath)
     return rootDir.rename(path, newPath);
 }
 
+bool LocalStorage::isInStorage(const QString path)
+{
+    QString cleanedPath = QDir::cleanPath(path);
+    sDebug() << "Is in storage: testing : " << cleanedPath;
+    sDebug() << "Rooth path             : " << rootPath;
+    return cleanedPath.startsWith(rootPath);
+}
+
+QString LocalStorage::storagePath(const QString path)
+{
+    QString plop = path;
+    plop = QDir::cleanPath(path);
+    plop.replace(rootPath + "/", "");
+    return plop;
+}
+
 bool LocalStorage::violateRoot(QString toCheck)
 {
     QString path = rootDir.absoluteFilePath(rootPath + "/" + toCheck);
