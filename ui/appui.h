@@ -26,6 +26,7 @@
 #include "../devices/sd2snesfactory.h"
 #include "../devices/retroarchfactory.h"
 #include "../devices/emunetworkaccessfactory.h"
+#include "ui/systraywidget.h"
 
 #include <QMenu>
 #include <QObject>
@@ -88,6 +89,8 @@ private:
     };
     friend QDebug              operator<<(QDebug debug, const AppUi::PopTrackerPackInfo& req);
     friend QDebug              operator<<(QDebug debug, const AppUi::ApplicationInfo& req);
+
+    SysTrayWidget*      UiWidget;
     QMenu*              menu;
     QMenu*              deviceMenu;
     QMenu*              appsMenu;

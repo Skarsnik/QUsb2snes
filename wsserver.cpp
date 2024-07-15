@@ -279,6 +279,17 @@ void WSServer::requestDeviceStatus()
         emit deviceFactoryStatusDone();
 }
 
+QStringList WSServer::getAllClientsName()
+{
+    QStringList toret;
+
+    for (const auto& values : wsInfos.values())
+    {
+        toret.append(values.name);
+    }
+    return toret;
+}
+
 void WSServer::onDeviceFactoryStatusDone(DeviceFactory::DeviceFactoryStatus status)
 {
     factoryStatusDoneCount++;

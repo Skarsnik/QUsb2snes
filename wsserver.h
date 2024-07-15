@@ -136,6 +136,7 @@ public:
     void        addTrusted(QString origin);
     ServerStatus  serverStatus() const;
     void        requestDeviceStatus();
+    QStringList getAllClientsName();
 
 signals:
     void    error();

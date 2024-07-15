@@ -16,6 +16,7 @@
         <file alias="ikari.ico">ui/icons/ikari.ico</file>
         <file alias="mr chip.png">ui/icons/mr chip.png</file>
         <file alias="poptrackericon.png">ui/icons/poptrackericon.png</file>
+        <file alias="settings.svg">ui/icons/settings.svg</file>
     </qresource>
     <qresource prefix="/wizardpic">
         <file alias="ikaripic.png">ui/wizard/pictures/ikaripic.png</file>

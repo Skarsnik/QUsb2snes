@@ -160,6 +160,7 @@ void AppUi::init()
     });
     if (!globalSettings->contains("FirstTime"))
     {
+        sDebug() << "Starting Wizzard";
         globalSettings->setValue("FirstTime", true);
         DeviceSetupWizard wiz;
         if (wiz.exec() == QDialog::Accepted)
@@ -189,6 +190,44 @@ void AppUi::init()
     }
     setMenu();
     sysTray->setContextMenu(menu);
+    UiWidget = new SysTrayWidget();
+    UiWidget->contextMenu = menu;
+
+    connect(sysTray, &QSystemTrayIcon::activated, this, [=](QSystemTrayIcon::ActivationReason reason) {
+        if (reason == QSystemTrayIcon::Trigger)
+        {
+            if (UiWidget->isVisible() == false)
+            {
+                QRect geo = sysTray->geometry();
+                QPoint tray_center   = sysTray->geometry().center();
+                QRect  screen_rect   = qApp->screenAt(tray_center)->geometry();
+                QPoint screen_center = screen_rect.center();
+
+                Qt::Corner corner = Qt::TopLeftCorner;
+                if (tray_center.x() > screen_center.x() && tray_center.y() <= screen_center.y())
+                    corner = Qt::TopRightCorner;
+                else if (tray_center.x() > screen_center.x() && tray_center.y() > screen_center.y())
+                    corner = Qt::BottomRightCorner;
+                else if (tray_center.x() <= screen_center.x() && tray_center.y() > screen_center.y())
+                    corner = Qt::BottomLeftCorner;
+                // Bottom
+                if (corner == Qt::BottomRightCorner)
+                    UiWidget->move(geo.x() - UiWidget->size().width(), geo.y() - UiWidget->size().height());
+                if (corner == Qt::BottomLeftCorner)
+                    UiWidget->move(geo.x() + UiWidget->size().width(), geo.y() - UiWidget->size().height());
+                if (corner == Qt::TopLeftCorner)
+                    UiWidget->move(geo.x() + UiWidget->size().width(), geo.y() + UiWidget->size().height());
+                if (corner == Qt::TopRightCorner)
+                    UiWidget->move(geo.x() - UiWidget->size().width(), geo.y() + UiWidget->size().height());
+                UiWidget->show();
+
+                onMenuHovered(nullptr);
+            } else {
+                UiWidget->hide();
+            }
+
+        }
+    });
     startWServer();
 }
 

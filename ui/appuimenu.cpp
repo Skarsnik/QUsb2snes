@@ -119,12 +119,12 @@ void AppUi::setLinuxDeviceMenu()
 void AppUi::onMenuHovered(QAction* action)
 {
     //sDebug() << "Menu hovered";
-    if (action != deviceMenu->menuAction())
+    if (action != deviceMenu->menuAction() && action != nullptr)
         return ;
     if (checkingDeviceInfos)
         return ;
     checkingDeviceInfos = true;
-    QTimer::singleShot(4000, this, [=] {
+    QTimer::singleShot(3000, this, [=] {
         checkingDeviceInfos = false;
     });
     auto serverStatus = wsServer.serverStatus();
@@ -142,6 +142,12 @@ void AppUi::onMenuHovered(QAction* action)
     deviceMenu->addAction("Devices state");
     deviceMenu->addSeparator();
 #endif
+    UiWidget->initDeviceStatus();
+    UiWidget->clearClientStatus();
+    for (const QString& clientName : wsServer.getAllClientsName())
+    {
+        UiWidget->addClientStatus(clientName);
+    }
     wsServer.requestDeviceStatus();
 }
 
@@ -154,15 +160,17 @@ void    AppUi::setDeviceEntry(const QString str)
 #else
     deviceMenu->addAction(str);
 #endif
+    UiWidget->addDeviceStatus(str);
 }
 
 void AppUi::onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus status)
 {
     QString statusString;
     sDebug() << "Receveid status for" << status.name;
-    if (!status.deviceNames.isEmpty())
+    if (status.deviceNames.isEmpty() == false)
     {
         setDeviceEntry(status.name + ":");
+        UiWidget->addDeviceStatus(status.name + ":");
     } else {
         statusString = status.name + " : ";
     }
@@ -198,12 +206,14 @@ void AppUi::onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus sta
             }
             sDebug() << "name" << statusString;
             setDeviceEntry(statusString);
+            UiWidget->addDeviceStatus(statusString);
             statusString.clear();
         }
     }
     if (status.deviceNames.isEmpty())
     {
         deviceMenu->addAction(statusString);
+        UiWidget->addDeviceStatus(statusString);
         sDebug() << "Added devfact status : " << statusString;
     }
 }
