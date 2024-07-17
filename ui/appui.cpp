@@ -50,9 +50,9 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #include "sqpath.h"
 
 
-static const  QString             applicationJsonFileName = "qusb2snesapp.json";
-extern QSettings*          globalSettings;
-extern WSServer            wsServer;
+static const  QString       applicationJsonFileName = "qusb2snesapp.json";
+extern QSettings*           globalSettings;
+extern WSServer             wsServer;
 
 
 AppUi::AppUi(QObject *parent) : QObject(parent)
@@ -199,11 +199,19 @@ void AppUi::init()
             if (UiWidget->isVisible() == false)
             {
                 QRect geo = sysTray->geometry();
+                sDebug() << "Systray geo" << geo;
                 QPoint tray_center   = sysTray->geometry().center();
+                if (tray_center == QPoint(0, 0))
+                {
+                    QPoint mousePos = QCursor::pos() - qApp->screenAt(QCursor::pos())->geometry().topLeft();
+                    geo = QRect(mousePos, QSize(10, 10));
+                    tray_center = mousePos;
+                }
                 QRect  screen_rect   = qApp->screenAt(tray_center)->geometry();
                 QPoint screen_center = screen_rect.center();
 
                 Qt::Corner corner = Qt::TopLeftCorner;
+                sDebug() << tray_center << screen_center << UiWidget->size();
                 if (tray_center.x() > screen_center.x() && tray_center.y() <= screen_center.y())
                     corner = Qt::TopRightCorner;
                 else if (tray_center.x() > screen_center.x() && tray_center.y() > screen_center.y())
@@ -211,14 +219,15 @@ void AppUi::init()
                 else if (tray_center.x() <= screen_center.x() && tray_center.y() > screen_center.y())
                     corner = Qt::BottomLeftCorner;
                 // Bottom
+                sDebug() << "Systray is in : " << corner;
                 if (corner == Qt::BottomRightCorner)
                     UiWidget->move(geo.x() - UiWidget->size().width(), geo.y() - UiWidget->size().height());
                 if (corner == Qt::BottomLeftCorner)
                     UiWidget->move(geo.x() + UiWidget->size().width(), geo.y() - UiWidget->size().height());
                 if (corner == Qt::TopLeftCorner)
-                    UiWidget->move(geo.x() + UiWidget->size().width(), geo.y() + UiWidget->size().height());
+                    UiWidget->move(geo.x() + UiWidget->size().width(), geo.y() + geo.height());
                 if (corner == Qt::TopRightCorner)
-                    UiWidget->move(geo.x() - UiWidget->size().width(), geo.y() + UiWidget->size().height());
+                    UiWidget->move(geo.x() - UiWidget->size().width(), geo.y() + geo.height());
                 UiWidget->show();
 
                 onMenuHovered(nullptr);
@@ -785,4 +794,5 @@ void AppUi::handleMagic2Snes(QString path)
         addMagic2SnesFolder(scriptPath);
 
 }
+
 

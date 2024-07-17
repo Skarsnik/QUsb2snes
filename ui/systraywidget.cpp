@@ -70,10 +70,12 @@ void SysTrayWidget::on_pushButton_clicked()
     QPoint p = mapToGlobal(ui->pushButton->geometry().topRight());
     if (corner == Qt::TopLeftCorner || corner == Qt::TopRightCorner)
     {
-        p.setY(p.y() + contextMenu->sizeHint().height());
+        p.setY(p.y() + ui->pushButton->geometry().height());
     } else {
         p.setY(p.y() - contextMenu->sizeHint().height());
     }
+    if (corner == Qt::TopRightCorner)
+        p.setX(p.x() - contextMenu->sizeHint().width());
     contextMenu->move(p);
     contextMenu->show();
 }

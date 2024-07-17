@@ -36,7 +36,6 @@
 #include <QLabel>
 #include <QProgressBar>
 
-
 class AppUi : public QObject
 {
     Q_OBJECT

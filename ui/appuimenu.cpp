@@ -90,7 +90,7 @@ void    AppUi::setMenu()
            diag.setWSServer(&wsServer);
            diag.exec();
         });
-        QObject::connect(menu->addAction(tr("Exit")), &QAction::triggered, qApp, &QApplication::exit);
+        QObject::connect(menu->addAction(QIcon(":/img/quiticon.svg"), tr("Exit")), &QAction::triggered, qApp, &QApplication::exit);
         appsMenu->addSeparator();
         appsMenu->addAction(tr("Remote Applications"));
         appsMenu->addSeparator();
@@ -104,6 +104,7 @@ void    AppUi::setMenu()
 
 void AppUi::setLinuxDeviceMenu()
 {
+    linuxActionPos = 0;
     deviceMenu->addAction("Devices state");
     auto serverStatus = wsServer.serverStatus();
     for (quint8 i = 0; i < serverStatus.deviceFactoryCount * 3; i++)

@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>QUsb2Snes</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../ressources.qrc">
+    <normaloff>:/img/icon64x64.ico</normaloff>:/img/icon64x64.ico</iconset>
+  </property>
   <layout class="QHBoxLayout" name="horizontalLayout" stretch="8,1">
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,2,1,2">
