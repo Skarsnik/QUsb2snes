@@ -42,6 +42,11 @@ void SysTrayWidget::addDeviceStatus(QString status)
     ui->devicesLabel->setText(text);
 }
 
+void SysTrayWidget::noDevicesStatus()
+{
+    ui->devicesLabel->setText(tr("No device activated"));
+}
+
 void SysTrayWidget::addClientStatus(QString status)
 {
     if (firstClientStatus == true)

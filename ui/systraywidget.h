@@ -18,6 +18,7 @@ public:
     void    initDeviceStatus();
     void    clearClientStatus();
     void    addDeviceStatus(QString status);
+    void    noDevicesStatus();
     void    addClientStatus(QString status);
     QMenu   *contextMenu;
 
