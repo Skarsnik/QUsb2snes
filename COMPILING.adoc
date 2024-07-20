@@ -1,10 +1,21 @@
-This document will guide you through the compiling process.
+This document will guide you through the compiling process. QUsb2Snes can be built with Qt 5.8 minimum but
+we recommend using Qt 6.5 or higher.
+
+== Submodules
+
+If you get the source code with a `git clone`, you need to set up the git submodules.
+
+[source, bash]
+----
+git submodule init
+git submodule update
+----
 
 == Linux
 
 === Prerequisites
 
-* You need the development files for Qt 5.8 or newer.
+* You need the development files for Qt
 * You will need the development files for websocket and serialport libraries that goes with your Qt version
 * You can either use the Qbs build tool or the regular qmake build too to build it. QMake is simpler to use.
 
@@ -16,7 +27,7 @@ qmake QUsb2snes.pro CONFIG+='release'
 make
 ----
 
-Then start the QUsb2Snes binary directory that is created.
+Then, start the QUsb2Snes binary directory that is created.
 
 === Compiling without GUI
 
@@ -30,9 +41,7 @@ make
 
 == Windows
 
-=== Prerequisites
-
-* Install Qt 5
+* Install Qt 6 
 * Open the `.qbs` file with QCreator
 
 == MacOS
