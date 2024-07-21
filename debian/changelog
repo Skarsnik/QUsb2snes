@@ -1,5 +1,11 @@
-qusb2snes (0.7.28-2-g8bccb22-1) UNRELEASED; urgency=medium
+qusb2snes (0.7.29-1) unstable; urgency=medium
+
+  * Better Linux support
+
+ -- Sylvain Colinet <scolinet@gmail.com>  Sun, 21 Jul 2024 11:31:14 +0200
+
+qusb2snes (0.7.28-2-g8bccb22-1) unstable; urgency=medium
 
   * Initial release generated with SQPackager
 
- -- Sylvain Colinet <scolinet@gmail.com>  Sat, 15 Jun 2024 17:23:16 +0200
+ -- Sylvain Colinet <scolinet@gmail.com>  Sun, 21 Jul 2024 11:21:36 +0200

@@ -36,6 +36,7 @@
 #include <QNetworkAccessManager>
 #include <QVBoxLayout>
 #include <QSettings>
+#include <QScreen>
 
 #include <ui/wizard/devicesetupwizard.h>
 
