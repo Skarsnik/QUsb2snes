@@ -17,6 +17,7 @@ UISOURCES = ui/appui.cpp \
             ui/appuipoptracker.cpp \
             ui/tempdeviceselector.cpp \
             ui/diagnosticdialog.cpp \
+	    ui/systraywidget.cpp \
             ui/wizard/deviceselectorpage.cpp \
             ui/wizard/devicesetupwizard.cpp \
             ui/wizard/lastpage.cpp \
@@ -27,6 +28,7 @@ UISOURCES = ui/appui.cpp \
 UIHEADERS = ui/appui.h \
             ui/tempdeviceselector.h \
             ui/diagnosticdialog.h \
+	    ui/systraywidget.h \
             ui/wizard/deviceselectorpage.h \
             ui/wizard/devicesetupwizard.h \
             ui/wizard/lastpage.h \
@@ -44,6 +46,7 @@ equals(QUSB2SNES_NOGUI, 1) {
     QT += gui widgets
     FORMS =  ui/tempdeviceselector.ui \
              ui/diagnosticdialog.ui \
+	     ui/systraywidget.ui \
              ui/wizard/deviceselectorpage.ui \
              ui/wizard/devicesetupwizard.ui \
              ui/wizard/lastpage.ui \
