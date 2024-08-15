@@ -124,6 +124,7 @@ void AppUi::onMenuHovered(QAction* action)
         return ;
     if (checkingDeviceInfos)
         return ;
+    //sDebug() << "Menu hovered code is running";
     checkingDeviceInfos = true;
     QTimer::singleShot(3000, this, [=] {
         checkingDeviceInfos = false;
@@ -176,7 +177,6 @@ void AppUi::onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus sta
     if (status.deviceNames.isEmpty() == false)
     {
         setDeviceEntry(status.name + ":");
-        UiWidget->addDeviceStatus(status.name + ":");
     } else {
         statusString = status.name + " : ";
     }
@@ -212,7 +212,6 @@ void AppUi::onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus sta
             }
             sDebug() << "name" << statusString;
             setDeviceEntry(statusString);
-            UiWidget->addDeviceStatus(statusString);
             statusString.clear();
         }
     }
