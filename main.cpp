@@ -130,8 +130,8 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
     QTextStream*    log = &logfile;
     //QTextStream* log = new QTextStream();
     //cout << msg;
-//    if (dontLogNext)
-//        return ;
+    if (dontLogNext)
+       return ;
     QString logString = QString("%6 %5 - %7: %1").arg(localMsg.constData()).arg(context.category, 20).arg(QDateTime::currentDateTime().toString(Qt::ISODate));
     switch (type)
     {
