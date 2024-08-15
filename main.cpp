@@ -281,6 +281,9 @@ int main(int ac, char *ag[])
     wsServer.addTrusted("https://funtoon.party");
     QLoggingCategory::setFilterRules("EmuNWAccessClient.debug=true\n");
 
+#ifdef QUSB2SNES_DEVEL
+    qInfo() << "THIS MESSAGE SHOULD ONLY APPEAR ON DEVEL MODE, IF YOU SEE IT PLEASE REPPORT";
+#endif
 #ifndef QUSB2SNES_NOGUI
     AppUi*  appUi = new AppUi();
     int updatedIndex = app.arguments().indexOf("-updated");
