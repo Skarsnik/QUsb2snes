@@ -412,6 +412,7 @@ void EmuNetworkAccessDevice::putAddrCommand(SD2Snes::space space, unsigned int a
     m_state = BUSY;
     std::function<void()> F([this, addr, size] {
         currentCmd = USB2SnesWS::PutAddress;
+        NWAMemoriesToWrite.clear();
         NWAMemoriesToWrite.append(PutAddressEntry());
         auto newAddr = sd2snesToDomain(addr);
         currentMemorieToWrite = &NWAMemoriesToWrite.last();
@@ -446,10 +447,11 @@ void EmuNetworkAccessDevice::putAddrCommand(SD2Snes::space space, QList<QPair<un
     m_state = BUSY;
     std::function<void()> F([this, args] {
         currentCmd = USB2SnesWS::PutAddress;
+        NWAMemoriesToWrite.clear();
         NWAMemoriesToWrite.append(PutAddressEntry());
         QString domain = "";
+        putAddressTotalSize = 0;
         sDebug() << "Should be 1" << NWAMemoriesToWrite.size();
-        currentMemorieToWrite = &NWAMemoriesToWrite.last();
         for (auto pairing : args)
         {
             auto newAddr = sd2snesToDomain(pairing.first);
@@ -472,6 +474,7 @@ void EmuNetworkAccessDevice::putAddrCommand(SD2Snes::space space, QList<QPair<un
             NWAMemoriesToWrite.last().mems.append(newAddr);
         }
         putAddressTotalSent = 0;
+        currentMemorieToWrite = &NWAMemoriesToWrite.first();
         prepareWriteMemory(currentMemorieToWrite->mems);
     });
     if (!memoryAccess.contains("WRAM"))
