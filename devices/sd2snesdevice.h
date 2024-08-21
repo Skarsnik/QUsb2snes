@@ -22,6 +22,7 @@
 #define USBCONNECTION_H
 
 #include <QObject>
+#include <QQueue>
 #include <QSerialPort>
 #include <QVector>
 #include "../adevice.h"
@@ -74,6 +75,11 @@ private:
     void    readPacket(const QByteArray& packetData);
 
 private:
+    struct VCmdEntry {
+        QList<QPair<unsigned int, quint8> > list;
+        unsigned int                        totalSIze;
+    };
+
     QSerialPort m_port;
 
     QByteArray  dataReceived;
@@ -84,9 +90,12 @@ private:
     bool        isGetCmd;
     bool        skipResponse;
     quint16     blockSize;
+    QQueue<VCmdEntry> vCmdArgumentsQueue;
 
     SD2Snes::opcode m_currentCommand;
+    //VCmdEntry       m_currentVEntry;
     unsigned char   m_commandFlags;
+    SD2Snes::space  m_currentSpace;
     int             m_getSize;
     int             m_putSize;
     int             m_get_expected_size;
@@ -95,6 +104,7 @@ private:
 
     void writeToDevice(const QByteArray &data);
     void beNiceToFirmWare(const QByteArray &data);
+    QQueue<VCmdEntry> createSuitableListForVCMD(QList<QPair<unsigned int, quint8> > &originalArgs);
 };
 
 #endif // USBCONNECTION_H

@@ -20,6 +20,7 @@
 
 #include <QDebug>
 #include <QLoggingCategory>
+#include <QQueue>
 #include <QRegularExpression>
 #include <QThread>
 #include "sd2snesdevice.h"
@@ -142,6 +143,7 @@ void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space
     data.append(QByteArray().fill(0, filer_size));
     int i = 0;
     int tsize = 0;
+    m_currentSpace = space;
     foreach (auto infos, args) {
         data[32 + i * 4] = static_cast<char>(infos.second);
         data[33 + i * 4] = static_cast<char>((infos.first >> 16) & 0xFF);
@@ -287,12 +289,22 @@ void SD2SnesDevice::spReadyRead()
     return;
 cmdFinished:
     fileGetSizeSent = false;
-    m_state = READY;
     bytesReceived = 0;
     dataReceived.clear();
     responseBlock.clear();
     bytesGetSent = 0;
     m_getSize = 0;
+    // To handle the vcmd get queue
+    if (vCmdArgumentsQueue.isEmpty() == false)
+    {
+        sDebug() << "A part of a multiple vget command done. Remaining : " << vCmdArgumentsQueue.size();
+        if (m_currentCommand == SD2Snes::opcode::VGET)
+        {
+            sendVCommand(SD2Snes::opcode::VGET, m_currentSpace, SD2Snes::server_flags::NONE, vCmdArgumentsQueue.dequeue().list);
+        }
+        return ;
+    }
+    m_state = READY;
     sDebug() << "Command finished";
     emit commandFinished();
 }
@@ -485,6 +497,28 @@ static QByteArray   int32ToData(quint32 number)
 
 }
 
+QQueue<SD2SnesDevice::VCmdEntry> SD2SnesDevice::createSuitableListForVCMD(QList<QPair<unsigned int, quint8> > &originalArgs)
+{
+    QQueue<VCmdEntry > toret;
+
+    unsigned int i = 0;
+    unsigned int e = 0;
+    unsigned int size = 0;
+    for (auto pair : originalArgs)
+    {
+        if (i % 8 == 0 && i != 0)
+        {
+            toret[e].totalSIze = size;
+            e++;
+            size = 0;
+        }
+        size += pair.second;
+        toret[e].list.append(pair);
+        i++;
+    }
+    return toret;
+}
+
 
 void SD2SnesDevice::putFile(QByteArray name, unsigned int size)
 {
@@ -519,7 +553,8 @@ void SD2SnesDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned in
     m_get_expected_size = 0;
     foreach (auto p, args)
         m_get_expected_size += p.second;
-    sendVCommand(SD2Snes::opcode::VGET, space, SD2Snes::server_flags::NONE, args);
+    vCmdArgumentsQueue = createSuitableListForVCMD(args);
+    sendVCommand(SD2Snes::opcode::VGET, space, SD2Snes::server_flags::NONE, vCmdArgumentsQueue.dequeue().list);
 }
 
 void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size)
