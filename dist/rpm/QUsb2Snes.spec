@@ -1,6 +1,6 @@
 %global debug_package %{nil}
 Name:     QUsb2snes
-Version:  0.7.26.1
+Version:  0.7.30
 Release:  1%{?dist}
 Summary:  websocket server protocol for accessing hardware/software that act like a SNES (or are a SNES)
 License:  GPLv3
