@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Version=0.7.26.1
+Version=0.7.30
 Name=QUsb2snes
 Comment=A Qt based webserver for usb2snes
 Exec=/usr/bin/QUsb2Snes
