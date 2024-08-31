@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-VERSION=0.7.26.1
+VERSION=0.7.30
 PROJECT=QUsb2snes
 
 # required to build on centos, not on fedora
@@ -17,6 +17,6 @@ git submodule update --init
 cd ..
 tar czf v${VERSION}.tar.gz ${PROJECT}
 
-fedpkg --release f37 mockbuild
+fedpkg --release f40 mockbuild
 
 rm -rf ${PROJECT} v${VERSION}.tar.gz
