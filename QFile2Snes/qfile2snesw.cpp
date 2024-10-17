@@ -302,7 +302,7 @@ void QFile2SnesW::on_resetButton_clicked()
 void QFile2SnesW::on_menuButton_clicked()
 {
     usb2snes->menu();
-    refreshStatus();
+    QTimer::singleShot(100, [=](){refreshStatus();});
 }
 
 void QFile2SnesW::onLocalDirectoryLoaded(const QString& path)
