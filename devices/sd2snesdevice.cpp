@@ -504,12 +504,14 @@ QQueue<SD2SnesDevice::VCmdEntry> SD2SnesDevice::createSuitableListForVCMD(QList<
     unsigned int i = 0;
     unsigned int e = 0;
     unsigned int size = 0;
+    toret.enqueue(VCmdEntry());
     for (auto pair : originalArgs)
     {
         if (i % 8 == 0 && i != 0)
         {
             toret[e].totalSIze = size;
             e++;
+            toret.enqueue(VCmdEntry());
             size = 0;
         }
         size += pair.second;
@@ -543,7 +545,14 @@ void SD2SnesDevice::getAddrCommand(SD2Snes::space space, unsigned int addr, unsi
     m_get_expected_size = static_cast<int>(size);
     QByteArray data1 = int32ToData(addr);
     QByteArray data2 = int32ToData(size);
-    sendCommand(SD2Snes::opcode::GET, space, SD2Snes::server_flags::NONE, data1, data2);
+    if (size > 64)
+        sendCommand(SD2Snes::opcode::GET, space, SD2Snes::server_flags::NONE, data1, data2);
+    else
+    {
+        QList<QPair<unsigned int, quint8> > tmp;
+        tmp.append(QPair<unsigned int, quint8>(addr, size));
+        getAddrCommand(space, tmp);
+    }
 }
 
 
@@ -554,6 +563,7 @@ void SD2SnesDevice::getAddrCommand(SD2Snes::space space, QList<QPair<unsigned in
     foreach (auto p, args)
         m_get_expected_size += p.second;
     vCmdArgumentsQueue = createSuitableListForVCMD(args);
+    sDebug() << "VCMdQueue Queue is " << vCmdArgumentsQueue.size();
     sendVCommand(SD2Snes::opcode::VGET, space, SD2Snes::server_flags::NONE, vCmdArgumentsQueue.dequeue().list);
 }
 
