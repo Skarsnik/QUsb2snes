@@ -15,7 +15,6 @@ DEFINES += GIT_TAG_VERSION=\\\"$$GIT_TAG_VERSION\\\"
 UISOURCES = ui/appui.cpp \
             ui/appuimenu.cpp \
             ui/appuipoptracker.cpp \
-            ui/tempdeviceselector.cpp \
             ui/diagnosticdialog.cpp \
 	    ui/systraywidget.cpp \
             ui/wizard/deviceselectorpage.cpp \
@@ -26,7 +25,6 @@ UISOURCES = ui/appui.cpp \
             ui/wizard/nwapage.cpp \
             ui/wizard/snesclassicpage.cpp
 UIHEADERS = ui/appui.h \
-            ui/tempdeviceselector.h \
             ui/diagnosticdialog.h \
 	    ui/systraywidget.h \
             ui/wizard/deviceselectorpage.h \
@@ -44,8 +42,7 @@ equals(QUSB2SNES_NOGUI, 1) {
     QT -= gui
 } else {
     QT += gui widgets
-    FORMS =  ui/tempdeviceselector.ui \
-             ui/diagnosticdialog.ui \
+    FORMS =  ui/diagnosticdialog.ui \
 	     ui/systraywidget.ui \
              ui/wizard/deviceselectorpage.ui \
              ui/wizard/devicesetupwizard.ui \

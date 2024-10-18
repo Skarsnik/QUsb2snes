@@ -47,7 +47,6 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #include "../usb2snes.h"
 #include "appui.h"
 #include "../wsserver.h"
-#include "tempdeviceselector.h"
 #include "sqpath.h"
 
 
