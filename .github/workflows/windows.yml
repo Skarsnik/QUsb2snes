@@ -101,7 +101,7 @@ jobs:
             7z a "QUsb2Snes.7z" QUsb2Snes
       -
         name: Upload 7zip
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: QUsb2Snes.7z
           path: QUsb2Snes.7z
