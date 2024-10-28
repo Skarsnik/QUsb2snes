@@ -43,6 +43,11 @@ bool DeviceSetupWizard::contextMenu() const
     return field("Sd2SnesContextMenu").toBool();
 }
 
+bool DeviceSetupWizard::sendTelemetry() const
+{
+    return field("SendTelemetryData").toBool();
+}
+
 bool DeviceSetupWizard::showQuitMessage()
 {
     auto question = QMessageBox::question(this, tr("Abord configurtion"),

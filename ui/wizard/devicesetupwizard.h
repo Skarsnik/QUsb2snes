@@ -24,6 +24,7 @@ public:
     ~DeviceSetupWizard();
     DeviceSelected  deviceSelected() const;
     bool            contextMenu() const;
+    bool            sendTelemetry() const;
 
 private:
     Ui::DeviceSetupWizard *ui;

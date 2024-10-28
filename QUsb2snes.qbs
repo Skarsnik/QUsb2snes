@@ -19,6 +19,7 @@ Project {
             "ui/appuimenu.cpp",
             "ui/appui.h",
             "ui/appuipoptracker.cpp",
+            "ui/appuiupdate.cpp",
             "ui/systraywidget.cpp",
             "ui/systraywidget.h",
             "ui/systraywidget.ui",

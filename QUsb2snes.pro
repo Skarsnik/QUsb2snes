@@ -15,6 +15,7 @@ DEFINES += GIT_TAG_VERSION=\\\"$$GIT_TAG_VERSION\\\"
 UISOURCES = ui/appui.cpp \
             ui/appuimenu.cpp \
             ui/appuipoptracker.cpp \
+	    ui/appuiupdate.cpp \
             ui/diagnosticdialog.cpp \
 	    ui/systraywidget.cpp \
             ui/wizard/deviceselectorpage.cpp \

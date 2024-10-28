@@ -25,23 +25,7 @@
    <property name="text">
     <string>You are done configuring QUsb2Snes!
 
-After you close this window QUsb2Snes will only be accessible via the systray</string>
-   </property>
-   <property name="wordWrap">
-    <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_2">
-   <property name="geometry">
-    <rect>
-     <x>140</x>
-     <y>320</y>
-     <width>221</width>
-     <height>81</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string/>
+After you close this window QUsb2Snes will only be accessible from your system systray like shows in the picture bellow</string>
    </property>
    <property name="wordWrap">
     <bool>true</bool>
@@ -93,6 +77,38 @@ After you close this window QUsb2Snes will only be accessible via the systray</s
    </property>
    <property name="text">
     <string>Hey, it's me!</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="telemetryCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>350</y>
+     <width>191</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Send telemetry informations</string>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="telemetryLabel">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>370</y>
+     <width>381</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Data sent : </string>
+   </property>
+   <property name="wordWrap">
+    <bool>true</bool>
    </property>
   </widget>
  </widget>

@@ -13,12 +13,14 @@ class LastPage : public QWizardPage
 
 public:
     explicit LastPage(QWidget *parent = nullptr);
+    void initializePage();
     ~LastPage();
     bool    isComplete() const;
 
 private:
     Ui::LastPage *ui;
     bool        canNext;
+
 };
 
 #endif // LASTPAGE_H

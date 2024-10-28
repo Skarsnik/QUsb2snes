@@ -126,6 +126,7 @@ private:
     void                addDevicesInfo(DeviceFactory *devFact);
     ApplicationInfo     parseJsonAppInfo(QString fileName);
     void                checkForNewVersion(bool manual = false);
+    void                postTelemetryData();
     void startWServer();
     void addSD2SnesFactory();
     void addRetroarchFactory();
@@ -135,9 +136,11 @@ private:
     void setLinuxDeviceMenu();
     void setMenu();
     void setDeviceEntry(const QString str);
+
     QList<PopTrackerPackInfo> poptrackerScanPack();
     bool checkPopTracker();
     void addPopTrackerMenu();
+    void initDLManager();
 };
 
 #endif // APPUI_H
