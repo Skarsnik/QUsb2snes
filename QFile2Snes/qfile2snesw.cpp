@@ -91,7 +91,8 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
         usb2snes->deviceList();
     });
     connect(usb2snes, &Usb2Snes::disconnected, this, [=]() {
-        ui->sd2snesLabel->setText(tr("Disconnected, trying to reconnect in 1 sec"));
+        ui->infoLabel->setText(tr("Disconnected, trying to reconnect in 1 sec"));
+        setEnabledSd2SnesUI(false);
         QTimer::singleShot(1000, this, [=] {
             usb2snes->connect();
         });
@@ -161,6 +162,9 @@ void QFile2SnesW::setEnabledSd2SnesUI(bool enabled)
     ui->newDirButton->setEnabled(enabled);
     ui->renameButton->setEnabled(enabled);
     ui->bootButton->setEnabled(enabled);
+    ui->sd2snesLabel->setEnabled(enabled);
+    ui->resetButton->setEnabled(enabled);
+    ui->patchButton->setEnabled(enabled);
 }
 
 void QFile2SnesW::onUsb2SnesStateChanged()
@@ -302,7 +306,7 @@ void QFile2SnesW::on_resetButton_clicked()
 void QFile2SnesW::on_menuButton_clicked()
 {
     usb2snes->menu();
-    QTimer::singleShot(100, [=](){refreshStatus();});
+    QTimer::singleShot(100, this, [=](){refreshStatus();});
 }
 
 void QFile2SnesW::onLocalDirectoryLoaded(const QString& path)
