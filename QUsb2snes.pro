@@ -59,7 +59,9 @@ equals(QUSB2SNES_NOGUI, 1) {
 
 include($$PWD/devices/EmuNWAccess-qt/EmuNWAccess-qt.pri)
 
-SOURCES += adevice.cpp \
+INCLUDEPATH += core/
+
+SOURCES += core/adevice.cpp \
           devicefactory.cpp \
           devices/sd2snesfactory.cpp \
           devices/snesclassicfactory.cpp \
@@ -79,12 +81,12 @@ SOURCES += adevice.cpp \
           rommapping/rominfo.c \
           devices/sd2snesdevice.cpp \
           devices/snesclassic.cpp \
-          localstorage.cpp \
-          wsserver.cpp \
-          wsservercommands.cpp
+          core/localstorage.cpp \
+          core/wsserver.cpp \
+          core/wsservercommands.cpp
 
-HEADERS += adevice.h \
-          devicefactory.h \
+HEADERS += core/adevice.h \
+          core/devicefactory.h \
           devices/deviceerror.h \
           devices/sd2snesfactory.h \
           devices/snesclassicfactory.h \
@@ -101,9 +103,9 @@ HEADERS += adevice.h \
           devices/sd2snesdevice.h \
           devices/snesclassic.h \
           localstorage.h \
-          usb2snes.h \
+          core/usb2snes.h \
 	  sqpath.h \
-          wsserver.h
+          core/wsserver.h
 
 macx: {
         message("MAC OS BUILD")

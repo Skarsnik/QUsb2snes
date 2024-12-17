@@ -23,7 +23,7 @@
 
 #include <QObject>
 #include <QUdpSocket>
-#include "../devicefactory.h"
+#include "devicefactory.h"
 #include "retroarchhost.h"
 #include "retroarchdevice.h"
 

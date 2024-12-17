@@ -6,14 +6,14 @@ Project {
     QtApplication {
         name : "QUsb2Snes"
         cpp.cxxLanguageVersion: "c++11"
-        cpp.includePaths: ["devices/EmuNWAccess-qt", "./"]
+        cpp.includePaths: ["devices/EmuNWAccess-qt", "./", "core/"]
         consoleApplication: false
         files: [
             "TODO",
             "devices/EmuNWAccess-qt/emunwaccessclient.cpp",
             "devices/EmuNWAccess-qt/emunwaccessclient.h",
-            "adevice.cpp",
-            "adevice.h",
+            "core/adevice.cpp",
+            "core/adevice.h",
             "sqpath.h",
             "ui/appui.cpp",
             "ui/appuimenu.cpp",
@@ -27,8 +27,8 @@ Project {
             "ui/diagnosticdialog.h",
             "ui/diagnosticdialog.ui",
             "backward.hpp",
-            "devicefactory.cpp",
-            "devicefactory.h",
+            "core/devicefactory.cpp",
+            "core/devicefactory.h",
             "devices/deviceerror.cpp",
             "devices/deviceerror.h",
             "devices/emunetworkaccessdevice.cpp",
@@ -49,8 +49,8 @@ Project {
             "devices/luabridge.h",
             "devices/luabridgedevice.cpp",
             "devices/luabridgedevice.h",
-            "localstorage.cpp",
-            "localstorage.h",
+            "core/localstorage.cpp",
+            "core/localstorage.h",
             "main.cpp",
             "qskarsnikringlist.hpp",
             "qusb2snes.rc",
@@ -86,10 +86,10 @@ Project {
             "ui/wizard/snesclassicpage.cpp",
             "ui/wizard/snesclassicpage.h",
             "ui/wizard/snesclassicpage.ui",
-            "usb2snes.h",
-            "wsserver.cpp",
-            "wsserver.h",
-            "wsservercommands.cpp",
+            "core/usb2snes.h",
+            "core/wsserver.cpp",
+            "core/wsserver.h",
+            "core/wsservercommands.cpp",
         ]
 
         Group {

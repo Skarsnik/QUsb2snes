@@ -44,9 +44,9 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #define sDebug() qCDebug(log_appUi)
 #define sInfo() qCInfo(log_appUi)
 
-#include "../usb2snes.h"
+//#include "../core/usb2snes.h"
 #include "appui.h"
-#include "../wsserver.h"
+#include "wsserver.h"
 #include "sqpath.h"
 
 

@@ -26,8 +26,8 @@
 #include <QTimer>
 
 
-#include "../adevice.h"
-#include "../localstorage.h"
+#include "adevice.h"
+#include "localstorage.h"
 #include "emunwaccessclient.h"
 #include "../rommapping/rommapping.h"
 

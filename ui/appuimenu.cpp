@@ -8,7 +8,7 @@
 #include "appui.h"
 
 #include "diagnosticdialog.h"
-#include "../wsserver.h"
+#include "wsserver.h"
 
 Q_LOGGING_CATEGORY(log_appUiMenu, "APPUIMenu")
 #define sDebug() qCDebug(log_appUiMenu)

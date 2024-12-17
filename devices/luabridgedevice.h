@@ -21,7 +21,7 @@
 #ifndef LUABRIDGEDEVICE_H
 #define LUABRIDGEDEVICE_H
 
-#include "../adevice.h"
+#include "adevice.h"
 
 #include <QObject>
 #include <QTcpServer>

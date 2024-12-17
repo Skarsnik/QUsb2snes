@@ -21,7 +21,7 @@
 #ifndef LUABRIDGE_H
 #define LUABRIDGE_H
 
-#include "../devicefactory.h"
+#include "devicefactory.h"
 #include "luabridgedevice.h"
 #include <QRandomGenerator>
 

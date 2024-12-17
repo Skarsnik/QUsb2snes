@@ -24,7 +24,7 @@
 #include <QMap>
 #include <QObject>
 
-#include "../devicefactory.h"
+#include "devicefactory.h"
 #include "sd2snesdevice.h"
 
 class SD2SnesFactory : public DeviceFactory

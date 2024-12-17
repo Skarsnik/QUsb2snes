@@ -21,7 +21,7 @@
 #ifndef RETROARCHDEVICE_H
 #define RETROARCHDEVICE_H
 
-#include "../adevice.h"
+#include "adevice.h"
 #include "retroarchhost.h"
 #include "../rommapping/rominfo.h"
 
