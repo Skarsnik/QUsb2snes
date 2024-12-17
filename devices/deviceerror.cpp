@@ -62,6 +62,10 @@ QString deviceErrorString(DeviceError er)
         return QObject::tr("Can't connect to host");
     case DE_EMUNWA_INCOMPATIBLE_CLIENT:
         return QObject::tr("Client not compatible");
+    case DE_EMUNWA_GAME_LOADED_NO_SNES:
+        return QObject::tr("Game loaded is not a SNES game");
+    case DE_EMUNWA_NO_SNES_CORE:
+        return QObject::tr("No SNES core available");
     default: return QString();
     }
 }

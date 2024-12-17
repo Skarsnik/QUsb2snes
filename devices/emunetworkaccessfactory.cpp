@@ -192,9 +192,30 @@ void    EmuNetworkAccessFactory::onClientReadyRead()
     {
         if (rep.isValid && rep.isAscii)
         {
-            checkSuccess(client);
+            info.checkState = DetectState::CHECK_CURRRENT_CORE;
+            client->cmdCoreCurrentInfo();
         } else {
             checkFailed(client, Error::DeviceError::DE_EMUNWA_NO_SNES_CORE);
+        }
+        break;
+    }
+    case DetectState::CHECK_CURRRENT_CORE:
+    {
+        sDebug() << "Chck current core" << info.deviceName << clientInfos[client].deviceName;
+        if (rep.isValid && rep.isAscii)
+        {
+            if (rep["plateform"] == "SNES")
+                checkSuccess(client);
+            else
+                checkFailed(client, Error::DeviceError::DE_EMUNWA_GAME_LOADED_NO_SNES);
+        } else {
+            // The error is likely no core loaded
+            if (rep.isValid && rep.isError)
+            {
+                checkSuccess(client);
+                break;
+            }
+            checkFailed(client, Error::DeviceError::DE_EMUNWA_INCOMPATIBLE_CLIENT);
         }
         break;
     }
@@ -243,10 +264,11 @@ void EmuNetworkAccessFactory::checkFailed(EmuNWAccessClient *client, Error::Devi
     {
         if (err != Error::DeviceError::DE_EMUNWA_NO_CLIENT)
         {
-            QString piko = QString("Client %1").arg(clientInfos[client].port);
+            QString piko = clientInfos[client].deviceName;
+            if (clientInfos[client].deviceName.isEmpty())
+                piko = QString("Client %1").arg(clientInfos[client].port);
             devFacStatus.deviceNames.append(piko);
             devFacStatus.deviceStatus[piko].error = err;
-            clientInfos[client].deviceName.clear();
         }
     }
     if (checkedCount == 5)

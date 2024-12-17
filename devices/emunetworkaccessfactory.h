@@ -39,6 +39,7 @@ public:
         DOING_NAME,
         CHECK_EMU_INFO,
         CHECK_CORE_LIST,
+        CHECK_CURRRENT_CORE
     };
     Q_ENUM(DetectState)
 
