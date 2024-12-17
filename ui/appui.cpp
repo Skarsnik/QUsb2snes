@@ -280,7 +280,7 @@ void   AppUi::startWServer()
     {
         QMessageBox::critical(nullptr, tr("Error listenning on normal port"),
                               QString(tr("There was an error starting the core of the application : %1\n"
-                                         "Make sure there is no other Usb2Snes webserver application running (QUsb2Snes/Crowd Control")));
+                                         "Make sure there is no other Usb2Snes webserver application running (QUsb2Snes/Crowd Control")).arg(status));
         qApp->exit(1);
     }
 }
