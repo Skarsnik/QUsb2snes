@@ -62,7 +62,7 @@ include($$PWD/devices/EmuNWAccess-qt/EmuNWAccess-qt.pri)
 INCLUDEPATH += core/
 
 SOURCES += core/adevice.cpp \
-          devicefactory.cpp \
+          core/devicefactory.cpp \
           devices/sd2snesfactory.cpp \
           devices/snesclassicfactory.cpp \
           ipsparse.cpp \
