@@ -29,7 +29,7 @@
 #include "adevice.h"
 #include "localstorage.h"
 #include "emunwaccessclient.h"
-#include "../rommapping/rommapping.h"
+#include "utils/rommapping/rommapping.h"
 
 class EmuNetworkAccessDevice : public ADevice
 {

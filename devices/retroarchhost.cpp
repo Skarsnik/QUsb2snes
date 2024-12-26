@@ -24,6 +24,7 @@
 #include <QRegularExpression>
 
 #include "retroarchhost.h"
+#include "utils/rommapping/rominfo.h"
 
 Q_LOGGING_CATEGORY(log_retroarchhost, "RetroArcHost")
 #define sDebug() qCDebug(log_retroarchhost) << m_name

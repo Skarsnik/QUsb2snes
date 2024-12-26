@@ -24,7 +24,6 @@
 #include <QVersionNumber>
 
 #include "retroarchdevice.h"
-#include "../rommapping/rominfo.h"
 
 Q_LOGGING_CATEGORY(log_retroarch, "RETROARCH")
 #define sDebug() qCDebug(log_retroarch)

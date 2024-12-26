@@ -23,7 +23,7 @@
 
 #include "adevice.h"
 #include "retroarchhost.h"
-#include "../rommapping/rominfo.h"
+#include "utils/rommapping/rominfo.h"
 
 #include <QObject>
 #include <QUdpSocket>

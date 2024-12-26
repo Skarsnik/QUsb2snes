@@ -22,13 +22,14 @@
 #ifndef RETROARCHHOST_H
 #define RETROARCHHOST_H
 
+
 #include <QHostInfo>
 #include <QObject>
 #include <QTimer>
 #include <QUdpSocket>
 #include <QVersionNumber>
+#include "utils/rommapping/rommapping.h"
 #include <functional>
-#include "../rommapping/rominfo.h"
 
 class RetroArchHost : public QObject
 {

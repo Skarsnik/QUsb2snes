@@ -26,6 +26,7 @@
 #include <QMetaObject>
 #include <QMetaObject>
 #include <QSettings>
+#include "websocketclient.h"
 
 Q_LOGGING_CATEGORY(log_wsserver, "WSServer")
 #define sDebug() qCDebug(log_wsserver)
@@ -33,7 +34,7 @@ Q_LOGGING_CATEGORY(log_wsserver, "WSServer")
 
 extern QSettings*          globalSettings;
 
-quint64 WSServer::MRequest::gId = 0;
+quint64 MRequest::gId = 0;
 
 WSServer::WSServer(QObject *parent) : QObject(parent)
 {
@@ -53,64 +54,43 @@ WSServer::WSServer(QObject *parent) : QObject(parent)
 
 QString WSServer::start(QHostAddress lAddress, quint16 port)
 {
-    errTypeMetaEnum = QMetaEnum::fromType<WSServer::ErrorType>();
-    QWebSocketServer* newServer = new QWebSocketServer(QStringLiteral("USB2SNES Server"), QWebSocketServer::NonSecureMode, this);
+    WebSocketProvider* newServer = new WebSocketProvider("USB2SNES Server", this);
     if (newServer->listen(lAddress, port))
     {
         sInfo() << "WebSocket server started : listenning " << lAddress << "port : " << port;
-        connect(newServer, &QWebSocketServer::newConnection, this, &WSServer::onNewConnection);
-        connect(newServer, &QWebSocketServer::closed, this, &WSServer::onWSClosed);
-        connect(newServer, &QWebSocketServer::serverError, this, &WSServer::onWSError);
+        connect(newServer, &WebSocketProvider::newClient, this, &WSServer::onNewWsClient);
         wsServers.append(newServer);
         return QString();
     }
-    return newServer->errorString();
+    QString err = newServer->errorString();
+    newServer->deleteLater();
+    return err;
 }
 
-void WSServer::onNewConnection()
+// TODO Move this to the provider?
+void WSServer::onNewWsClient(AClient* client)
 { 
-    QWebSocketServer* server = qobject_cast<QWebSocketServer*>(sender());
-    QWebSocket* newSocket = server->nextPendingConnection();
-    sInfo() << "New connection from " << newSocket->origin();
-    if (!trustedOrigin.contains(newSocket->origin()))
+    WebSocketClient* wsClient = qobject_cast<WebSocketClient*>(client);
+    sInfo() << "New WS Connection from " << wsClient->origin();
+    if (!trustedOrigin.contains(wsClient->origin()))
     {
         sInfo() << "Connection from untrusted origin";
-        emit untrustedConnection(newSocket->origin());
+        emit untrustedConnection(wsClient->origin());
         sInfo() << "Closing Connection";
-        newSocket->close(QWebSocketProtocol::CloseCodePolicyViolated, "Not in trusted origin");
+        wsClient->close(QWebSocketProtocol::CloseCodePolicyViolated, "Not in trusted origin");
         return ;
     }
-
-    connect(newSocket, SIGNAL(textMessageReceived(QString)), this, SLOT(onTextMessageReceived(QString)));
-    connect(newSocket, SIGNAL(binaryMessageReceived(QByteArray)), this, SLOT(onBinaryMessageReceived(QByteArray)));
-    connect(newSocket, SIGNAL(disconnected()), this, SLOT(onClientDisconnected()));
-    connect(newSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onClientError(QAbstractSocket::SocketError)));
-
-    WSInfos wi;
-    wi.name = "Websocket " + QString::number((size_t)newSocket, 16);
-    wi.attached = false;
-    wi.attachedTo = nullptr;
-    wi.commandState = NOCOMMAND;
-    wi.byteReceived = 0;
-    wi.pendingAttach = false;
-    wi.recvData.clear();
-    wi.ipsSize = 0;
-    wi.expectedDataSize = 0;
-    wi.legacy = server->serverPort() == USB2SnesWS::legacyPort;
-
-    wsInfos[newSocket] = wi;
-    sInfo() << "New connection accepted " << wi.name << newSocket->origin() << newSocket->peerAddress();
+    connect(client, &AClient::newRequest, this, &WSServer::onNewRequest);
+    client->attached = false;
+    client->attachedTo = nullptr;
+    client->commandState = AClient::ClientCommandState::NOCOMMAND;
+    client->byteReceived = 0;
+    client->pendingAttach = false;
+    client->recvData.clear();
+    client->ipsSize = 0;
+    sInfo() << "New connection accepted " << client->name << wsClient->origin();
 }
 
-void WSServer::onWSError(QWebSocketProtocol::CloseCode code)
-{
-    sDebug() << "Websocket error" << code;
-}
-
-void WSServer::onWSClosed()
-{
-    qDebug() << "Websocket closed";
-}
 
 void WSServer::addDevice(ADevice *device)
 {
@@ -125,7 +105,7 @@ void WSServer::addDevice(ADevice *device)
 
 void WSServer::removeDevice(ADevice *device)
 {
-    setError(DeviceError, "Manualy removed the device (probably from the UI");
+    setError(ErrorType::DeviceError, "Manualy removed the device (probably from the UI");
     cleanUpDevice(device);
     devices.removeAt(devices.indexOf(device));
     devicesInfos.remove(device);
@@ -146,16 +126,6 @@ void WSServer::addDeviceFactory(DeviceFactory *devFact)
     deviceFactories.append(devFact);
 }
 
-QStringList WSServer::deviceFactoryNames() const
-{
-    QStringList toret;
-    for (auto devFact : deviceFactories)
-    {
-        toret << devFact->name();
-    }
-    return toret;
-}
-
 // TODO: this is bad if you do it during a devicelist request x)
 
 void WSServer::removeDeviceFactory(DeviceFactory *devFact)
@@ -172,13 +142,11 @@ void WSServer::removeDeviceFactory(DeviceFactory *devFact)
 QStringList WSServer::getClientsName(ADevice *dev)
 {
     QStringList toret;
-    QMapIterator<QWebSocket*, WSInfos> wsIit(wsInfos);
-    while (wsIit.hasNext())
+    for(AClient* cl : clients)
     {
-        auto p = wsIit.next();
-        if (p.value().attached && p.value().attachedTo == dev)
+        if (cl->attached && cl->attachedTo == dev)
         {
-            toret << p.value().name;
+            toret << cl->name;
         }
     }
     return toret;
@@ -187,66 +155,22 @@ QStringList WSServer::getClientsName(ADevice *dev)
 QStringList WSServer::getClientsName(const QString devName) const
 {
     QStringList toret;
-    sDebug() << "Get Client Name for " << devName;
-    QMapIterator<QWebSocket*, WSInfos> wsIit(wsInfos);
-    while (wsIit.hasNext())
+    for(AClient* cl : clients)
     {
-        auto p = wsIit.next();
-        if (p.value().attachedTo != nullptr &&
-            p.value().attachedTo->name() == devName)
+        if (cl->attached && cl->attachedTo->name() == devName)
         {
-            toret << p.value().name;
+            toret << cl->name;
         }
     }
     return toret;
 }
 
-
-QList<WSServer::MiniDeviceInfos> WSServer::getDevicesInfo()
+QStringList WSServer::deviceFactoryNames() const
 {
-    QList<MiniDeviceInfos> toret;
-    QListIterator<ADevice*> it(devices);
-    QStringList canAttachDev = getDevicesList();
-
-    while (it.hasNext())
+    QStringList toret;
+    for (auto devFact : deviceFactories)
     {
-        MiniDeviceInfos mInfo;
-        mInfo.usable = true;
-        ADevice *dev = it.next();
-        sDebug() << dev->name();
-        mInfo.name = dev->name();
-        if (!canAttachDev.contains(dev->name()))
-        {
-            mInfo.usable = false;
-            mInfo.error = dev->attachError();
-        } else {
-            QMapIterator<QWebSocket*, WSInfos> wsIit(wsInfos);
-            while (wsIit.hasNext())
-            {
-                auto p = wsIit.next();
-                if (p.value().attachedTo == dev)
-                {
-                    mInfo.clients << p.value().name;
-                }
-            }
-        }
-        toret.append(mInfo);
-    }
-    /* SD2SNES devices are created only when attached */
-    foreach (QString devName, canAttachDev)
-    {
-        bool pass = false;
-        foreach(MiniDeviceInfos mDev, toret)
-        {
-            if (devName == mDev.name)
-                pass = true;
-        }
-        if (pass)
-            continue;
-        MiniDeviceInfos mInfo;
-        mInfo.name = devName;
-        mInfo.usable = true;
-        toret.append(mInfo);
+        toret << devFact->name();
     }
     return toret;
 }
@@ -259,7 +183,7 @@ void WSServer::addTrusted(QString origin)
 WSServer::ServerStatus WSServer::serverStatus() const
 {
     WSServer::ServerStatus status;
-    status.clientCount = wsInfos.size();
+    status.clientCount = clients.size();
     status.deviceFactoryCount = deviceFactories.size();
     status.deviceCount = devices.size();
     return status;
@@ -269,7 +193,7 @@ void WSServer::requestDeviceStatus()
 {
     factoryStatusCount = 0;
     factoryStatusDoneCount = 0;
-    for (DeviceFactory* devFac : qAsConst(deviceFactories))
+    for (DeviceFactory* devFac : deviceFactories)
     {
         if (devFac->devicesStatus())
             factoryStatusCount++;
@@ -282,10 +206,9 @@ void WSServer::requestDeviceStatus()
 QStringList WSServer::getAllClientsName()
 {
     QStringList toret;
-
-    for (const auto& values : wsInfos.values())
+    for (const auto& client : clients)
     {
-        toret.append(values.name);
+        toret.append(client->name);
     }
     return toret;
 }
@@ -300,32 +223,25 @@ void WSServer::onDeviceFactoryStatusDone(DeviceFactory::DeviceFactoryStatus stat
 }
 
 
-void WSServer::onTextMessageReceived(QString message)
+void WSServer::onNewRequest(MRequest* req)
 {
-    QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
-    const WSInfos &wsInfo = wsInfos.value(ws);
-    sDebug() << wsInfo.name << "received " << message;
-
-    MRequest* req = requestFromJSON(message);
-    sDebug() << "Request is " << req->opcode;
-    if ((intptr_t)req->owner == 42)
-        goto LError;
-    req->owner = ws;
-    if (wsInfo.attached == false && !isValidUnAttached(req->opcode))
+    AClient* client = req->owner;
+    sDebug() << client->name << "received " << *req;
+    if (client->attached == false && !isValidUnAttached(req->opcode))
     {
-        if (wsInfo.pendingAttach)
+        if (client->pendingAttach)
         {
-            sDebug() << wsInfo.attachedTo->name() << "Adding request in queue (size:" << pendingRequests[wsInfo.attachedTo].size() << ")" << *req;
-            addToPendingRequest(wsInfo.attachedTo, req);
+            sDebug() << client->attachedTo->name() << "Adding request in queue (size:" << pendingRequests[client->attachedTo].size() << ")" << *req;
+            addToPendingRequest(client->attachedTo, req);
             return ;
         } else {
             setError(ErrorType::ProtocolError, "Invalid command while unattached");
             goto LError;
         }
     }
-    if (wsInfo.attached && !isValidUnAttached(req->opcode))
+    if (client->attached && !isValidUnAttached(req->opcode))
     {
-        ADevice* dev = wsInfo.attachedTo;
+        ADevice* dev = client->attachedTo;
         sDebug() << "Device is " << dev->state();
         if (dev->state() == ADevice::READY && pendingRequests[dev].isEmpty())
         {
@@ -337,11 +253,11 @@ void WSServer::onTextMessageReceived(QString message)
             }
             currentRequests[dev] = req;
             devicesInfos[dev].currentCommand = req->opcode;
-            devicesInfos[dev].currentWS = ws;
+            devicesInfos[dev].currentClient = client;
             executeRequest(req);
         } else { // add to queue
-            sDebug() << wsInfo.attachedTo->name() << "Adding request in queue " << *req << "(" << pendingRequests[wsInfo.attachedTo].size() << ")";
-            addToPendingRequest(wsInfo.attachedTo, req);
+            sDebug() << client->attachedTo->name() << "Adding request in queue " << *req << "(" << pendingRequests[client->attachedTo].size() << ")";
+            addToPendingRequest(client->attachedTo, req);
         }
 
     }
@@ -349,7 +265,7 @@ void WSServer::onTextMessageReceived(QString message)
         executeServerRequest(req);
     return ;
 LError:
-    clientError(ws);
+    clientError(client); //FIXME
 }
 
 void    WSServer::addToPendingRequest(ADevice* device, MRequest *req)
@@ -365,63 +281,62 @@ void    WSServer::addToPendingRequest(ADevice* device, MRequest *req)
             for (int i = 0; i < req->arguments.size(); i += 2)
                 putSize += req->arguments.at(i + 1).toUShort(&ok, 16);
         }
-        wsInfos[req->owner].expectedDataSize += putSize;
-        sDebug() << "Adding a Put command in queue, adding size" << wsInfos[req->owner].expectedDataSize;
+        req->owner->expectedDataSize += putSize;
+        sDebug() << "Adding a Put command in queue, adding size" << req->owner->expectedDataSize;
     }
 }
 
 void WSServer::onBinaryMessageReceived(QByteArray data)
 {
-    QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
-    WSInfos& infos = wsInfos[ws];
-    ADevice* dev = wsInfos.value(ws).attachedTo;
-    sDebug() << infos.name << "Received binary data" << data.size() << "Expected size: " << infos.expectedDataSize;
-    if (infos.commandState != ClientCommandState::WAITINGBDATAREPLY && infos.expectedDataSize == 0)
+    AClient* client = qobject_cast<AClient*>(sender());
+    ADevice* dev = client->attachedTo;
+    sDebug() << client->name << "Received binary data" << data.size() << "Expected size: " << client->expectedDataSize;
+    if (client->commandState != AClient::ClientCommandState::WAITINGBDATAREPLY && client->expectedDataSize == 0)
     {
         setError(ErrorType::ProtocolError, "Sending binary data when nothing waiting for it");
-        clientError(ws);
+        clientError(client);
         return;
     }
     // IPS stuff, please don't queue IPS data ~~
-    if (infos.ipsSize != 0)
+    if (client->ipsSize != 0)
     {
         sDebug() << "Data sent are IPS data";
-        infos.ipsData.append(data);
-        if (infos.ipsData.size() == infos.ipsSize)
+        client->ipsData.append(data);
+        if (client->ipsData.size() == client->ipsSize)
         {
-            infos.recvData.clear();
-            infos.byteReceived = 0;
-            infos.ipsSize = 0;
-            processIpsData(ws);
+            client->recvData.clear();
+            client->byteReceived = 0;
+            client->ipsSize = 0;
+            processIpsData(client);
         }
         return ;
     }
-    sDebug() << "Current put size : " << infos.currentPutSize << "Expected size" << infos.expectedDataSize;
+    sDebug() << "Current put size : " << client->currentPutSize << "Expected size" << client->expectedDataSize;
     // There is probably code that can be merged, but it's easier to read
     // to clearly separate all case, if only C++ has local function x)
 
     // First case, a put command wait for its data and there is no other put queued
-    if (infos.currentPutSize == infos.expectedDataSize) {
-        /*infos.byteReceived = 0;
-        infos.recvData.clear();*/
-        /*if (data.size() == infos.currentPutSize)
+    if (client->currentPutSize == client->expectedDataSize) {
+        /*client->byteReceived = 0;
+        client->recvData.clear();*/
+        /*if (data.size() == client->currentPutSize)
         {
-            infos.currentPutSize = 0; // the call to write data can trigger other signal.
-            infos.expectedDataSize = 0;
+            client->currentPutSize = 0; // the call to write data can trigger other signal.
+            client->expectedDataSize = 0;
             dev->writeData(data);
             return ;
         }*/
         sDebug() << "Regular non queued put command";
-        if (data.size() <= infos.currentPutSize) // We need two case since the previous one can
+        if (data.size() <= client->currentPutSize) // We need two case since the previous one can
             // trigger the finish signal and mess up currentPutSize
         {
-            infos.currentPutSize -= data.size();
-            infos.expectedDataSize = infos.currentPutSize;
+            client->currentPutSize -= data.size();
+            client->expectedDataSize = client->currentPutSize;
             dev->writeData(data);
         } else { // There is too much data
-            dev->writeData(data.left(infos.currentPutSize));
+            dev->writeData(data.left(client->currentPutSize));
             setError(ErrorType::ProtocolError, "Sending too much binary data");
-            clientError(ws);
+            clientError(client);
         }
         return ;
     }
@@ -431,10 +346,10 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
     // So we need to set variable before otherwise they are overwritted
 
     // No extra data for the queued request
-    if (data.size() <= infos.currentPutSize)
+    if (data.size() <= client->currentPutSize)
     {
-        infos.currentPutSize -= data.size();
-        infos.expectedDataSize -= data.size();
+        client->currentPutSize -= data.size();
+        client->expectedDataSize -= data.size();
         dev->writeData(data);
         return ;
     }
@@ -443,81 +358,81 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
     // In case writedata trigger finished
 
 
-    infos.recvData.append(data.mid(infos.currentPutSize));
-    infos.byteReceived += data.mid(infos.currentPutSize).size();
-    unsigned int currentSize = infos.currentPutSize;
-    infos.currentPutSize = 0;
-    infos.expectedDataSize -= currentSize;
+    client->recvData.append(data.mid(client->currentPutSize));
+    client->byteReceived += data.mid(client->currentPutSize).size();
+    unsigned int currentSize = client->currentPutSize;
+    client->currentPutSize = 0;
+    client->expectedDataSize -= currentSize;
     dev->writeData(data.left(currentSize));
     return ;
-            /*QByteArray toWrite = data.left(infos.currentPutSize);
-            data = data.mid(infos.currentPutSize);
-            infos.currentPutSize = 0;
+            /*QByteArray toWrite = data.left(client->currentPutSize);
+            data = data.mid(client->currentPutSize);
+            client->currentPutSize = 0;
             dev->writeData(toWrite);
             if (!data.isEmpty()) // This is probably data for the next cmd
             {
-                if (infos.pendingPutSizes.isEmpty() && infos.currentPutSize == 0)
+                if (client->pendingPutSizes.isEmpty() && client->currentPutSize == 0)
                 {
                     sDebug() << "Sending too much data to Websocket";
                     ws->close();
                     cleanUpSocket(ws);
                     return ;
                 }
-                while (infos.currentPutSize != 0 && !data.isEmpty()) // the previous writeData triggered a request in queue
+                while (client->currentPutSize != 0 && !data.isEmpty()) // the previous writeData triggered a request in queue
                 {
-                    toWrite = data.left(infos.currentPutSize);
-                    data = data.mid(infos.currentPutSize);
-                    infos.currentPutSize = 0;
+                    toWrite = data.left(client->currentPutSize);
+                    data = data.mid(client->currentPutSize);
+                    client->currentPutSize = 0;
                     dev->writeData(toWrite);
                 }
                 if (!data.isEmpty()) // we should probably move that highter
                 {
-                    QByteArray nextData = data.left(infos.pendingPutSizes.first());
+                    QByteArray nextData = data.left(client->pendingPutSizes.first());
                     qDebug() << "Next data : "<< nextData.size();
-                    while (!nextData.isEmpty() && !infos.pendingPutSizes.isEmpty() &&
-                           nextData.size() == infos.pendingPutSizes.first())
+                    while (!nextData.isEmpty() && !client->pendingPutSizes.isEmpty() &&
+                           nextData.size() == client->pendingPutSizes.first())
                     {
-                        infos.pendingPutDatas.append(nextData);
-                        nextData = data.left(infos.pendingPutSizes.first());
+                        client->pendingPutDatas.append(nextData);
+                        nextData = data.left(client->pendingPutSizes.first());
                     }
                 }
             }
-            //sDebug() << "Wriging before cps :" << __func__ << infos.currentPutSize;
-            infos.currentPutSize = 0;
-            //sDebug() << "Wriging after cps :" << __func__ << infos.currentPutSize;
+            //sDebug() << "Wriging before cps :" << __func__ << client->currentPutSize;
+            client->currentPutSize = 0;
+            //sDebug() << "Wriging after cps :" << __func__ << client->currentPutSize;
         }
     }
-    sDebug() << "Data for pending request" << infos.byteReceived << pend.first();
-    sDebug() << infos.name << "Putting data in queue";
-    //infos.pendingPutDatas.append(data);
-    if (infos.byteReceived != 0 && pend.first() == infos.byteReceived)
+    sDebug() << "Data for pending request" << client->byteReceived << pend.first();
+    sDebug() << client->name << "Putting data in queue";
+    //client->pendingPutDatas.append(data);
+    if (client->byteReceived != 0 && pend.first() == client->byteReceived)
     {
-        sDebug() << infos.name << "Putting data in queue";
-        infos.pendingPutDatas.append(infos.recvData);
+        sDebug() << client->name << "Putting data in queue";
+        client->pendingPutDatas.append(client->recvData);
         pend.removeFirst();
-        //infos.pendingPutReqWithNoData.removeFirst();
-        infos.byteReceived = 0;
-        infos.recvData.clear();
+        //client->pendingPutReqWithNoData.removeFirst();
+        client->byteReceived = 0;
+        client->recvData.clear();
     }*/
 }
 
 void WSServer::onClientDisconnected()
 {
-    QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
-    sInfo() << "Websocket disconnected" << wsInfos.value(ws).name;
-    cleanUpSocket(ws);
+    AClient* client = qobject_cast<AClient*>(sender());
+    sInfo() << "Websocket disconnected" << client->name;
+    cleanUpClient(client);
 }
 
-void WSServer::onClientError(QAbstractSocket::SocketError)
+void WSServer::onClientError()
 {
-    QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
-    sInfo() << "Client error : " << wsInfos.value(ws).name << ws->error() << ws->errorString();
+
 }
+
 
 void WSServer::onDeviceCommandFinished()
 {
     ADevice*  device = qobject_cast<ADevice*>(sender());
-    if (devicesInfos[device].currentWS != nullptr)
+    if (devicesInfos[device].currentClient != nullptr)
     {
         processDeviceCommandFinished(device);
         // This should avoid too much recursion
@@ -532,7 +447,7 @@ void WSServer::onDeviceProtocolError()
 {
     ADevice*  device = qobject_cast<ADevice*>(sender());
     sInfo() << "Device Error" << device->name();
-    setError(ProtocolError, "Error in device protocol");
+    setError(ErrorType::ProtocolError, "Error in device protocol");
     disconnect(device, &ADevice::closed, this, &WSServer::onDeviceClosed);
     cleanUpDevice(device);
 }
@@ -548,20 +463,20 @@ void WSServer::onDeviceClosed()
 void WSServer::onDeviceGetDataReceived(QByteArray data)
 {
     ADevice*  device = qobject_cast<ADevice*>(sender());
-    if (devicesInfos.value(device).currentWS == nullptr)
+    if (devicesInfos.value(device).currentClient == nullptr)
     {
         sDebug() << "NOOP Sending get data to nothing" << device->name();
         return ;
     }
-    sDebug() << "Sending " << data.size() << "to" << wsInfos.value(devicesInfos[device].currentWS).name;
-    devicesInfos[device].currentWS->sendBinaryMessage(data);
+    sDebug() << "Sending " << data.size() << "to" << devicesInfos[device].currentClient->name;
+    devicesInfos[device].currentClient->sendData(data);
 }
 
 // Used for Get File
 void WSServer::onDeviceSizeGet(unsigned int size)
 {
     ADevice*  device = qobject_cast<ADevice*>(sender());
-    sendReply(devicesInfos[device].currentWS, QString::number(size, 16));
+    sendReply(devicesInfos[device].currentClient, QString::number(size, 16));
 }
 
 void        WSServer::processCommandQueue(ADevice* device)
@@ -573,7 +488,7 @@ void        WSServer::processCommandQueue(ADevice* device)
         MRequest* req = cmdQueue.takeFirst();
         currentRequests[device] = req;
         devicesInfos[device].currentCommand = req->opcode;
-        devicesInfos[device].currentWS = req->owner;
+        devicesInfos[device].currentClient = req->owner;
         req->wasPending = true;
         // Request is no longer in queue, so expected data need to not go in queue
         // if not already here.
@@ -590,64 +505,16 @@ void        WSServer::processCommandQueue(ADevice* device)
     }
 }
 
-void WSServer::setError(const WSServer::ErrorType type, const QString reason)
+void WSServer::setError(const Core::ErrorType type, const QString reason)
 {
     m_errorType = type;
     m_errorString = reason;
 }
 
-WSServer::MRequest* WSServer::requestFromJSON(const QString &str)
+void WSServer::clientError(AClient *client)
 {
-    MRequest    *req = new MRequest();
-    req->state = RequestState::NEW;
-    req->owner = nullptr;
-    QJsonDocument   jdoc = QJsonDocument::fromJson(str.toLatin1());
-    QJsonObject job = jdoc.object();
-    QString opcode = job["Opcode"].toString();
-    if (cmdMetaEnum.keyToValue(qPrintable(opcode)) == -1)
-    {
-        req->owner = (QWebSocket*)(42);
-        setError(ErrorType::ProtocolError, "Invalid OPcode send" + opcode);
-        return req;
-    }
-    if (job.contains("Space"))
-    {
-        QString space = job["Space"].toString();
-
-        if (spaceMetaEnum.keyToValue(qPrintable(space)) == -1)
-        {
-            req->owner = (QWebSocket*)(42);
-            setError(ErrorType::ProtocolError, "Invalid Space send" + space);
-            return req;
-        }
-        req->space = (SD2Snes::space) spaceMetaEnum.keyToValue(qPrintable(space));
-    }
-    req->opcode = (USB2SnesWS::opcode) cmdMetaEnum.keyToValue(qPrintable(opcode));
-    if (job.contains("Operands"))
-    {
-        QJsonArray   jarray = job["Operands"].toArray();
-        foreach(QVariant entry, jarray.toVariantList())
-        {
-            req->arguments << entry.toString();
-        }
-    }
-    if (job.contains("Flags"))
-    {
-        QJsonArray   jarray = job["Flags"].toArray();
-        foreach(QVariant entry, jarray.toVariantList())
-        {
-            req->flags << entry.toString();
-        }
-    }
-    req->timeCreated = QTime::currentTime();
-    return req;
-}
-
-void WSServer::clientError(QWebSocket *ws)
-{
-    sInfo() << "Error with a ws client " << wsInfos[ws].name << m_errorType << m_errorString;
-    sendError(ws, m_errorType, m_errorString);
-    ws->close();
+    sInfo() << "Error with a client " << client->name << m_errorType << m_errorString;
+    client->close();
     emit error();
 }
 
@@ -656,21 +523,19 @@ void    WSServer::cleanUpDevice(ADevice* device)
 {
     sDebug() << "Cleaning up device " << device->name();
     DeviceInfos& devInfo = devicesInfos[device];
-    QMapIterator<QWebSocket*, WSInfos> it(wsInfos);
-    QList<QWebSocket*> toDiscard;
-    while (it.hasNext())
+    QList<AClient*> toDiscard;
+    for (AClient* client : clients)
     {
-        it.next();
-        if (it.value().attachedTo == device)
-            toDiscard.append(it.key());
+        if (client->attachedTo == device)
+            toDiscard.append(client);
     }
-    foreach (QWebSocket* ws, toDiscard)
+    for (AClient* client : toDiscard)
     {
-        setError(WSServer::DeviceError, "Device closed");
-        clientError(ws);
+        setError(Core::ErrorType::DeviceError, "Device closed");
+        clientError(client);
     }
-    if (devInfo.currentWS != nullptr)
-        devInfo.currentWS = nullptr;
+    if (devInfo.currentClient != nullptr)
+        devInfo.currentClient = nullptr;
     DeviceFactory* devFact = mapDevFact[device];
     mapDevFact.remove(device);
     disconnect(device, nullptr, this, nullptr);
@@ -678,19 +543,19 @@ void    WSServer::cleanUpDevice(ADevice* device)
     devFact->deleteDevice(device);
 }
 
-void WSServer::cleanUpSocket(QWebSocket *ws)
+// FIXME
+void WSServer::cleanUpClient(AClient* client)
 {
-    WSInfos wInfo = wsInfos.value(ws);
-    sDebug() << "Cleaning up wsocket" << wInfo.name;
-    if (pendingDeviceListWebsocket.contains(ws))
+    sDebug() << "Cleaning up wsocket" << client->name;
+    if (pendingDeviceListClients.contains(client))
     {
-        pendingDeviceListQuery -= pendingDeviceListWebsocket.count(ws);
-        pendingDeviceListWebsocket.removeAll(ws);
+        pendingDeviceListQuery -= pendingDeviceListClients.count(client);
+        pendingDeviceListClients.removeAll(client);
         QMutableListIterator<MRequest*> it(pendingDeviceListRequests);
         while (it.hasNext())
         {
             it.next();
-            if (it.value()->owner == ws)
+            if (it.value()->owner == client)
             {
                 it.value()->owner = nullptr;
                 it.value()->state = RequestState::CANCELLED;
@@ -698,13 +563,13 @@ void WSServer::cleanUpSocket(QWebSocket *ws)
             }
         }
     }
-    if (wInfo.attached)
+    if (client->attached)
     {
-        ADevice*    dev = wInfo.attachedTo;
+        ADevice*    dev = client->attachedTo;
         MRequest*   req = currentRequests[dev];
-        if (devicesInfos.value(dev).currentWS == ws)
-            devicesInfos[dev].currentWS = nullptr;
-        if (req != nullptr && req->owner == ws)
+        if (devicesInfos.value(dev).currentClient == client)
+            devicesInfos[dev].currentClient = nullptr;
+        if (req != nullptr && req->owner == client)
         {
             req->owner = nullptr;
             req->state = RequestState::CANCELLED;
@@ -714,15 +579,14 @@ void WSServer::cleanUpSocket(QWebSocket *ws)
         while(it.hasNext())
         {
             MRequest* mReq = it.next();
-            if (mReq->owner == ws)
+            if (mReq->owner == client)
             {
                 it.remove();
                 delete mReq;
             }
         }
     }
-    wsInfos.remove(ws);
-    ws->deleteLater();
+    //ws->deleteLater();
 }
 
 bool WSServer::isValidUnAttached(const USB2SnesWS::opcode opcode)
@@ -736,60 +600,22 @@ bool WSServer::isValidUnAttached(const USB2SnesWS::opcode opcode)
     return false;
 }
 
-void        WSServer::sendReply(QWebSocket* ws, const QStringList& args)
+void        WSServer::sendReply(AClient* client, const QStringList& args)
 {
-    if (ws == nullptr)
+    if (client == nullptr)
     {
         sDebug() << "NOOP: Sending reply to a non existing client";
         return ;
     }
-    QJsonObject jObj;
-    QJsonArray ja;
-
-    foreach(QString s, args)
-    {
-        ja.append(QJsonValue(s));
-    }
-    jObj["Results"] = ja;
-    sDebug() << wsInfos.value(ws).name << ">>" << QJsonDocument(jObj).toJson();
-    ws->sendTextMessage(QJsonDocument(jObj).toJson());
+    client->sendReply(args);
 }
 
-void    WSServer::sendReply(QWebSocket* ws, QString args)
+void    WSServer::sendReply(AClient *ws, QString args)
 {
     sendReply(ws, QStringList() << args);
 }
 
-bool    WSServer::isV2WebSocket(QWebSocket *ws)
-{
-    return false;
-}
-
-void    WSServer::sendReplyV2(QWebSocket* ws, QString args)
-{
-    if (isV2WebSocket(ws))
-        sendReply(ws, args);
-}
-
-void    WSServer::sendError(QWebSocket* ws, ErrorType errType, QString errorString)
-{
-    if (ws == nullptr)
-    {
-        sDebug() << "NOOP: Sending error to a non existing client";
-        return ;
-    }
-    if (!isV2WebSocket(ws))
-        return ;
-    QJsonObject jObj;
-    QJsonObject jObjError;
-    jObjError["Type"] = errTypeMetaEnum.valueToKey(errType);
-    jObjError["Text"] = errorString;
-    jObj["Error"] = jObjError;
-    sDebug() << wsInfos.value(ws).name << ">>" << QJsonDocument(jObj).toJson();
-    ws->sendTextMessage(QJsonDocument(jObj).toJson());
-}
-
-QDebug operator<<(QDebug debug, const WSServer::MRequest &req)
+QDebug Core::operator<<(QDebug debug, const MRequest &req)
 {
     debug << req.id << "Created at" << req.timeCreated << "-" << req.opcode << req.space << req.flags << req.arguments << req.state;
     return debug;

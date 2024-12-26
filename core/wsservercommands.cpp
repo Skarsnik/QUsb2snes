@@ -18,7 +18,7 @@
  * along with QUsb2Snes.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "ipsparse.h"
+#include "utils/ipsparse.h"
 #include "wsserver.h"
 #include <QLoggingCategory>
 #include <QSerialPortInfo>
@@ -47,7 +47,7 @@ bool    WSServer::isControlCommand(USB2SnesWS::opcode opcode)
 #define CMD_TAKE_ONE_ARG(cmd) if (req->arguments.size() != 1) \
 { \
     setError(ErrorType::CommandError, QString("%1 command take one argument").arg(cmd)); \
-    clientError(ws); \
+    clientError(client); \
     return ; \
 }
 
@@ -55,18 +55,18 @@ bool    WSServer::isControlCommand(USB2SnesWS::opcode opcode)
 
 void WSServer::executeServerRequest(MRequest* req)
 {
-    QWebSocket*     ws = req->owner;
-    sInfo() << "Executing server request : " << *req << "for" << wsInfos.value(ws).name;
+    AClient*    client = req->owner;
+    sInfo() << "Executing server request : " << *req << "for" << client->name;
     switch (req->opcode)
     {
     case USB2SnesWS::DeviceList : {
         if (numberOfAsyncFactory == 0) {
             QStringList l = getDevicesList();
-            sendReply(ws, l);
+            sendReply(client, l);
         } else {
-            pendingDeviceListWebsocket.append(ws);
+            pendingDeviceListClients.append(client);
             pendingDeviceListRequests.append(req);
-            if (pendingDeviceListWebsocket.size() == 1)
+            if (pendingDeviceListClients.size() == 1)
                 asyncDeviceList();
         }
         break;
@@ -77,21 +77,20 @@ void WSServer::executeServerRequest(MRequest* req)
         break;
     }
     case USB2SnesWS::AppVersion : {
-        if (wsInfos.value(ws).legacy)
-            sendReply(ws, "7.42.0");
+        if (client->legacy)
+            sendReply(client, "7.42.0");
         else
-            sendReply(ws, "QUsb2Snes-" + qApp->applicationVersion());
+            sendReply(client, "QUsb2Snes-" + qApp->applicationVersion());
         break;
     }
     case USB2SnesWS::Name : {
         CMD_TAKE_ONE_ARG("Name")
-        wsInfos[ws].name = req->arguments.at(0);
-        sendReplyV2(ws, wsInfos[ws].name);
+        client->name = req->arguments.at(0);
         break;
     }
     case USB2SnesWS::Close : {
-        ws->close();
-        cleanUpSocket(ws);
+        client->close();
+        cleanUpClient(client);
         break;
     }
     default:
@@ -107,16 +106,16 @@ void WSServer::executeServerRequest(MRequest* req)
 void    WSServer::executeRequest(MRequest *req)
 {
     ADevice*  device = nullptr;
-    QWebSocket*     ws = req->owner;
+    AClient* client = req->owner;
     if (isValidUnAttached(req->opcode))
     {
         executeServerRequest(req);
         return;
     }
-    device = wsInfos.value(ws).attachedTo;
-    sInfo() << "Executing request : " << *req << "for" << wsInfos.value(ws).name;
-    if (wsInfos.value(ws).attached)
-        device = wsInfos.value(ws).attachedTo;
+    device = client->attachedTo;
+    sInfo() << "Executing request : " << *req << "for" << client->name;
+    if (client->attached)
+        device = client->attachedTo;
     switch(req->opcode)
     {
     case USB2SnesWS::Info : {
@@ -169,21 +168,21 @@ void    WSServer::executeRequest(MRequest *req)
         if (req->arguments.size() != 2)
         {
             setError(ErrorType::CommandError, "PutFile command take 2 arguments (file1, SizeInHex)");
-            clientError(ws);
+            clientError(client);
             return ;
         }
         bool ok;
         device->putFile(req->arguments.at(0).toLatin1(), req->arguments.at(1).toUInt(&ok, 16));
         req->state = RequestState::WAITINGREPLY;
-        wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
-        wsInfos[ws].currentPutSize = req->arguments.at(1).toUInt(&ok, 16);
+        client->commandState = AClient::ClientCommandState::WAITINGBDATAREPLY;
+        client->currentPutSize = req->arguments.at(1).toUInt(&ok, 16);
         break;
     }
     case USB2SnesWS::Rename : {
         if (req->arguments.size() != 2)
         {
             setError(ErrorType::CommandError, "Rename command take 2 arguments (file1, file2)");
-            clientError(ws);
+            clientError(client);
             return ;
         }
         device->fileCommand(SD2Snes::opcode::MV, QVector<QByteArray>() << req->arguments.at(0).toLatin1()
@@ -211,7 +210,7 @@ void    WSServer::executeRequest(MRequest *req)
         if (req->arguments.size() < 2)
         {
             setError(ErrorType::CommandError, "GetAddress commands take at least 2 arguments (AddressInHex, SizeInHex)");
-            clientError(ws);
+            clientError(client);
             return ;
         }
         connect(device, &ADevice::getDataReceived, this, &WSServer::onDeviceGetDataReceived, Qt::UniqueConnection);
@@ -222,7 +221,7 @@ void    WSServer::executeRequest(MRequest *req)
             if (req->arguments.at(1).toUInt(&ok, 16) == 0)
             {
                 setError(ErrorType::CommandError, "GetAddress - trying to read 0 byte");
-                clientError(ws);
+                clientError(client);
                 return ;
             }
             device->getAddrCommand(req->space, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
@@ -239,17 +238,17 @@ void    WSServer::executeRequest(MRequest *req)
                 if (usize == 0)
                 {
                     setError(ErrorType::CommandError, "GetAddress - trying to read 0 byte");
-                    clientError(ws);
+                    clientError(client);
                     return ;
                 }
                 if (usize > 255)
                 {
-                    if (wsInfos.value(ws).legacy)
+                    if (client->legacy)
                     {
                         split = true;
                     } else {
                         setError(ErrorType::CommandError, "GetAddress - VGet with a size > 255");
-                        clientError(ws);
+                        clientError(client);
                         return ;
                     }
                 }
@@ -269,7 +268,7 @@ void    WSServer::executeRequest(MRequest *req)
                 {
                     sDebug() << pairs.at(i);
                     MRequest* newReq = new MRequest();
-                    newReq->owner = ws;
+                    newReq->owner = client;
                     newReq->state = RequestState::NEW;
                     newReq->space = SD2Snes::space::SNES;
                     newReq->timeCreated = QTime::currentTime();
@@ -288,7 +287,7 @@ void    WSServer::executeRequest(MRequest *req)
         if (req->arguments.size() < 2)
         {
             setError(ErrorType::CommandError, "PutAddress command take at least 2 arguments (AddressInHex, SizeInHex)");
-            clientError(ws);
+            clientError(client);
             return ;
         }
         bool ok;
@@ -302,7 +301,7 @@ void    WSServer::executeRequest(MRequest *req)
             if (putSize == 0)
             {
                 setError(ErrorType::CommandError, "PutAddress - trying to write 0 byte");
-                clientError(ws);
+                clientError(client);
                 return ;
             }
             if (req->flags.isEmpty())
@@ -322,7 +321,7 @@ void    WSServer::executeRequest(MRequest *req)
                 if (req->arguments.at(i + 1).toUInt(&ok, 16) == 0)
                 {
                     setError(ErrorType::CommandError, "PutAddress - trying to write 0 byte");
-                    clientError(ws);
+                    clientError(client);
                     return ;
                 }
                 vputArgs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUShort(&ok, 16)));
@@ -346,7 +345,7 @@ void    WSServer::executeRequest(MRequest *req)
                 {
                     auto pair = argsIt.next();
                     MRequest* newReq = new MRequest();
-                    newReq->owner = ws;
+                    newReq->owner = client;
                     newReq->state = RequestState::NEW;
                     newReq->space = SD2Snes::space::SNES;
                     newReq->timeCreated = QTime::currentTime();
@@ -359,16 +358,16 @@ void    WSServer::executeRequest(MRequest *req)
                     cpt++;
                 }
                 if (!req->wasPending)
-                    wsInfos[ws].expectedDataSize = totalSize;
+                    client->expectedDataSize = totalSize;
             }
         }
         req->state = RequestState::WAITINGREPLY;
-        wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
-        //sDebug() << "Writing before cps :" << __func__ << wsInfos[ws].currentPutSize;
-        wsInfos[ws].currentPutSize = putSize;
-        if (wsInfos[ws].expectedDataSize == 0)
-            wsInfos[ws].expectedDataSize = putSize;
-        //sDebug() << "Writing after cps" << __func__ << wsInfos[ws].currentPutSize;
+        client->commandState = AClient::ClientCommandState::WAITINGBDATAREPLY;
+        //sDebug() << "Writing before cps :" << __func__ << client->currentPutSize;
+        client->currentPutSize = putSize;
+        if (client->expectedDataSize == 0)
+            client->expectedDataSize = putSize;
+        //sDebug() << "Writing after cps" << __func__ << client->currentPutSize;
         break;
     }
 
@@ -379,19 +378,19 @@ void    WSServer::executeRequest(MRequest *req)
         if (req->arguments.size() < 2)
         {
             setError(ErrorType::CommandError, "PutIPS command take at least 2 arguments (Name, SizeInHex)");
-            clientError(ws);
+            clientError(client);
             return ;
         }
         bool    ok;
         req->state = RequestState::WAITINGREPLY;
-        wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
-        wsInfos[ws].ipsSize = req->arguments.at(1).toUInt(&ok, 16);
+        client->commandState = AClient::ClientCommandState::WAITINGBDATAREPLY;
+        client->ipsSize = req->arguments.at(1).toUInt(&ok, 16);
         break;
     }
     default:
     {
         setError(ErrorType::ProtocolError, "Invalid command or non implemented");
-        clientError(ws);
+        clientError(client);
     }
     }
 
@@ -408,26 +407,26 @@ void    WSServer::executeRequest(MRequest *req)
 
     if (req->wasPending && (req->opcode == USB2SnesWS::PutFile || req->opcode == USB2SnesWS::PutAddress))
     {
-        wsInfos[ws].commandState = ClientCommandState::WAITINGBDATAREPLY;
-        if (wsInfos[ws].recvData.size() >= wsInfos[ws].currentPutSize) // This cover 1A and 2A
+        client->commandState = AClient::ClientCommandState::WAITINGBDATAREPLY;
+        if (client->recvData.size() >= client->currentPutSize) // This cover 1A and 2A
         {                                           // Only imcomplete data can be for later requests if this is not empty
             //sDebug() << "Pending 1A & 2A";
-            sDebug() << "We have ALL data for the queued command " << wsInfos[ws].expectedDataSize;
-            QByteArray toSend = wsInfos[ws].recvData.left(wsInfos[ws].currentPutSize);
-            wsInfos[ws].recvData.remove(0, wsInfos[ws].currentPutSize);
-            wsInfos[ws].expectedDataSize -= wsInfos[ws].currentPutSize;
-            wsInfos[ws].currentPutSize = 0;
+            sDebug() << "We have ALL data for the queued command " << client->expectedDataSize;
+            QByteArray toSend = client->recvData.left(client->currentPutSize);
+            client->recvData.remove(0, client->currentPutSize);
+            client->expectedDataSize -= client->currentPutSize;
+            client->currentPutSize = 0;
             device->writeData(toSend);
-            wsInfos[ws].commandState = ClientCommandState::WAITINGREPLY;
+            client->commandState = AClient::ClientCommandState::WAITINGREPLY;
 
         } else {
-            if (!wsInfos[ws].recvData.isEmpty() && wsInfos[ws].recvData.size() < wsInfos[ws].currentPutSize)
+            if (!client->recvData.isEmpty() && client->recvData.size() < client->currentPutSize)
             {
-                sDebug() << "We have SOME data for the queued command " << wsInfos[ws].expectedDataSize;
-                device->writeData(wsInfos[ws].recvData);
-                wsInfos[ws].expectedDataSize -= wsInfos[ws].recvData.size();
-                wsInfos[ws].currentPutSize -= wsInfos[ws].recvData.size();
-                wsInfos[ws].recvData.clear();
+                sDebug() << "We have SOME data for the queued command " << client->expectedDataSize;
+                device->writeData(client->recvData);
+                client->expectedDataSize -= client->recvData.size();
+                client->currentPutSize -= client->recvData.size();
+                client->recvData.clear();
             } else {
                 // Nothing;
             }
@@ -448,13 +447,13 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
     DeviceInfos&  info = devicesInfos[device];
     sDebug() << "Processing command finished" << info.currentCommand;
     //sDebug() << "Wriging before cps : " << __func__ << wsInfos[info.currentWS].currentPutSize;
-    wsInfos[info.currentWS].currentPutSize = 0;
+    info.currentClient->currentPutSize = 0;
     //sDebug() << "Wriging after cps :" << __func__ << wsInfos[info.currentWS].currentPutSize;
     switch (info.currentCommand) {
     case USB2SnesWS::Info :
     {
         USB2SnesInfo    ifo = device->parseInfo(device->dataRead);
-        sendReply(info.currentWS, QStringList() << ifo.version << ifo.deviceName << ifo.romPlaying << ifo.flags);
+        sendReply(info.currentClient, QStringList() << ifo.version << ifo.deviceName << ifo.romPlaying << ifo.flags);
         break;
     }
 
@@ -468,7 +467,7 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
             rep << QString::number(static_cast<quint32>(fi.type));
             rep << fi.name;
         }
-        sendReply(info.currentWS, rep);
+        sendReply(info.currentClient, rep);
         break;
     }
     case USB2SnesWS::GetFile :
@@ -486,7 +485,7 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
     case USB2SnesWS::Reset :
     case USB2SnesWS::Boot :
     {
-        sendReplyV2(info.currentWS, "");
+        //sendReplyV2(info.currentWS, "");
         break;
     }
     case USB2SnesWS::GetAddress :
@@ -552,10 +551,10 @@ void    WSServer::onDeviceListDone()
     pendingDeviceListQuery--;
     if (pendingDeviceListQuery != 0)
             return;
-    for (auto ws : qAsConst(pendingDeviceListWebsocket))
+    for (AClient* client : pendingDeviceListClients)
     {
-        sDebug() << "Sending device list to " << wsInfos[ws].name;
-        sendReply(ws, deviceList);
+        sDebug() << "Sending device list to " << client->name;
+        sendReply(client, deviceList);
     }
     for (MRequest* req : qAsConst(pendingDeviceListRequests))
     {
@@ -565,7 +564,7 @@ void    WSServer::onDeviceListDone()
     pendingDeviceListQuery = 0;
     deviceList.clear();
     pendingDeviceListRequests.clear();
-    pendingDeviceListWebsocket.clear();
+    pendingDeviceListClients.clear();
 }
 
 void    WSServer::onNewDeviceName(QString name)
@@ -577,7 +576,7 @@ void    WSServer::onNewDeviceName(QString name)
 void WSServer::cmdAttach(MRequest *req)
 {
     QString deviceToAttach = req->arguments.at(0);
-    wsInfos[req->owner].pendingAttach = true;
+    req->owner->pendingAttach = true;
     ADevice* devGet = nullptr;
 
     foreach (DeviceFactory* devFact, deviceFactories)
@@ -599,7 +598,7 @@ void WSServer::cmdAttach(MRequest *req)
     if (devGet != nullptr)
     {
         sDebug() << "Found device" << devGet->name() << "from" << mapDevFact[devGet]->name() << "State : " << devGet->state();
-        sDebug() << "Attaching " << wsInfos.value(req->owner).name <<  " to " << deviceToAttach;
+        sDebug() << "Attaching " << req->owner->name <<  " to " << deviceToAttach;
         if (devGet->state() == ADevice::State::CLOSED)
         {
             sDebug() << "Trying to open device";
@@ -612,10 +611,10 @@ void WSServer::cmdAttach(MRequest *req)
         }
         if (!devices.contains(devGet))
             addDevice(devGet);
-        wsInfos[req->owner].attached = true;
-        wsInfos[req->owner].attachedTo = devGet;
-        wsInfos[req->owner].pendingAttach = false;
-        sendReplyV2(req->owner, devGet->name());
+        req->owner->attached = true;
+        req->owner->attachedTo = devGet;
+        req->owner->pendingAttach = false;
+        //sendReplyV2(req->owner, devGet->name());
         if (devGet->state() == ADevice::READY)
             processCommandQueue(devGet);
         return ;
@@ -626,12 +625,11 @@ void WSServer::cmdAttach(MRequest *req)
     }
 }
 
-void    WSServer::processIpsData(QWebSocket* ws)
+void    WSServer::processIpsData(AClient *client)
 {
     sDebug() << "processing IPS data";
-    WSInfos& infos = wsInfos[ws];
-    MRequest* ipsReq = currentRequests[infos.attachedTo];
-    QList<IPSReccord>  ipsReccords = parseIPSData(infos.ipsData);
+    MRequest* ipsReq = currentRequests[client->attachedTo];
+    QList<IPSReccord>  ipsReccords = parseIPSData(client->ipsData);
 
     // Creating new PutAddress requests
     int cpt = 0;
@@ -639,7 +637,7 @@ void    WSServer::processIpsData(QWebSocket* ws)
     foreach(IPSReccord ipsr, ipsReccords)
     {
         MRequest* newReq = new MRequest();
-        newReq->owner = ws;
+        newReq->owner = client;
         newReq->state = RequestState::NEW;
         newReq->space = SD2Snes::space::SNES;
         newReq->timeCreated = QTime::currentTime();
@@ -652,11 +650,11 @@ void    WSServer::processIpsData(QWebSocket* ws)
             newReq->flags << "SETX";
         newReq->arguments << QString::number(ipsr.offset, 16) << QString::number(ipsr.size, 16);
 
-        pendingRequests[infos.attachedTo].append(newReq);
-        infos.recvData.append(ipsr.data);
+        pendingRequests[client->attachedTo].append(newReq);
+        client->recvData.append(ipsr.data);
         //sDebug() << "IPS:" <<  QString::number(ipsr.offset, 16) << ipsr.data.toHex();
         cpt++;
     }
-    infos.ipsData.clear();
-    processCommandQueue(infos.attachedTo);
+    client->ipsData.clear();
+    processCommandQueue(client->attachedTo);
 }

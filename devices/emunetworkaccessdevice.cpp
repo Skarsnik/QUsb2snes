@@ -21,7 +21,7 @@
 
 
 #include "emunetworkaccessdevice.h"
-#include "rommapping/rominfo.h"
+#include "utils/rommapping/rominfo.h"
 #include <QCoreApplication>
 #include <QLoggingCategory>
 
