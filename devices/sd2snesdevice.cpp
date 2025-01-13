@@ -200,7 +200,7 @@ void SD2SnesDevice::spReadyRead()
             dataReceived.remove(0, blockSize);
             data = dataReceived;
             bytesReceived -= blockSize;
-            if(responseBlock.left(5) != (QByteArray("USBA").append(SD2Snes::opcode::RESPONSE)) || responseBlock.at(5) == 1)
+            if (responseBlock.left(5) != (QByteArray("USBA").append(SD2Snes::opcode::RESPONSE)) || responseBlock.at(5) == 1)
             {
                 sDebug() << "Protocol error:" << responseBlock.left(6);
                 m_state = READY;
@@ -294,6 +294,8 @@ cmdFinished:
     responseBlock.clear();
     bytesGetSent = 0;
     m_getSize = 0;
+    fileGetCmd = false;
+
     // To handle the vcmd get queue
     if (vCmdArgumentsQueue.isEmpty() == false)
     {
