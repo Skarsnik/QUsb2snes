@@ -39,6 +39,18 @@ qmake "QUSB2SNES_NOGUI=1" CONFIG+='release'
 make
 ----
 
+=== Compiling for installing
+
+QUsb2snes will compile by default in a standalone mode where the config file is set on its current directory.
+You need to use the `sqpackager_unix_installer.sh` script that will set all the proper things and install all the related files
+like the localizations, desktop and man according to the specified prefix
+[source,bash]
+----
+sh ./sqpackager_unix_installer.sh --build --install --prefix /usr/local/
+----
+
+If you need to specify which qmake version to use you can use the `--qmake-cmd` argument
+
 == Windows
 
 * Install Qt 6 
