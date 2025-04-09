@@ -80,77 +80,25 @@ void WSServer::onNewWsClient(AClient* client)
         wsClient->close(QWebSocketProtocol::CloseCodePolicyViolated, "Not in trusted origin");
         return ;
     }
+    onNewClient(client);
+    sInfo() << "New connection accepted " << client->name << wsClient->origin();
+}
+
+void    WSServer::onNewClient(AClient* client)
+{
     connect(client, &AClient::newRequest, this, &WSServer::onNewRequest);
+    connect(client, &AClient::binaryData, this, &WSServer::onBinaryMessageReceived);
     client->attached = false;
     client->attachedTo = nullptr;
     client->commandState = AClient::ClientCommandState::NOCOMMAND;
     client->byteReceived = 0;
     client->pendingAttach = false;
     client->recvData.clear();
+    client->expectedDataSize = 0;
     client->ipsSize = 0;
-    sInfo() << "New connection accepted " << client->name << wsClient->origin();
 }
 
 
-void WSServer::addDevice(ADevice *device)
-{
-    sDebug() << "Adding device" << device->name();
-    devices.append(device);
-    devicesInfos[device] = DeviceInfos();
-    connect(device, &ADevice::commandFinished, this, &WSServer::onDeviceCommandFinished);
-    connect(device, &ADevice::protocolError, this, &WSServer::onDeviceProtocolError);
-    connect(device, &ADevice::closed, this, &WSServer::onDeviceClosed);
-    sDebug() << "Added device : " << device->name();
-}
-
-void WSServer::removeDevice(ADevice *device)
-{
-    setError(ErrorType::DeviceError, "Manualy removed the device (probably from the UI");
-    cleanUpDevice(device);
-    devices.removeAt(devices.indexOf(device));
-    devicesInfos.remove(device);
-
-    // TODO remove and disconnect WS
-}
-
-void WSServer::addDeviceFactory(DeviceFactory *devFact)
-{
-    sDebug() << "Adding Device Factory " << devFact->name();
-    connect(devFact, &DeviceFactory::deviceStatusDone, this, &WSServer::onDeviceFactoryStatusDone);
-    if (devFact->hasAsyncListDevices())
-    {
-        numberOfAsyncFactory++;
-        connect(devFact, &DeviceFactory::newDeviceName, this, &WSServer::onNewDeviceName);
-        connect(devFact, &DeviceFactory::devicesListDone, this, &WSServer::onDeviceListDone);
-    }
-    deviceFactories.append(devFact);
-}
-
-// TODO: this is bad if you do it during a devicelist request x)
-
-void WSServer::removeDeviceFactory(DeviceFactory *devFact)
-{
-    sDebug() << "Removing Device Factory" << devFact->name();
-    if (devFact->hasAsyncListDevices())
-    {
-        numberOfAsyncFactory--;
-    }
-    disconnect(devFact, nullptr, this, nullptr);
-    deviceFactories.removeAll(devFact);
-}
-
-QStringList WSServer::getClientsName(ADevice *dev)
-{
-    QStringList toret;
-    for(AClient* cl : clients)
-    {
-        if (cl->attached && cl->attachedTo == dev)
-        {
-            toret << cl->name;
-        }
-    }
-    return toret;
-}
 
 QStringList WSServer::getClientsName(const QString devName) const
 {
@@ -365,61 +313,12 @@ void WSServer::onBinaryMessageReceived(QByteArray data)
     client->expectedDataSize -= currentSize;
     dev->writeData(data.left(currentSize));
     return ;
-            /*QByteArray toWrite = data.left(client->currentPutSize);
-            data = data.mid(client->currentPutSize);
-            client->currentPutSize = 0;
-            dev->writeData(toWrite);
-            if (!data.isEmpty()) // This is probably data for the next cmd
-            {
-                if (client->pendingPutSizes.isEmpty() && client->currentPutSize == 0)
-                {
-                    sDebug() << "Sending too much data to Websocket";
-                    ws->close();
-                    cleanUpSocket(ws);
-                    return ;
-                }
-                while (client->currentPutSize != 0 && !data.isEmpty()) // the previous writeData triggered a request in queue
-                {
-                    toWrite = data.left(client->currentPutSize);
-                    data = data.mid(client->currentPutSize);
-                    client->currentPutSize = 0;
-                    dev->writeData(toWrite);
-                }
-                if (!data.isEmpty()) // we should probably move that highter
-                {
-                    QByteArray nextData = data.left(client->pendingPutSizes.first());
-                    qDebug() << "Next data : "<< nextData.size();
-                    while (!nextData.isEmpty() && !client->pendingPutSizes.isEmpty() &&
-                           nextData.size() == client->pendingPutSizes.first())
-                    {
-                        client->pendingPutDatas.append(nextData);
-                        nextData = data.left(client->pendingPutSizes.first());
-                    }
-                }
-            }
-            //sDebug() << "Wriging before cps :" << __func__ << client->currentPutSize;
-            client->currentPutSize = 0;
-            //sDebug() << "Wriging after cps :" << __func__ << client->currentPutSize;
-        }
-    }
-    sDebug() << "Data for pending request" << client->byteReceived << pend.first();
-    sDebug() << client->name << "Putting data in queue";
-    //client->pendingPutDatas.append(data);
-    if (client->byteReceived != 0 && pend.first() == client->byteReceived)
-    {
-        sDebug() << client->name << "Putting data in queue";
-        client->pendingPutDatas.append(client->recvData);
-        pend.removeFirst();
-        //client->pendingPutReqWithNoData.removeFirst();
-        client->byteReceived = 0;
-        client->recvData.clear();
-    }*/
 }
 
 void WSServer::onClientDisconnected()
 {
     AClient* client = qobject_cast<AClient*>(sender());
-    sInfo() << "Websocket disconnected" << client->name;
+    sInfo() << "Client disconnected" << client->name;
     cleanUpClient(client);
 }
 
@@ -490,17 +389,6 @@ void        WSServer::processCommandQueue(ADevice* device)
         devicesInfos[device].currentCommand = req->opcode;
         devicesInfos[device].currentClient = req->owner;
         req->wasPending = true;
-        // Request is no longer in queue, so expected data need to not go in queue
-        // if not already here.
-        /*if (req->opcode == USB2SnesWS::PutAddress)
-        {
-            WSInfos& wInfos = wsInfos[req->owner];
-            if (wInfos.pendingPutReqWithNoData.contains(req))
-            {
-                wInfos.pendingPutReqWithNoData.removeFirst();
-                wInfos.pendingPutSizes.removeFirst();
-            }
-        }*/
         executeRequest(req);
     }
 }
@@ -546,7 +434,7 @@ void    WSServer::cleanUpDevice(ADevice* device)
 // FIXME
 void WSServer::cleanUpClient(AClient* client)
 {
-    sDebug() << "Cleaning up wsocket" << client->name;
+    sDebug() << "Cleaning up client" << client->name;
     if (pendingDeviceListClients.contains(client))
     {
         pendingDeviceListQuery -= pendingDeviceListClients.count(client);
@@ -586,7 +474,7 @@ void WSServer::cleanUpClient(AClient* client)
             }
         }
     }
-    //ws->deleteLater();
+    qobject_cast<AClientProvider*>(client->parent())->deleteClient(client);
 }
 
 bool WSServer::isValidUnAttached(const USB2SnesWS::opcode opcode)
@@ -599,6 +487,55 @@ bool WSServer::isValidUnAttached(const USB2SnesWS::opcode opcode)
         return true;
     return false;
 }
+
+void WSServer::addDevice(ADevice *device)
+{
+    sDebug() << "Adding device" << device->name();
+    devices.append(device);
+    devicesInfos[device] = DeviceInfos();
+    connect(device, &ADevice::commandFinished, this, &WSServer::onDeviceCommandFinished);
+    connect(device, &ADevice::protocolError, this, &WSServer::onDeviceProtocolError);
+    connect(device, &ADevice::closed, this, &WSServer::onDeviceClosed);
+    sDebug() << "Added device : " << device->name();
+}
+
+void WSServer::removeDevice(ADevice *device)
+{
+    setError(ErrorType::DeviceError, "Manualy removed the device (probably from the UI");
+    cleanUpDevice(device);
+    devices.removeAt(devices.indexOf(device));
+    devicesInfos.remove(device);
+
+    // TODO remove and disconnect WS
+}
+
+void WSServer::addDeviceFactory(DeviceFactory *devFact)
+{
+    sDebug() << "Adding Device Factory " << devFact->name();
+    connect(devFact, &DeviceFactory::deviceStatusDone, this, &WSServer::onDeviceFactoryStatusDone);
+    if (devFact->hasAsyncListDevices())
+    {
+        numberOfAsyncFactory++;
+        connect(devFact, &DeviceFactory::newDeviceName, this, &WSServer::onNewDeviceName);
+        connect(devFact, &DeviceFactory::devicesListDone, this, &WSServer::onDeviceListDone);
+    }
+    deviceFactories.append(devFact);
+}
+
+// TODO: this is bad if you do it during a devicelist request x)
+
+void WSServer::removeDeviceFactory(DeviceFactory *devFact)
+{
+    sDebug() << "Removing Device Factory" << devFact->name();
+    if (devFact->hasAsyncListDevices())
+    {
+        numberOfAsyncFactory--;
+    }
+    disconnect(devFact, nullptr, this, nullptr);
+    deviceFactories.removeAll(devFact);
+}
+
+
 
 void        WSServer::sendReply(AClient* client, const QStringList& args)
 {

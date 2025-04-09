@@ -54,13 +54,6 @@ private:
     };
 
 public:
-    struct MiniDeviceInfos {
-       QString  name;
-       bool     usable;
-       QString  error;
-       QStringList  clients;
-    };
-
     struct ServerStatus {
         int clientCount;
         int deviceCount;
@@ -75,9 +68,7 @@ public:
     void        addDeviceFactory(DeviceFactory* devFact);
     QStringList deviceFactoryNames() const;
     void        removeDeviceFactory(DeviceFactory* devFact);
-    QStringList getClientsName(ADevice* dev);
     QStringList getClientsName(const QString devName) const;
-    QList<MiniDeviceInfos>  getDevicesInfo();
     void        addTrusted(QString origin);
     ServerStatus  serverStatus() const;
     void        requestDeviceStatus();
@@ -94,6 +85,7 @@ public slots:
 
 private slots:
     void    onNewWsClient(AClient* client);
+    void    onNewClient(AClient *client);
     void    onNewRequest(MRequest* req);
     void    onBinaryMessageReceived(QByteArray data);
     void    onClientDisconnected();
@@ -111,6 +103,7 @@ private:
     QMetaEnum                           cmdMetaEnum;
     QMetaEnum                           spaceMetaEnum;
     QMetaEnum                           flagsMetaEnum;
+    QList<AClientProvider*>             clientProviders;
     QList<WebSocketProvider*>           wsServers;
     QList<ADevice*>                     devices; // Mostly used to keep tracks of signal/slots connection
     QList<DeviceFactory*>               deviceFactories;
@@ -159,6 +152,7 @@ private:
     void    addToPendingRequest(ADevice *device, MRequest *req);
     void    cleanUpDevice(ADevice *device);
     void    sendError(QWebSocket *ws, ErrorType errType, QString errorString);
+
 
 };
 
