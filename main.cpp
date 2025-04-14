@@ -47,11 +47,8 @@
 
 #include "qskarsnikringlist.hpp"
 #include "wsserver.h"
-#include "devices/sd2snesfactory.h"
-#include "devices/luabridge.h"
-#include "devices/retroarchfactory.h"
-#include "devices/snesclassicfactory.h"
-#include "devices/emunetworkaccessfactory.h"
+
+#include "sqpath.h"
 
 std::ostream* stdLogStream = nullptr;
 
@@ -93,7 +90,7 @@ static QSkarsnikRingList<QString> logDebugCrash(500);
 
 static void onCrash()
 {
-    QFile crashLog(qApp->applicationDirPath() + "/crash-log.txt");
+    QFile crashLog(SQPath::logDirectoryPath() + "/crash-log.txt");
     if (!crashLog.open(QIODevice::WriteOnly | QIODevice::Text))
         exit(1);
     crashLog.write(QString("Runing QUsb2Snes version " + qApp->applicationVersion() + "\n").toUtf8());
@@ -218,21 +215,10 @@ int main(int ac, char *ag[])
 #else
     QCoreApplication app(ac, ag);
 #endif
-#ifdef Q_OS_WIN
-    QFile   mlog(qApp->applicationDirPath() + "/log.txt");
-    QFile   mDebugLog(qApp->applicationDirPath() + "/log-debug.txt");
-    //QString crashFileQPath = qApp->applicationDirPath() + "/crash-log.txt";
-    //QByteArray bacf = crashFileQPath.toLocal8Bit();
-    //char* crashFilePath = bacf.data();
-
-#else
-    const QString appDataPath = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0);
-    if (!QFile::exists(appDataPath))
-        QDir().mkdir(appDataPath);
-    QFile   mlog(appDataPath + "/log.txt");
-    QFile   mDebugLog(appDataPath + "/log-debug.txt");
-#endif
-
+    QFile   mlog(SQPath::logDirectoryPath() + "/log.txt");
+    QFile   mDebugLog(SQPath::logDirectoryPath() + "/log-debug.txt");
+    if (!QFile::exists(SQPath::logDirectoryPath()))
+        QDir().mkdir(SQPath::logDirectoryPath());
     //std::filebuf crashFile;
 #ifndef Q_OS_WIN
     globalSettings = new QSettings("nyo.fr", "QUsb2Snes");
@@ -291,6 +277,11 @@ int main(int ac, char *ag[])
         appUi->updated(app.arguments().at(updatedIndex + 1));
     appUi->sysTray->show();
 #else
+#include "devices/sd2snesfactory.h"
+#include "devices/luabridge.h"
+#include "devices/retroarchfactory.h"
+#include "devices/snesclassicfactory.h"
+#include "devices/emunetworkaccessfactory.h"
    if (app.arguments().contains("--version"))
    {
         fprintf(stdout, "QUsb2Snes version : %s\n", app.applicationVersion().toLocal8Bit().constData());

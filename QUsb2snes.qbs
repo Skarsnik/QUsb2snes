@@ -90,6 +90,7 @@ Project {
             "core/wsserver.cpp",
             "core/wsserver.h",
             "core/wsservercommands.cpp",
+            "sqpath.h"
         ]
 
         Group {
