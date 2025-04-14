@@ -18,7 +18,7 @@ static const QString translationsPath()
     return qApp->applicationDirPath() + "/i18n/";
 #endif
 #ifdef SQPROJECT_TRANSLATIONS_PATH
-    return QString("%1/i18n/").arg(SQPROJECT_TRANSLATIONS_PATH);
+    return QString("%1").arg(SQPROJECT_TRANSLATIONS_PATH);
 #endif
     return "";
 }
