@@ -5,7 +5,9 @@
 #include <QMessageBox>
 #include <QDesktopServices>
 #include <QProcess>
+#include <QStyle>
 #include "appui.h"
+#include "sqpath.h"
 
 #include "diagnosticdialog.h"
 #include "wsserver.h"
@@ -58,7 +60,16 @@ void    AppUi::setMenu()
 #endif
 
         miscMenu->setToolTipsVisible(true);
-        QAction* debugLogAction = miscMenu->addAction(tr("Enable debug logs"));
+        miscMenu->addSeparator();
+
+        miscMenu->addAction(tr("Diagnostic"));
+        miscMenu->addSeparator();
+        QObject::connect(miscMenu->addAction(QIcon(":/img/build.svg"), tr(" Diagnostic tool")), &QAction::triggered, this, [=] {
+            DiagnosticDialog diag;
+            diag.setWSServer(&wsServer);
+            diag.exec();
+        });
+        QAction* debugLogAction = miscMenu->addAction(QIcon(":/img/analytic.svg"), tr(" Enable debug logs"));
         debugLogAction->setCheckable(true);
         debugLogAction->setChecked(globalSettings->value("debugLog").toBool());
         debugLogAction->setToolTip(tr("Enable the creation of a log file with lot of debug informations"));
@@ -85,10 +96,14 @@ void    AppUi::setMenu()
                 globalSettings->setValue("debugLog", false);
             }
         });
-        QObject::connect(miscMenu->addAction(tr("Diagnostic tool")), &QAction::triggered, this, [=] {
-           DiagnosticDialog diag;
-           diag.setWSServer(&wsServer);
-           diag.exec();
+        auto openLogAction = miscMenu->addAction(QIcon(":/img/file.svg"), tr(" Open normal logs file"));
+        QObject::connect(openLogAction, &QAction::triggered, this, [=] {
+            QDesktopServices::openUrl(QUrl(SQPath::logDirectoryPath() + "/log.txt"));
+        });
+        auto openDebugLogAction = miscMenu->addAction(QIcon(":/img/file.svg"), tr(" Open debug logs file"));
+        openDebugLogAction->setEnabled(globalSettings->value("debugLog").toBool());
+        QObject::connect(openDebugLogAction, &QAction::triggered, this, [=] {
+            QDesktopServices::openUrl(QUrl(SQPath::logDirectoryPath() + "/log.txt"));
         });
         QObject::connect(menu->addAction(QIcon(":/img/quiticon.svg"), tr("Exit")), &QAction::triggered, qApp, &QApplication::exit);
         appsMenu->addSeparator();
