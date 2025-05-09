@@ -58,4 +58,21 @@ If you need to specify which qmake version to use you can use the `--qmake-cmd` 
 
 == MacOS
 
-TBD
+=== Prerequisites
+
+* Install Homebrew
+* Install Qt 5
+
+[source,bash]
+----
+brew install qt5
+brew link qt5 --force
+----
+
+* retrieve the submodules
+
+[source,bash]
+----
+git submodule update --init
+----
+
