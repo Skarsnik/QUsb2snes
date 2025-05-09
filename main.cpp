@@ -27,6 +27,11 @@
   #include "ui/appui.h"
 #else
   #include <QCoreApplication>
+  #include "devices/sd2snesfactory.h"
+  #include "devices/luabridge.h"
+  #include "devices/retroarchfactory.h"
+  #include "devices/snesclassicfactory.h"
+  #include "devices/emunetworkaccessfactory.h"
 #endif
 
 #include <QTimer>
@@ -277,11 +282,6 @@ int main(int ac, char *ag[])
         appUi->updated(app.arguments().at(updatedIndex + 1));
     appUi->sysTray->show();
 #else
-#include "devices/sd2snesfactory.h"
-#include "devices/luabridge.h"
-#include "devices/retroarchfactory.h"
-#include "devices/snesclassicfactory.h"
-#include "devices/emunetworkaccessfactory.h"
    if (app.arguments().contains("--version"))
    {
         fprintf(stdout, "QUsb2Snes version : %s\n", app.applicationVersion().toLocal8Bit().constData());
