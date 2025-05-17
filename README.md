@@ -70,13 +70,13 @@ Activate the `Lua bridge` on the device menu of QUsb2Snes.
 Then run the luabridge.lua script from the LuaBridge folder from the Lua console window in Snes9x
 
 
-#### BizHawk 2.3.1 (bsnes core recommanded)
+#### BizHawk (bsnes core recommanded)
 
 In the device menu of QUsb2Snes activate the `Lua bridge`
 
-You will need to change the Lua support on the emulator. Go into the `Config -> Customize` menu then goes into the Advanced tab and select `Lua+LuaInterface` at the bottom in the Lua core part. Restart the emulator.
-In the Lua directory of BizHawk create a `lua_bridge` directory (or a similar name) then copy the content of the LuaBridge directory from QUsb2Snes (the lua file and the dll file).
-Run your game and then in the `Tools` menu start the `Lua console` click on the folder icon to load the `multibridge.lua` file. You need to close the Lua console if you want to disconnect properly.
+You will need to change the Lua support on the emulator if you use an old version of Bizhawk (prior to 2.9): Go into the `Config -> Customize` menu then goes into the Advanced tab and select `Lua+LuaInterface` at the bottom in the Lua core part. Restart the emulator.
+In the Lua directory of BizHawk create a `lua_bridge` directory (or a similar name), then copy the content of the LuaBridge directory from QUsb2Snes (the lua file and the dll file).
+Run your game and then in the `Tools` menu start the `Lua console`, click on the folder icon to load the `multibridge.lua` file. You need to close the Lua console if you want to disconnect properly.
 
 
 #### RetroArch with Snes9x core
