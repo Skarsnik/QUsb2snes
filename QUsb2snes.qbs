@@ -89,8 +89,7 @@ Project {
             "core/usb2snes.h",
             "core/wsserver.cpp",
             "core/wsserver.h",
-            "core/wsservercommands.cpp",
-            "sqpath.h"
+            "core/wsservercommands.cpp"
         ]
 
         Group {
