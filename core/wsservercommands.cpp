@@ -51,7 +51,6 @@ bool    WSServer::isControlCommand(USB2SnesWS::opcode opcode)
     return ; \
 }
 
-// TODO, need to delete req when async device list is done
 
 void WSServer::executeServerRequest(MRequest* req)
 {
@@ -62,10 +61,11 @@ void WSServer::executeServerRequest(MRequest* req)
     case USB2SnesWS::DeviceList : {
         if (numberOfAsyncFactory == 0) {
             QStringList l = getDevicesList();
+            sInfo() << "Server request " << *req << " executed in " << req->timeCreated.msecsTo(QTime::currentTime());
             sendReply(ws, l);
         } else {
             pendingDeviceListWebsocket.append(ws);
-            pendingDeviceListRequests.append(req);
+            pendingDeviceListRequests.append(*req);
             if (pendingDeviceListWebsocket.size() == 1)
                 asyncDeviceList();
         }
@@ -100,8 +100,8 @@ void WSServer::executeServerRequest(MRequest* req)
     if (req->opcode != USB2SnesWS::DeviceList)
     {
         sInfo() << "Server request " << *req << " executed in " << req->timeCreated.msecsTo(QTime::currentTime());
-        delete req;
     }
+    delete req;
 }
 
 void    WSServer::executeRequest(MRequest *req)
@@ -540,8 +540,14 @@ void    WSServer::asyncDeviceList()
     {
         if (devFact->hasAsyncListDevices())
         {
-            if (devFact->asyncListDevices())
-                pendingDeviceListQuery++;
+            pendingDeviceListQuery++;
+        }
+    }
+    for (auto devFact : qAsConst(deviceFactories))
+    {
+        if (devFact->hasAsyncListDevices())
+        {
+            devFact->asyncListDevices();
         }
     }
 }
@@ -551,16 +557,15 @@ void    WSServer::onDeviceListDone()
     sDebug() << qobject_cast<DeviceFactory*>(sender())->name() << " is done doing devicelist";
     pendingDeviceListQuery--;
     if (pendingDeviceListQuery != 0)
-            return;
+        return;
     for (auto ws : qAsConst(pendingDeviceListWebsocket))
     {
         sDebug() << "Sending device list to " << wsInfos[ws].name;
         sendReply(ws, deviceList);
     }
-    for (MRequest* req : qAsConst(pendingDeviceListRequests))
+    for (const MRequest& req : pendingDeviceListRequests)
     {
-        sInfo() << "Device request finished - " << *req << "processed in " << req->timeCreated.msecsTo(QTime::currentTime()) << " ms";
-        delete req;
+        sInfo() << "Device request finished - " << req << "processed in " << req.timeCreated.msecsTo(QTime::currentTime()) << " ms";
     }
     pendingDeviceListQuery = 0;
     deviceList.clear();

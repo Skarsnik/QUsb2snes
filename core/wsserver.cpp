@@ -686,14 +686,15 @@ void WSServer::cleanUpSocket(QWebSocket *ws)
     {
         pendingDeviceListQuery -= pendingDeviceListWebsocket.count(ws);
         pendingDeviceListWebsocket.removeAll(ws);
-        QMutableListIterator<MRequest*> it(pendingDeviceListRequests);
+        QMutableListIterator<MRequest> it(pendingDeviceListRequests);
         while (it.hasNext())
         {
             it.next();
-            if (it.value()->owner == ws)
+            MRequest& req = it.value();
+            if (req.owner == ws)
             {
-                it.value()->owner = nullptr;
-                it.value()->state = RequestState::CANCELLED;
+                req.owner = nullptr;
+                req.state = RequestState::CANCELLED;
                 it.remove();
             }
         }

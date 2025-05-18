@@ -185,7 +185,7 @@ private:
     unsigned    int                     numberOfAsyncFactory;
     unsigned    int                     pendingDeviceListQuery;
     QList<QWebSocket*>                  pendingDeviceListWebsocket;
-    QList<MRequest*>                    pendingDeviceListRequests;
+    QList<MRequest>                     pendingDeviceListRequests;
     QStringList                         deviceList;
 
     QMap<ADevice*, QList<MRequest*> >   pendingRequests;
