@@ -20,12 +20,12 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
-    runs-on: macos-latest
+    runs-on: macos-13
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with: 
           submodules : true
       - uses: little-core-labs/get-git-tag@v3.0.1
@@ -40,7 +40,8 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: build
         run: |
-          export PATH="/usr/local/opt/qt5/bin:$PATH"
+          # NOTE: prefix is different between Intel and arm64
+          export PATH="/usr/local/opt/qt@5/bin:/usr/local/opt/qt/bin:$PATH"
           qmake QUsb2Snes.pro
           make
           cd QFile2Snes
@@ -49,16 +50,16 @@ jobs:
           cd ..
       - name: Create dmg
         run: |
-            export PATH="/usr/local/opt/qt5/bin:$PATH"
-            mkdir QUsb2Snes.app/Contents/MacOs/apps
-            mkdir QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/
-            cp QFile2Snes/QFile2Snes.app/Contents/MacOs/QFile2Snes QUsb2Snes.app/Contents/MacOs/
-            cp QFile2Snes/icon50x50.png QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/icone.png
-            cp QFile2Snes/qusb2snesapposx.json QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/qusb2snesapp.json
-            macdeployqt QUsb2Snes.app -dmg
+          export PATH="/usr/local/opt/qt@5/bin:/usr/local/opt/qt/bin:$PATH"
+          mkdir QUsb2Snes.app/Contents/MacOs/apps
+          mkdir QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/
+          cp QFile2Snes/QFile2Snes.app/Contents/MacOs/QFile2Snes QUsb2Snes.app/Contents/MacOs/
+          cp QFile2Snes/icon50x50.png QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/icone.png
+          cp QFile2Snes/qusb2snesapposx.json QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/qusb2snesapp.json
+          macdeployqt QUsb2Snes.app -dmg
 
       - name: Upload dmg
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: QUsb2Snes.dmg
           path: QUsb2Snes.dmg
