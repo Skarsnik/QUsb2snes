@@ -204,7 +204,7 @@ void    EmuNetworkAccessFactory::onClientReadyRead()
         sDebug() << "Chck current core" << info.deviceName << clientInfos[client].deviceName;
         if (rep.isValid && rep.isAscii)
         {
-            if (rep["platform"] == "SNES")
+            if (rep["platform"].toUpper() == "SNES")
                 checkSuccess(client);
             else
                 checkFailed(client, Error::DeviceError::DE_EMUNWA_GAME_LOADED_NO_SNES);
