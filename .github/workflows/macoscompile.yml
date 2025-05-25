@@ -35,13 +35,13 @@ jobs:
       # Runs a single command using the runners shell
       - name: install qt
         run: |
-            brew install qt@5
+            brew install qt@6
 
       # Runs a set of commands using the runners shell
       - name: build
         run: |
           export BREW_PREFIX="$(brew --prefix)"
-          export PATH="$BREW_PREFIX/opt/qt@5/bin:$BREW_PREFIX/opt/qt/bin:$PATH"
+          export PATH="$BREW_PREFIX/opt/qt@6/bin:$BREW_PREFIX/opt/qt/bin:$PATH"
           qmake QUsb2Snes.pro
           make
           cd QFile2Snes
@@ -51,7 +51,7 @@ jobs:
       - name: Create dmg
         run: |
           export BREW_PREFIX="$(brew --prefix)"
-          export PATH="$BREW_PREFIX/opt/qt@5/bin:$BREW_PREFIX/opt/qt/bin:$PATH"
+          export PATH="$BREW_PREFIX/opt/qt@6/bin:$BREW_PREFIX/opt/qt/bin:$PATH"
           mkdir QUsb2Snes.app/Contents/MacOs/apps
           mkdir QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/
           cp QFile2Snes/QFile2Snes.app/Contents/MacOs/QFile2Snes QUsb2Snes.app/Contents/MacOs/
