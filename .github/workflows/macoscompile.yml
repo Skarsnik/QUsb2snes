@@ -40,7 +40,7 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: build
         run: |
-          export PATH="/usr/local/opt/qt5/bin:$PATH"
+          export PATH="/usr/local/opt/qt@5/bin:/usr/local/opt/qt/bin:$PATH"
           qmake QUsb2Snes.pro
           make
           cd QFile2Snes
@@ -49,13 +49,13 @@ jobs:
           cd ..
       - name: Create dmg
         run: |
-            export PATH="/usr/local/opt/qt5/bin:$PATH"
-            mkdir QUsb2Snes.app/Contents/MacOs/apps
-            mkdir QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/
-            cp QFile2Snes/QFile2Snes.app/Contents/MacOs/QFile2Snes QUsb2Snes.app/Contents/MacOs/
-            cp QFile2Snes/icon50x50.png QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/icone.png
-            cp QFile2Snes/qusb2snesapposx.json QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/qusb2snesapp.json
-            macdeployqt QUsb2Snes.app -dmg
+          export PATH="/usr/local/opt/qt@5/bin:/usr/local/opt/qt/bin:$PATH"
+          mkdir QUsb2Snes.app/Contents/MacOs/apps
+          mkdir QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/
+          cp QFile2Snes/QFile2Snes.app/Contents/MacOs/QFile2Snes QUsb2Snes.app/Contents/MacOs/
+          cp QFile2Snes/icon50x50.png QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/icone.png
+          cp QFile2Snes/qusb2snesapposx.json QUsb2Snes.app/Contents/MacOs/apps/QFile2Snes/qusb2snesapp.json
+          macdeployqt QUsb2Snes.app -dmg
 
       - name: Upload dmg
         uses: actions/upload-artifact@v4
