@@ -7,7 +7,7 @@ Welcome to QUsb2Snes documentation.
 
 QUsb2Snes is a reimplementation of the Usb2Snes websocket server using a more multi plateform framework (Qt, ench the Q in the name) than the original one.
 
-You should look at http://usb2snes.com/ if you are regular user.
+You should look at http://usb2snes.com/ or jump to the Installation part if you are regular user.
 
 # Contents
 {:.no_toc}
@@ -27,7 +27,7 @@ The issue with this approche, when writing application that use this techology o
 
 ![Direct access](images/directaccess.png)
 
-To avoid this issue, Redguyy wrote an intermediary application also called Usb2Snes (enjoy your name confusion) that other application use to talk to the Sd2Snes.
+To avoid this issue, Redguyy wrote an intermediary application also called Usb2Snes (enjoy your name confusion) that other applications use to talk to the Sd2Snes.
 
 So a basic usage look like that:
 
@@ -36,7 +36,7 @@ So a basic usage look like that:
 ## Emulators, SNES Classic...
 
 QUsb2Snes is a replacement for the middle part of the previous diagram. Since now the application
-does not access directly the Sd2Snes through the Usb connection. Nothing prevent this intermediate part to trick the applications to make them access something else, like a Snes Emulator or a SNES Classic
+does not access directly the Sd2Snes through the Usb connection; nothing prevent this intermediate part to trick the applications to make them access something else, like a Snes Emulator or a SNES Classic
 
 For example Snes9x
 
@@ -48,19 +48,13 @@ For example Snes9x
 QUsb2Snes currently support:
 
 * SD2Snes with the [usb2snes](https://github.com/RedGuyyyy/sd2snes/releases) firmware.
-* [Snes9x multitroid](https://drive.google.com/open?id=1_ej-pwWtCAHYXIrvs5Hro16A1s9Hi3Jz) with Lua support
+* Any emulator supporting the Emulator Network Access protocol [Emulator Network Access](https://usb2snes.com/nwa/);
 * SNES classic moded with [Hakchi2 CE](https://github.com/TeamShinkansen/hakchi2/releases)
 * RetroArch support with Snes9x and bsnes-mercury cores
 
 # Application
 
 A list of applications and what they do is available on the [application page](https://skarsnik.github.io/QUsb2snes/Application)
-
-# Magic2Snes
-
-Magic2Snes is a special application that make writing applications for Usb2Snes easier for non developpers. You will find more informations on [Magic2Snes](https://github.com/Skarsnik/Magic2snes/wiki)
-
-By default QUsb2Snes comes with various Magic2Snes scripts.
 
 # Installation
 
@@ -77,7 +71,10 @@ SD2Snes devices may have issue on mac ox X
 
 ## Linux
 
-For now you will have to compile the source yourself, see the `LinuxREADME.md` file to how to do it.
+You are likely to have to compile the source yourself if you are not using one of the distribution listed bellow. See the `LinuxREADME.md` file to how to do it.
+
+### Debian based distrubution: Debian, Ubuntu, Mint...
+Follow the instruction at (https://debian.nyo.fr) to add a repository with up to date QUsb2Snes releases.
 
 ### Arch Linux
 There now exists a PKGBUILD for the upstream version of QUsb2Snes which also provides QFile2Snes (https://aur.archlinux.org/packages/qusb2snes-git/)
@@ -88,25 +85,26 @@ If you don't use a SD2Snes, you will have to activate the support for your way t
 
 ## SD2Snes
 
-If you came from usb2snes.com, the firmware should be provided directly on the bundle.
+Latest firmware already has the usb2snes support in it. Just choose or enable the Sd2snes support in QUsb2Snes.
 
-You need to install the last Usb2Snes firmware by Redguy (https://github.com/RedGuyyyy/sd2snes/releases/tag/usb2snes_v11) . Just follows the instruction provided. Don't start usb2snes.exe since QUsb2snes do the same thing that the original software. Your sd2snes device should show up on the Devices menu when connected.
+If you want to use an old fimrware (< 1.11) you need to install the last [Usb2Snes firmware by Redguyyy](https://github.com/RedGuyyyy/sd2snes/releases/) by
+following the instruction provided.
+Don't start `usb2snes.exe` since QUsb2snes do the same thing than the original software.
+Your sd2snes device should show up on the Devices menu when connected.
 
-## SNES9x Rerecording
+#### SNES9x Rerecording & BSnes-AS
 
-Snes9x-rr allows to run Lua scripts in the emulator, that allows use to connect to QUsb2snes. You can use the Multitroid version of Snes9x-rr (http://multitroid.com/) or use Snes9x-rr 1.60 https://github.com/gocha/snes9x-rr/releases. Older version of Snes9x-rr does not allow to write to ROM from Lua so some application will not work.
+This is not supported anymore. Please refer to older QUsb2Snes releases documentation if you really need it. 
+Emulator with Emulator Network Access support are recommanded instead. 
+Use Snes9x-nwa, Bizhawk with the nwa tool or bsnes-plus-nwa
 
-Activate the `Lua bridge` on the device menu of QUsb2Snes.
-Then run the luabridge.lua script from the LuaBridge folder from the Lua console window in Snes9x
+## BizHawk 2.9 or later (bsnes core recommanded)
 
-## BizHawk 2.3.1 (bsnes core recommanded)
+Download the Emulator Network Access plugin for bizhawk at https://github.com/Skarsnik/Bizhawk-nwa-tool/releases
+Enable or choose the Emulator Network Access support in QUsb2Snes.
+Copy the dll in the `ExternalTools` directory in you BizHawk folder (or create it if needed) then load the tool from the `Tools->External Tools` menu.
 
-In the device menu of QUsb2Snes activate the `lua bridge`
-
-You will need to change the Lua support on the emulator. Go into the `Config -> Customize` menu then goes into the Advanced tab and select `Lua+LuaInterface` at the bottom in the Lua core part. Restart the emulator.
-In the Lua directory of BizHawk create a `lua_bridge` directory (or a similar name) then copy the content of the BizHawk directory from QUsb2Snes (the lua file and the dll file).
-Run your game and then in the `Tools` menu start the `Lua console` click on the folder icon to load the `multibridge.lua` file. You need to close the Lua console if you want to disconnect properly.
-
+The lua bridge method is not supported anymore. Please refer to older QUsb2Snes releases for instructions if you really need it
 
 ## RetroArch
 

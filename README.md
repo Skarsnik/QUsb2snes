@@ -54,29 +54,29 @@ Replace `/dev/ttyACM0` with the correct device.
 
 ### Emulator configuration
 
-#### SD2Snes
+#### SD2Snes & FXpak Pro
 
-You need to install the last [Usb2Snes firmware by Redguyyy](https://github.com/RedGuyyyy/sd2snes/releases/).
-Just follows the instruction provided.
-Don't start `usb2snes.exe` since QUsb2snes do the same thing that the original software.
+Latest firmware already has the usb2snes support in it. Just choose or enable the Sd2snes support in QUsb2Snes.
+If you want to use an old fimrware (< 1.11) you need to install the last [Usb2Snes firmware by Redguyyy](https://github.com/RedGuyyyy/sd2snes/releases/) by
+following the instruction provided.
+Don't start `usb2snes.exe` since QUsb2snes do the same thing than the original software.
 Your sd2snes device should show up on the Devices menu when connected.
 
 
-#### SNES9x Rerecording
+#### SNES9x Rerecording & BSnes-AS
 
-Snes9x-rr allows to run Lua scripts in the emulator, that allows the emulator to connect to QUsb2snes. You can use the Multitroid version of Snes9x-rr (http://multitroid.com/) or use Snes9x-rr 1.60 https://github.com/gocha/snes9x-rr/releases. Older version of Snes9x-rr does not allow to write to ROM from Lua so some application will not work.
-
-Activate the `Lua bridge` on the device menu of QUsb2Snes.
-Then run the luabridge.lua script from the LuaBridge folder from the Lua console window in Snes9x
+This is not supported anymore. Please refer to older QUsb2Snes releases. 
+Emulator with Emulator Network Access support are recommanded instead. 
+Use Snes9x-nwa, Bizhawk with the nwa tool or bsnes-plus-nwa
 
 
 #### BizHawk (bsnes core recommanded)
 
-In the device menu of QUsb2Snes activate the `Lua bridge`
+Download the Emulator Network Access plugin for bizhawk at https://github.com/Skarsnik/Bizhawk-nwa-tool/releases
+Enable or choose the Emulator Network Access support in QUsb2Snes.
+Copy the dll in the `ExternalTools` directory in you BizHawk folder (or create it if needed) then load the tool from the `Tools->External Tools` menu.
 
-You will need to change the Lua support on the emulator if you use an old version of Bizhawk (prior to 2.9): Go into the `Config -> Customize` menu then goes into the Advanced tab and select `Lua+LuaInterface` at the bottom in the Lua core part. Restart the emulator.
-In the Lua directory of BizHawk create a `lua_bridge` directory (or a similar name), then copy the content of the LuaBridge directory from QUsb2Snes (the lua file and the dll file).
-Run your game and then in the `Tools` menu start the `Lua console`, click on the folder icon to load the `multibridge.lua` file. You need to close the Lua console if you want to disconnect properly.
+The lua bridge method is not supported anymore. Please refer to older QUsb2Snes releases for instructions if you really need it
 
 
 #### RetroArch with Snes9x core
@@ -117,11 +117,6 @@ Open the copy with a text editor and search for the `network_cmd_enable` entry, 
 Then now put your copy in place of the original one.
 
 
-#### BSnes-AS
-
-Activate the `Lua bridge` on the device menu of QUsb2Snes.
-In the `Script` menu of Bsnes-as, select `Load Script` and pick the usb2snes.as file from the included scripts folder.
-
 ### Command line options
 
 #### Emulator choice
@@ -134,6 +129,7 @@ Only the non gui version take arguments, It still use the config file but you ca
 * `-luabridge` : for the lua bridge support
 * `-retroarch` : for the retroarch support
 * `-snesclassic` :  for the snes classic support
+* `-emunwaccess` : for Emulator Network Access support
 
 ---
 
@@ -143,7 +139,7 @@ See [COMPILING.adoc](COMPILING.adoc).
 
 ## Developers
 
-Look at the [docs/Protocol.md](docs/Protocol.md) file to have a detailed view of the command of websocket protocol.
+Look at the [docs/Protocol.md](docs/Protocol.md) file to have a detailed view of the commands of websocket protocol.
 
 ## Licence
 
@@ -151,7 +147,7 @@ QUsb2snes project follow the GPL version 3 licence, you can find the full versio
 
 ## Icons
 
-* Flat style icons are from google https://material.io/tools/icons/?style=baseline and under Apache Licence 2.0
+* Flat style icons are from google https://material.io/tools/icons/?style=baseline and are under Apache Licence 2.0
 * Snes9x and RetroArch icon are from their respective project
 * QUsb2Snes icon is from TrenteR_TR on FrankerFaceZ with changed contrast/light.
 * Most pony icons are from FrankerFaceZ.
