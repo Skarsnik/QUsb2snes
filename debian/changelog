@@ -1,4 +1,10 @@
-qusb2snes (0.7.29-1) unstable; urgency=medium
+qusb2snes (0.7.31-1) unstable; urgency=medium
+
+  * Some Telemetry added
+
+ -- Sylvain Colinet <scolinet@gmail.com>  Mon, 04 Nov 2024 11:40:52 +0100
+
+qusb2snes (0.7.30-1) unstable; urgency=medium
 
   * Better Linux support
 
