@@ -243,7 +243,7 @@ void AppUi::onDeviceFactoryStatusDone()
     deviceMenu->addSeparator();
     deviceMenu->addAction(sd2snesAction);
     deviceMenu->addAction(retroarchAction);
-    deviceMenu->addAction(luaBridgeAction);
+    //deviceMenu->addAction(luaBridgeAction);
     deviceMenu->addAction(snesClassicAction);
     deviceMenu->addAction(emuNWAccessAction);
     //checkingDeviceInfos = false;
