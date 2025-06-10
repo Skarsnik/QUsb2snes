@@ -22,6 +22,7 @@ void    AppUi::addPopTrackerMenu()
     sDebug() << "Creating Poptracker menu";
     popTrackerMenu = menu->addMenu(QIcon(":/img/poptrackericon.png"), "PopTracker");
     auto packList = poptrackerScanPack();
+    sDebug() << "Found : " << packList.size() << " pack";
     if (packList.isEmpty())
     {
         popTrackerMenu->addAction(tr("PopTracker detected but no pack installed"));
@@ -56,13 +57,20 @@ QList<AppUi::PopTrackerPackInfo> AppUi::poptrackerScanPack()
         return toret;
 
     QByteArray data = poptrackerProcess.readAllStandardOutput();
+    qDebug() << data;
     QTextStream stream(data);
     QString line = stream.readLine();
+    while (line.indexOf("Installed packs:") == -1)
+    {
+        line = stream.readLine();
+    }
     while (!stream.atEnd())
     {
         line = stream.readLine();
-        if (line.indexOf("no packs installed") != -1 || line.isEmpty())
-            break;
+        if (line.indexOf("no packs installed") != -1)
+            return toret;
+        if (line.isEmpty())
+            continue;
         sDebug() << line;
         auto pl = line.split(" ");
         PopTrackerPackInfo pi;
