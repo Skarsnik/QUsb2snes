@@ -73,11 +73,6 @@ jobs:
             }
             Copy-Item ..\LICENSE .\LICENCE-GPLV3.txt
             Copy-Item ..\README.md .\Readme.txt
-            mkdir LuaBridge
-            Copy-Item ..\LuaBridge\luabridge.lua LuaBridge\
-            cd LuaBridge\
-            Invoke-WebRequest -Uri https://shelter.mahoro-net.org/~skarsnik/project/socket.dll -OutFile socket.dll
-            cd ..
             # Translations
             mkdir i18n
             xcopy /y ..\Translations\qusb2snes_fr.qm i18n\
@@ -92,7 +87,7 @@ jobs:
             mkdir QUsb2Snes\apps\QFile2Snes\i18n
             xcopy QFile2Snes\Translations\qfile2snes_fr.qm QUsb2Snes\apps\QFile2Snes\i18n\
             xcopy QFile2Snes\Translations\sendtodialog_fr.qm QUsb2Snes\i18n\
-            Invoke-WebRequest -Uri "https://github.com/Skarsnik/snesclassicstuff/releases/download/serverstuffmod_v1/serverstuff.hmod" -OutFile "serverstuff.hmod"
+            Invoke-WebRequest -Uri "https://github.com/Skarsnik/snesclassicstuff/releases/download/serverstuffmod_v2/serverstuff.hmod" -OutFile "serverstuff.hmod"
             Copy-Item serverstuff.hmod QUsb2Snes\
             # Open SSL for the updater
             #dir "C:\Program Files\OpenSSL-Win64\bin\"
