@@ -33,7 +33,7 @@ void    AppUi::addPopTrackerMenu()
         });
         return ;
     }
-    popTrackerMenu->addAction(tr("Installed packs", "Poptracker pack"));
+    popTrackerMenu->addAction(QIcon(":/img/line.svg"), tr("Installed packs", "Poptracker pack"));
     popTrackerMenu->addSeparator();
     for (const auto& packInfo : qAsConst(packList))
     {

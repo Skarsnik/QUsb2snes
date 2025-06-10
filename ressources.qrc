@@ -20,6 +20,8 @@
         <file alias="analytic.svg">ui/icons/analytic.svg</file>
         <file alias="build.svg">ui/icons/build.svg</file>
         <file alias="file.svg">ui/icons/file.svg</file>
+        <file alias="line.svg">ui/icons/line.svg</file>
+        <file alias="Funtoon.svg">ui/icons/Funtoon.svg</file>
     </qresource>
     <qresource prefix="/wizardpic">
         <file alias="ikaripic.png">ui/wizard/pictures/ikaripic.png</file>

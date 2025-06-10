@@ -62,7 +62,7 @@ void    AppUi::setMenu()
         miscMenu->setToolTipsVisible(true);
         miscMenu->addSeparator();
 
-        miscMenu->addAction(tr("Diagnostic"));
+        miscMenu->addAction(QIcon(":/img/line.svg"), tr("Diagnostic"));
         miscMenu->addSeparator();
         QObject::connect(miscMenu->addAction(QIcon(":/img/build.svg"), tr(" Diagnostic tool")), &QAction::triggered, this, [=] {
             DiagnosticDialog diag;
@@ -107,10 +107,11 @@ void    AppUi::setMenu()
         });
         QObject::connect(menu->addAction(QIcon(":/img/quiticon.svg"), tr("Exit")), &QAction::triggered, qApp, &QApplication::exit);
         appsMenu->addSeparator();
-        appsMenu->addAction(tr("Remote Applications"));
+        appsMenu->addAction(QIcon(":/img/line.svg"), tr("Remote Applications"));
         appsMenu->addSeparator();
         appsMenu->addAction(QIcon(":/img/multitroid.png"), "Multitroid");
         appsMenu->addAction(QIcon(":/img/BK small.png"), "SMZ3 Multiworld");
+        appsMenu->addAction(QIcon(":/img/Funtoon.svg"), "Funtoon");
 
 #ifdef  Q_OS_LINUX
     setLinuxDeviceMenu();
@@ -256,8 +257,12 @@ void AppUi::onAppsMenuTriggered(QAction *action)
         QDesktopServices::openUrl(QUrl("http://multitroid.com/"));
     if (action->text() == "SMZ3 Multiworld")
         QDesktopServices::openUrl(QUrl("https://samus.link"));
+    if (action->text() == "Funtoon")
+        QDesktopServices::openUrl(QUrl("https://funtoon.party/"));
+
     if (action->data().isNull())
         return ;
+
     const ApplicationInfo& appInfo = regularApps[action->data().toString()];
     QProcess proc(this);
     //proc.setWorkingDirectory(fi.path());
