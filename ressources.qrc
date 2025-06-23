@@ -22,6 +22,7 @@
         <file alias="file.svg">ui/icons/file.svg</file>
         <file alias="line.svg">ui/icons/line.svg</file>
         <file alias="Funtoon.svg">ui/icons/Funtoon.svg</file>
+        <file alias="icone legacy.png">ui/icons/icone legacy.png</file>
     </qresource>
     <qresource prefix="/wizardpic">
         <file alias="ikaripic.png">ui/wizard/pictures/ikaripic.png</file>

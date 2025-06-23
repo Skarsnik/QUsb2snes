@@ -141,6 +141,7 @@ private:
     bool checkPopTracker();
     void addPopTrackerMenu();
     void initDLManager();
+    bool startLegacyPort();
 };
 
 #endif // APPUI_H

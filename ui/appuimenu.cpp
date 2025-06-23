@@ -62,6 +62,28 @@ void    AppUi::setMenu()
         miscMenu->setToolTipsVisible(true);
         miscMenu->addSeparator();
 
+        auto legacyAction = miscMenu->addAction(QIcon(":/img/icone legacy.png"), tr("Enable legacy port"));
+        //legacyAction->setCheckable(true);
+        //legacyAction->setChecked(globalSettings->value("legacyport").toBool());
+        if (legacyAction->isChecked())
+        {
+            legacyAction->setText(tr("Disable legacy port"));
+        }
+        legacyAction->setToolTip(tr("Enable the legacy port (8080), this is used by some old application like the MemoryViewer"));
+        QObject::connect(legacyAction, &QAction::triggered, this, [=]() {
+            if (globalSettings->value("legacyport").toBool() == false)
+            {
+                if (startLegacyPort())
+                {
+                    legacyAction->setText(tr("Disable legacy port"));
+                    globalSettings->setValue("legacyport", true);
+                }
+            } else {
+                globalSettings->setValue("legacyport", false);
+                wsServer.stop(USB2SnesWS::legacyPort);
+                legacyAction->setText(tr("Enable legacy port"));
+            }
+        });
         miscMenu->addAction(QIcon(":/img/line.svg"), tr("Diagnostic"));
         miscMenu->addSeparator();
         QObject::connect(miscMenu->addAction(QIcon(":/img/build.svg"), tr(" Diagnostic tool")), &QAction::triggered, this, [=] {
@@ -69,9 +91,13 @@ void    AppUi::setMenu()
             diag.setWSServer(&wsServer);
             diag.exec();
         });
-        QAction* debugLogAction = miscMenu->addAction(QIcon(":/img/analytic.svg"), tr(" Enable debug logs"));
+        QAction* debugLogAction = miscMenu->addAction(QIcon(":/img/analytic.svg"), tr("Enable debug logs"));
         debugLogAction->setCheckable(true);
         debugLogAction->setChecked(globalSettings->value("debugLog").toBool());
+        if (debugLogAction->isChecked())
+        {
+            debugLogAction->setText("Disable debug log");
+        }
         debugLogAction->setToolTip(tr("Enable the creation of a log file with lot of debug informations"));
         QObject::connect(debugLogAction, &QAction::changed, this, [=]() {
             if (debugLogAction->isChecked())
@@ -87,6 +113,7 @@ void    AppUi::setMenu()
                 {
                     sInfo() << "Debug log enabled";
                     globalSettings->setValue("debugLog", true);
+                    debugLogAction->setText("Disable debug log");
                 }
                 else {
                     debugLogAction->setChecked(false);
@@ -94,6 +121,7 @@ void    AppUi::setMenu()
             } else {
                 sInfo() << "Debug log disabled";
                 globalSettings->setValue("debugLog", false);
+                debugLogAction->setText(tr("Enable debug logs"));
             }
         });
         auto openLogAction = miscMenu->addAction(QIcon(":/img/file.svg"), tr(" Open normal logs file"));

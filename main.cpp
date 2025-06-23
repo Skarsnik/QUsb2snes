@@ -264,8 +264,8 @@ int main(int ac, char *ag[])
     qInfo() << "Runing QUsb2Snes version " << qApp->applicationVersion();
     qInfo() << "Compiled against Qt" << QT_VERSION_STR << ", running" << qVersion();
     // let set some know trusted domain
-    wsServer.addTrusted("http://www.multitroid.com");
-    wsServer.addTrusted("http://multitroid.com");
+    wsServer.addTrusted("https://www.multitroid.com");
+    wsServer.addTrusted("https://multitroid.com");
     wsServer.addTrusted("https://multiworld.samus.link/");
     wsServer.addTrusted("http://usb2snes.com");
     wsServer.addTrusted("https://samus.link");

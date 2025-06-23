@@ -124,6 +124,7 @@ public:
 
     explicit    WSServer(QObject *parent = nullptr);
     QString     start(QHostAddress lAddress, quint16 port);
+    void        stop(quint16 port);
     QString&    errorString() const;
     void        addDevice(ADevice* device);
     void        removeDevice(ADevice* device);
@@ -169,8 +170,7 @@ private:
     QMetaEnum                           spaceMetaEnum;
     QMetaEnum                           flagsMetaEnum;
     QMetaEnum                           errTypeMetaEnum;
-    QList<QWebSocketServer*>            wsServers;
-    //QWebSocketServer*                   wsServer;
+    QMap<quint16, QWebSocketServer*>    wsServers;
     QMap<QWebSocket*, WSInfos>          wsInfos;
     QList<ADevice*>                     devices; // Mostly used to keep tracks of signal/slots connection
     QList<DeviceFactory*>               deviceFactories;

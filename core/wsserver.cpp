@@ -61,10 +61,18 @@ QString WSServer::start(QHostAddress lAddress, quint16 port)
         connect(newServer, &QWebSocketServer::newConnection, this, &WSServer::onNewConnection);
         connect(newServer, &QWebSocketServer::closed, this, &WSServer::onWSClosed);
         connect(newServer, &QWebSocketServer::serverError, this, &WSServer::onWSError);
-        wsServers.append(newServer);
+        wsServers[port] = newServer;
         return QString();
     }
     return newServer->errorString();
+}
+
+void    WSServer::stop(quint16 port)
+{
+    if (!wsServers.contains(port))
+        return;
+    wsServers[port]->close();
+    sInfo() << "Closing Websocket server running on port " << port;
 }
 
 void WSServer::onNewConnection()
@@ -109,7 +117,13 @@ void WSServer::onWSError(QWebSocketProtocol::CloseCode code)
 
 void WSServer::onWSClosed()
 {
-    qDebug() << "Websocket closed";
+    QWebSocketServer* server = qobject_cast<QWebSocketServer*>(sender());
+    quint16 port = wsServers.key(server);
+    if (port == 0) // Why?
+        return;
+    wsServers[port]->deleteLater();
+    wsServers.remove(port);
+    sInfo() << "Websocket server on "<< port << " closed";
 }
 
 void WSServer::addDevice(ADevice *device)

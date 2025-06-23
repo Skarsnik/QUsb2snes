@@ -267,22 +267,35 @@ void   AppUi::startWServer()
         return ;
     }
     // Default behavior
-    status = wsServer.start(addr, USB2SnesWS::legacyPort);
-    if (!status.isEmpty())
+    if (globalSettings->contains("legacyport") && globalSettings->value("legacyport").toBool())
     {
-        QMessageBox::warning(nullptr, tr("Error listening on legacy port"),
-                     QString(tr("There was an error listenning on port 8080 :%1\n"
-                                "This can be that QUsb2Snes is already running, the legacy USB2SNES application or something else.\n\n"
-                                "Old applications would likely not work.")).arg(status));
+        startLegacyPort();
     }
     status = wsServer.start(addr, USB2SnesWS::defaultPort);
     if (!status.isEmpty())
     {
         QMessageBox::critical(nullptr, tr("Error listenning on normal port"),
                               QString(tr("There was an error starting the core of the application : %1\n"
-                                         "Make sure there is no other Usb2Snes webserver application running (QUsb2Snes/Crowd Control")).arg(status));
+                                         "Make sure there is no other Usb2Snes webserver application running (QUsb2Snes/SNI/Crowd Control")).arg(status));
         qApp->exit(1);
     }
+}
+
+bool    AppUi::startLegacyPort()
+{
+    QHostAddress addr(QHostAddress::Any);
+    if (globalSettings->contains("listen"))
+        addr = QHostInfo::fromName(globalSettings->value("listen").toString()).addresses().first();
+    QString status = wsServer.start(addr, USB2SnesWS::legacyPort);
+    if (!status.isEmpty())
+    {
+        QMessageBox::warning(nullptr, tr("Error listening on legacy port"),
+                             QString(tr("There was an error listenning on port 8080 :%1\n"
+                                        "This can be that QUsb2Snes is already running, the legacy USB2SNES application or something else.\n\n"
+                                        "Old applications would likely not work.")).arg(status));
+        return false;
+    }
+    return true;
 }
 
 
