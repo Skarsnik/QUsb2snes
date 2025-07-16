@@ -1,7 +1,9 @@
 #pragma once
 
 #include <QSettings>
+#include <QStringView>
 #include <qmetaobject.h>
+#include <QDebug>
 
 class Settings : private QSettings
 {
@@ -41,18 +43,18 @@ public:
         }();
         qDebug() << "Value() StringKey"  << settingString;
         if constexpr (type == QMetaType::Bool) {
-            return QSettings::value(settingString).toBool();
+            return QSettings::value(settingString.toString()).toBool();
         } else if constexpr (type == QMetaType::Int) {
-            return QSettings::value(settingString).toInt();
+            return QSettings::value(settingString.toString()).toInt();
         } else if constexpr (type == QMetaType::Double) {
-            return QSettings::value(settingString).toDouble();
+            return QSettings::value(settingString.toString()).toDouble();
         } else if constexpr (type == QMetaType::QString) {
-            return QSettings::value(settingString).toString();
+            return QSettings::value(settingString.toString()).toString();
         } else {
-            return QSettings::value(settingString);
+            return QSettings::value(QString(settingString));
         }
     }
-    void    setValue(SettingsV key, const QVariant& value)
+    /*void    setValue(SettingsV key, const QVariant& value)
     {
         QStringView keyString;
         for (const SettingEntry& mapping : settingsEntries)
@@ -65,8 +67,8 @@ public:
             keyString = text;
         }
         qDebug() << "SetValue() StringKey " << keyString;
-        QSettings::setValue(keyString, value);
-    }
+        QSettings::setValue(QString(keyString), value);
+    }*/
     template<SettingsV key, typename T> void setValue(T value)
     {
         constexpr QMetaType::Type type = [&]() {
@@ -95,7 +97,7 @@ public:
         #else
             static_assert(canConvert, "Settings: Unexpected type used for the key");
         #endif
-        QSettings::setValue(settingString, value);
+        QSettings::setValue(settingString.toString(), value);
         return ;
     }
 
