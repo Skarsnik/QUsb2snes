@@ -441,6 +441,7 @@ bool SNESClassicFactory::asyncListDevices()
     if (socket->state() == QAbstractSocket::ConnectingState)
     {
         sDebug() << "This should not happen, socket already trying to connect";
+        checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_NO_DEVICE);
         return false;
     }
     if (socket->state() == QAbstractSocket::UnconnectedState)
@@ -453,7 +454,7 @@ bool SNESClassicFactory::asyncListDevices()
            sDebug() << "Timeout " << socket->state();
            if (socket->state() == QAbstractSocket::ConnectingState)
            {
-               socket->close();
+               socket->disconnectFromHost();
                this->checkFailed(Error::DeviceFactoryError::DFE_SNESCLASSIC_NO_DEVICE);
            }
         });
