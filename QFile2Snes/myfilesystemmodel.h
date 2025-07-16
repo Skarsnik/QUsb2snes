@@ -23,7 +23,7 @@
 
 #include <QFileSystemModel>
 #include <QObject>
-#include <usb2snes.h>
+#include <usb2snesclient.h>
 
 class MyFileSystemModel : public QFileSystemModel
 {

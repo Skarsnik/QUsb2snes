@@ -94,7 +94,7 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
         ui->infoLabel->setText(tr("Disconnected, trying to reconnect in 1 sec"));
         setEnabledSd2SnesUI(false);
         QTimer::singleShot(1000, this, [=] {
-            usb2snes->connect();
+            usb2snes->connectToHost();
         });
     });
     connect(usb2snes, &Usb2Snes::deviceListDone, this, [=] (QStringList devices) {

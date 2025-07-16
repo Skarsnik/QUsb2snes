@@ -24,7 +24,7 @@
 #include <QMainWindow>
 #include <QSettings>
 #include "myfilesystemmodel.h"
-#include "usb2snes.h"
+#include "usb2snesclient.h"
 #include "usb2snesfilemodel.h"
 
 namespace Ui {

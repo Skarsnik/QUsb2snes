@@ -54,12 +54,14 @@
 #include "wsserver.h"
 
 #include "sqpath.h"
+#include "settings.hpp"
 
 std::ostream* stdLogStream = nullptr;
 
 WSServer    wsServer;
 QSettings*  globalSettings;
 
+Settings    testSettings;
 
 /*
 #include "backward.hpp"
@@ -316,5 +318,10 @@ int main(int ac, char *ag[])
    });
    QTimer::singleShot(100, &startServer);
 #endif
+    qDebug() << std::is_convertible<const char*, std::string>::value;
+    qDebug() << std::is_convertible<const char*, QString>::value;
+    testSettings.setValue<Settings::RemoteHost>("PcxikoNyo");
+    qDebug() << "Settings" << testSettings.value<Settings::RemoteHost>();
+    //return 1;
     return app.exec();
 }

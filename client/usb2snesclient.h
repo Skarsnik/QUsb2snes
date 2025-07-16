@@ -16,8 +16,7 @@
 
 
 
-#ifndef USB2SNES_H
-#define USB2SNES_H
+#pragma once
 
 #include <QObject>
 #include <QtWebSockets/QtWebSockets>
@@ -38,6 +37,7 @@ public:
     enum State {
         None,
         Connected,
+        Busy,
         Ready,
         SendingFile,
         ReceivingFile
@@ -96,12 +96,17 @@ public:
     Q_ENUM(Usb2SnesCommand)
 
     Usb2Snes(bool autoAttach = true);
+    static const unsigned int legacyPort = 8080;
+    static const unsigned int defaultPort = 23074;
     void                    usePort(QString port);
     QString                 port();
     QString                 getRomName();
+    void                    connectToHost(QString address = "localhost", quint16 port = defaultPort);
+    void                    disconnectFromHost();
     void                    connect();
     void                    close();
     void                    setAppName(QString name);
+    void                    appVersion();
     void                    attach(QString deviceName);
     QByteArray              getAddress(unsigned int addr, unsigned int size, Space space = SNES);
     void                    setAddress(unsigned int addr, QByteArray data, Space space = SNES);
@@ -134,6 +139,7 @@ signals:
     void    menuStarted();
     void    fileSendProgress(int size);
     void    fileSent();
+    void    appVersionDone(QString name);
     void    getFileSizeGet(unsigned int);
     void    getFileDataGet(QByteArray data);
     void    deviceListDone(QStringList listDevice);
@@ -183,4 +189,3 @@ private:
 
 };
 
-#endif // USB2SNES_H

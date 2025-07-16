@@ -10,10 +10,17 @@ Project {
         consoleApplication: false
         files: [
             "TODO",
+            "client/usb2snesclient.cpp",
+            "client/usb2snesclient.h",
             "devices/EmuNWAccess-qt/emunwaccessclient.cpp",
             "devices/EmuNWAccess-qt/emunwaccessclient.h",
             "core/adevice.cpp",
             "core/adevice.h",
+            "devices/remoteusb2sneswdevice.cpp",
+            "devices/remoteusb2sneswdevice.h",
+            "devices/remoteusb2sneswfactory.cpp",
+            "devices/remoteusb2sneswfactory.h",
+            "settings.hpp",
             "sqpath.h",
             "ui/appui.cpp",
             "ui/appuimenu.cpp",
@@ -89,7 +96,7 @@ Project {
             "core/usb2snes.h",
             "core/wsserver.cpp",
             "core/wsserver.h",
-            "core/wsservercommands.cpp"
+            "core/wsservercommands.cpp",
         ]
 
         Group {

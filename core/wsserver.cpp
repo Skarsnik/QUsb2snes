@@ -49,6 +49,7 @@ WSServer::WSServer(QObject *parent) : QObject(parent)
     trustedOrigin.append("http://localhost");
     trustedOrigin.append("");
     numberOfAsyncFactory = 0;
+    remoteFactory = nullptr;
 }
 
 QString WSServer::start(QHostAddress lAddress, quint16 port)
@@ -104,6 +105,7 @@ void WSServer::onNewConnection()
     wi.recvData.clear();
     wi.ipsSize = 0;
     wi.expectedDataSize = 0;
+    wi.attachedToRemote = false;
     wi.legacy = server->serverPort() == USB2SnesWS::legacyPort;
 
     wsInfos[newSocket] = wi;
@@ -158,6 +160,10 @@ void WSServer::addDeviceFactory(DeviceFactory *devFact)
         connect(devFact, &DeviceFactory::devicesListDone, this, &WSServer::onDeviceListDone);
     }
     deviceFactories.append(devFact);
+    if (qobject_cast<RemoteUsb2SnesWFactory*>(devFact) != nullptr)
+    {
+        remoteFactory = qobject_cast<RemoteUsb2SnesWFactory*>(devFact);
+    }
 }
 
 QStringList WSServer::deviceFactoryNames() const
@@ -181,6 +187,10 @@ void WSServer::removeDeviceFactory(DeviceFactory *devFact)
     }
     disconnect(devFact, nullptr, this, nullptr);
     deviceFactories.removeAll(devFact);
+    if (qobject_cast<RemoteUsb2SnesWFactory*>(devFact) != nullptr)
+    {
+        remoteFactory = nullptr;
+    }
 }
 
 QStringList WSServer::getClientsName(ADevice *dev)
@@ -320,6 +330,11 @@ void WSServer::onTextMessageReceived(QString message)
     const WSInfos &wsInfo = wsInfos.value(ws);
     sDebug() << wsInfo.name << "received " << message;
 
+    if (wsInfo.attachedToRemote)
+    {
+        //remoteFactory.sendToRemote(ws, message);
+        return ;
+    }
     MRequest* req = requestFromJSON(message);
     sDebug() << "Request is " << req->opcode;
     if ((intptr_t)req->owner == 42)

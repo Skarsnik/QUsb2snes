@@ -22,7 +22,7 @@
 #define DIRCHANGEDIALOG_H
 
 #include <QDialog>
-#include "usb2snes.h"
+#include "usb2snesclient.h"
 #include "usb2snesfilemodel.h"
 
 namespace Ui {

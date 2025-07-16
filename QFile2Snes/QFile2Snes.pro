@@ -28,13 +28,13 @@ SOURCES += \
         main.cpp \
         qfile2snesw.cpp \
         usb2snesfilemodel.cpp \
-        ../client/usb2snes.cpp \
+        ../client/usb2snesclient.cpp \
         myfilesystemmodel.cpp
 
 HEADERS += \
         qfile2snesw.h \
         usb2snesfilemodel.h \
-        ../client/usb2snes.h \
+        ../client/usb2snesclient.h \
         myfilesystemmodel.h
 
 FORMS += \

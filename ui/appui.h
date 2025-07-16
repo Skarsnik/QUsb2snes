@@ -26,6 +26,7 @@
 #include "../devices/sd2snesfactory.h"
 #include "../devices/retroarchfactory.h"
 #include "../devices/emunetworkaccessfactory.h"
+#include "devices/remoteusb2sneswfactory.h"
 #include "ui/systraywidget.h"
 
 #include <QMenu>
@@ -107,6 +108,7 @@ private:
     SD2SnesFactory*                 sd2snesFactory;
     RetroArchFactory*               retroarchFactory;
     SNESClassicFactory*             snesClassic;
+    RemoteUsb2SnesWFactory*         remoteFactory = nullptr;
     EmuNetworkAccessFactory*        emuNWAccess;
     QMap<QString, ApplicationInfo>  regularApps;
 
@@ -133,6 +135,7 @@ private:
     void addLuaBridgeFactory();
     void addSnesClassicFactory();
     void addNWAFactory();
+    void addRemoteFactory();
     void setLinuxDeviceMenu();
     void setMenu();
     void setDeviceEntry(const QString str);

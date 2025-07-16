@@ -22,7 +22,7 @@
 #define USB2SNESFILEMODEL_H
 
 #include <QAbstractListModel>
-#include "usb2snes.h"
+#include "usb2snesclient.h"
 
 class Usb2SnesFileModel : public QAbstractListModel
 {

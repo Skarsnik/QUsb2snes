@@ -23,7 +23,7 @@
 
 #include <QDialog>
 #include <QFileInfo>
-#include "usb2snes.h"
+#include "usb2snesclient.h"
 
 namespace Ui {
 class SendToDialog;

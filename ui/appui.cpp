@@ -154,6 +154,7 @@ void AppUi::init()
             wsServer.addTrusted(ori);
         }
     }
+    //addRemoteFactory();
     checkForApplications();
     connect(qApp, &QCoreApplication::aboutToQuit, this, [=]() {
       sysTray->hide();
@@ -542,6 +543,15 @@ void AppUi::addNWAFactory()
             LocalStorage::setRootPath(qApp->applicationDirPath() + "/Games");
         }
         wsServer.addDeviceFactory(emuNWAccess);
+    }
+}
+
+void AppUi::addRemoteFactory()
+{
+    if (remoteFactory == nullptr)
+    {
+        remoteFactory = new RemoteUsb2SnesWFactory();
+        wsServer.addDeviceFactory(remoteFactory);
     }
 }
 

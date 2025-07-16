@@ -29,6 +29,7 @@
 #include <QMetaEnum>
 #include "adevice.h"
 #include "devicefactory.h"
+#include "devices/remoteusb2sneswfactory.h"
 
 Q_DECLARE_LOGGING_CATEGORY(log_wsserver)
 
@@ -101,6 +102,7 @@ private:
         unsigned int            byteReceived;
         bool                    pendingAttach;
         bool                    legacy;
+        bool                    attachedToRemote;
     };
 
     struct DeviceInfos {
@@ -180,6 +182,7 @@ private:
     QString                             m_errorString;
     ErrorType                           m_errorType;
     QStringList                         trustedOrigin;
+    RemoteUsb2SnesWFactory*             remoteFactory;
 
     // Used for the async devicelist stuff
     unsigned    int                     numberOfAsyncFactory;

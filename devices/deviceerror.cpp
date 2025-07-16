@@ -35,6 +35,8 @@ QString deviceFactoryErrorString(DeviceFactoryError er)
     case DFE_SNESCLASSIC_WRONG_VERSION : return QObject::tr("SNES Classic emulator is not v2.0.14.");
     case DFE_SNESCLASSIC_MEMORY_LOCATION_NOT_FOUND : return QObject::tr("Can't find the proper memory locations.");
     case DFE_EMUNWA_NO_CLIENT : return QObject::tr("No Emulator found");
+    case DFE_REMOTE_NO_REMOTE : return QObject::tr("No remote wserver found");
+    case DFE_REMOTE_NO_DEVICE : return QObject::tr("No devices found on remote wserver");
     default: return QString();
     }
 }

@@ -14,7 +14,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "usb2snes.h"
+#include "usb2snesclient.h"
 #include <QUrl>
 #include <QDebug>
 
@@ -62,6 +62,17 @@ QString Usb2Snes::getRomName()
     return QString(title);
 }
 
+void Usb2Snes::connectToHost(QString address, quint16 port)
+{
+    if (m_state == None)
+        m_webSocket.open(QUrl("ws://" + address + ":" + QString::number(port)));
+}
+
+void Usb2Snes::disconnectFromHost()
+{
+    m_webSocket.close();
+}
+
 void Usb2Snes::connect()
 {
     if (m_state == None)
@@ -77,6 +88,12 @@ void Usb2Snes::close()
 void Usb2Snes::setAppName(QString name)
 {
     sendRequest(Name, QStringList() << name);
+}
+
+void Usb2Snes::appVersion()
+{
+    changeState(Busy);
+    sendRequest(AppVersion);
 }
 
 void Usb2Snes::attach(QString deviceName)
@@ -180,6 +197,7 @@ void Usb2Snes::onWebSocketTextReceived(QString message)
     switch (m_currentCommand)
     {
     case DeviceList: {
+        changeState(Ready);
         emit deviceListDone(getJsonResults(message));
         break;
     }
@@ -190,6 +208,7 @@ void Usb2Snes::onWebSocketTextReceived(QString message)
         info.versionString = results.at(1);
         info.romPlaying = results.at(2);
         info.flags = results.mid(3);
+        changeState(Ready);
         emit infoDone(info);
         break;
     }
@@ -203,6 +222,7 @@ void Usb2Snes::onWebSocketTextReceived(QString message)
             fi.name = infos.at(i + 1);
             toret << fi;
         }
+        changeState(Ready);
         emit lsDone(toret);
         break;
     }
@@ -212,6 +232,12 @@ void Usb2Snes::onWebSocketTextReceived(QString message)
         m_fileSize = result.at(0).toUInt(&ok, 16);
         emit getFileSizeGet(m_fileSize);
         changeState(ReceivingFile);
+        break;
+    }
+    case AppVersion: {
+        QStringList result = getJsonResults(message);
+        changeState(Ready);
+        emit appVersionDone(result.at(0));
         break;
     }
     }
@@ -456,6 +482,7 @@ int Usb2Snes::fileDataSize() const
 
 void    Usb2Snes::ls(QString path)
 {
+    changeState(Busy);
     sendRequest(List, QStringList() << path);
 }
 
@@ -472,6 +499,7 @@ QVersionNumber Usb2Snes::firmwareVersion()
 
 void    Usb2Snes::deviceList()
 {
+    changeState(Busy);
     sendRequest(DeviceList);
     /*startSyncCall();
     QEventLoop  loop;

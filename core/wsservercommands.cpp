@@ -543,10 +543,12 @@ void    WSServer::asyncDeviceList()
             pendingDeviceListQuery++;
         }
     }
+    sDebug() << "Doing device list for " << pendingDeviceListQuery << " factories";
     for (auto devFact : qAsConst(deviceFactories))
     {
         if (devFact->hasAsyncListDevices())
         {
+            sDebug() << "Async list device for " << devFact->name();
             devFact->asyncListDevices();
         }
     }
@@ -592,9 +594,13 @@ void WSServer::cmdAttach(MRequest *req)
         if (devGet != nullptr)
         {
             mapDevFact[devGet] = devFact;
+            if (qobject_cast<RemoteUsb2SnesWFactory*>(devFact))
+            {
+                wsInfos[req->owner].attachedToRemote = true;
+            }
             break;
         }
-        if (!devFact->attachError().isEmpty())
+        if (devFact->attachError().isEmpty() == false)
         {
             setError(ErrorType::CommandError, "Attach Error with " + deviceToAttach + " - " + devFact->attachError());
             clientError(req->owner);
@@ -608,7 +614,7 @@ void WSServer::cmdAttach(MRequest *req)
         if (devGet->state() == ADevice::State::CLOSED)
         {
             sDebug() << "Trying to open device";
-            if (!devGet->open())
+            if (devGet->open() == false)
             {
                 setError(ErrorType::CommandError, "Attach: Can't open the device on " + deviceToAttach);
                 clientError(req->owner);
@@ -620,6 +626,10 @@ void WSServer::cmdAttach(MRequest *req)
         wsInfos[req->owner].attached = true;
         wsInfos[req->owner].attachedTo = devGet;
         wsInfos[req->owner].pendingAttach = false;
+        /*if (wsInfos[req->owner].attachedToRemote)
+        {
+            connect(ws)
+        }*/
         sendReplyV2(req->owner, devGet->name());
         if (devGet->state() == ADevice::READY)
             processCommandQueue(devGet);
