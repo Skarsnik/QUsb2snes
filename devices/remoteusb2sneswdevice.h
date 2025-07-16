@@ -1,7 +1,7 @@
 #ifndef REMOTEUSB2SNESWDEVICE_H
 #define REMOTEUSB2SNESWDEVICE_H
 
-#include <QWebsocket>
+#include <QtWebSockets/QtWebSockets>
 #include <adevice.h>
 
 class RemoteUsb2snesWDevice : public ADevice
