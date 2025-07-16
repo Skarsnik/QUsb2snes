@@ -10,14 +10,14 @@ CONFIG += c++11
 SOURCES += \
     mainsendto.cpp \
     usb2snesfilemodel.cpp \
-    ../client/usb2snes.cpp \
+    ../client/usb2snesclient.cpp \
     sendtodialog.cpp \
     dirchangedialog.cpp
 
 
 HEADERS += \
     usb2snesfilemodel.h \
-    ../client/usb2snes.h \
+    ../client/usb2snesclient.h \
     sendtodialog.h \
     dirchangedialog.h \
 
