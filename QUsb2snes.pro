@@ -74,6 +74,8 @@ SOURCES += core/adevice.cpp \
           devices/retroarchhost.cpp \
           devices/emunetworkaccessfactory.cpp \
           devices/emunetworkaccessdevice.cpp \
+          devices/remoteusb2sneswfactory.cpp \
+          devices/remoteusb2sneswdevice.cpp \
           main.cpp \
           rommapping/mapping_hirom.c \
           rommapping/mapping_lorom.c \
@@ -83,7 +85,8 @@ SOURCES += core/adevice.cpp \
           devices/snesclassic.cpp \
           core/localstorage.cpp \
           core/wsserver.cpp \
-          core/wsservercommands.cpp
+          core/wsservercommands.cpp \
+          client/usb2snesclient.cpp \
 
 HEADERS += core/adevice.h \
           core/devicefactory.h \
@@ -91,6 +94,8 @@ HEADERS += core/adevice.h \
           devices/sd2snesfactory.h \
           devices/snesclassicfactory.h \
           devices/retroarchfactory.h \
+          devices/remoteusb2sneswfactory.h \
+          devices/remoteusb2sneswdevice.h \
           ipsparse.h \
           devices/luabridge.h \
           devices/luabridgedevice.h \
@@ -102,6 +107,7 @@ HEADERS += core/adevice.h \
           rommapping/rominfo.h \
           devices/sd2snesdevice.h \
           devices/snesclassic.h \
+          client/usb2snesclient.h \
           localstorage.h \
           core/usb2snes.h \
 	  sqpath.h \

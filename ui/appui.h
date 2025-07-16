@@ -26,7 +26,7 @@
 #include "../devices/sd2snesfactory.h"
 #include "../devices/retroarchfactory.h"
 #include "../devices/emunetworkaccessfactory.h"
-#include "devices/remoteusb2sneswfactory.h"
+#include "../devices/remoteusb2sneswfactory.h"
 #include "ui/systraywidget.h"
 
 #include <QMenu>

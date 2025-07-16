@@ -2,7 +2,7 @@
 #define REMOTEUSB2SNESWFACTORY_H
 
 #include <devicefactory.h>
-#include "client/usb2snesclient.h"
+#include "../client/usb2snesclient.h"
 
 class RemoteUsb2SnesWFactory : public DeviceFactory
 {

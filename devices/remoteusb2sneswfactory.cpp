@@ -5,7 +5,7 @@ Q_LOGGING_CATEGORY(log_remoteusb2snes, "Remote factory")
 #define sInfo() qCInfo(log_remoteusb2snes)
 
 #include "remoteusb2sneswfactory.h"
-#include "devices/remoteusb2sneswdevice.h"
+#include "remoteusb2sneswdevice.h"
 
 
 RemoteUsb2SnesWFactory::RemoteUsb2SnesWFactory(QObject *parent)
