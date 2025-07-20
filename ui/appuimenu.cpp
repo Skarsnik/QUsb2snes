@@ -283,7 +283,7 @@ void AppUi::onDeviceFactoryStatusDone()
 void AppUi::onAppsMenuTriggered(QAction *action)
 {
     if (action->text() == "Multitroid")
-        QDesktopServices::openUrl(QUrl("http://multitroid.com/"));
+        QDesktopServices::openUrl(QUrl("https://multitroid.com/"));
     if (action->text() == "SMZ3 Multiworld")
         QDesktopServices::openUrl(QUrl("https://samus.link"));
     if (action->text() == "Funtoon")
