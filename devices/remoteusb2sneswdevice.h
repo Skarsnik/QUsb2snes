@@ -8,10 +8,12 @@ class RemoteUsb2snesWDevice : public ADevice
 {
     Q_OBJECT
 public:
-    explicit RemoteUsb2snesWDevice(QObject *parent = nullptr);
+    explicit RemoteUsb2snesWDevice(QString remoteName, QObject *parent = nullptr);
     void     createWebsocket(QUrl url);
-    void     send(QString message);
-    void     send(QByteArray data);
+    void     sendText(const QString& message);
+    void     sendBinary(const QByteArray& data);
+    void     setClientName(const QString& name);
+
 
     // ADevice interface
 public:
@@ -40,7 +42,17 @@ public slots:
     void close();
 
 private:
-    QWebSocket*  websocket;
+
+    struct Message {
+        QString text;
+        QByteArray datas;
+    };
+    QQueue<Message> queue;
+    bool        attached = false;
+    QWebSocket* websocket;
+    QString     remoteDeviceName;
+    QString     clientName;
+    void     attach();
 };
 
 #endif // REMOTEUSB2SNESWDEVICE_H

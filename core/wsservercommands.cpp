@@ -18,6 +18,7 @@
  * along with QUsb2Snes.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "devices/remoteusb2sneswdevice.h"
 #include "ipsparse.h"
 #include "wsserver.h"
 #include <QLoggingCategory>
@@ -594,9 +595,13 @@ void WSServer::cmdAttach(MRequest *req)
         if (devGet != nullptr)
         {
             mapDevFact[devGet] = devFact;
-            if (qobject_cast<RemoteUsb2SnesWFactory*>(devFact))
+            if (qobject_cast<RemoteUsb2SnesWFactory*>(devFact) != nullptr)
             {
                 wsInfos[req->owner].attachedToRemote = true;
+                setRemoteConnection(req->owner, wsInfos[req->owner], devGet);
+                // Since we don't call open, there should be not pending command happening.
+                wsInfos[req->owner].pendingAttach = false;
+                return;
             }
             break;
         }
@@ -626,10 +631,6 @@ void WSServer::cmdAttach(MRequest *req)
         wsInfos[req->owner].attached = true;
         wsInfos[req->owner].attachedTo = devGet;
         wsInfos[req->owner].pendingAttach = false;
-        /*if (wsInfos[req->owner].attachedToRemote)
-        {
-            connect(ws)
-        }*/
         sendReplyV2(req->owner, devGet->name());
         if (devGet->state() == ADevice::READY)
             processCommandQueue(devGet);
@@ -639,6 +640,29 @@ void WSServer::cmdAttach(MRequest *req)
         clientError(req->owner);
         return ;
     }
+}
+
+/* This set the connection to the remote, the main code stop caring about the
+ * the communication at this point, only the device will log trafic.
+ */
+void    WSServer::setRemoteConnection(QWebSocket* ws, WSInfos& infos, ADevice* device)
+{
+    sDebug() << "Attaching to remote server";
+    infos.attachedTo = device;
+    RemoteUsb2snesWDevice* remoteDevice = qobject_cast<RemoteUsb2snesWDevice*>(device);
+    remoteDevice->setClientName(infos.name);
+    connect(remoteDevice, &RemoteUsb2snesWDevice::textMessageReceived, ws, [=](const QString& message)
+    {
+        ws->sendTextMessage(message);
+    });
+    connect(remoteDevice, &RemoteUsb2snesWDevice::binaryMessageReceived, ws, [=](const QByteArray& message)
+    {
+        ws->sendBinaryMessage(message);
+    });
+    disconnect(ws, &QWebSocket::textMessageReceived, this, &WSServer::onTextMessageReceived);
+    disconnect(ws, &QWebSocket::binaryMessageReceived, this, &WSServer::onBinaryMessageReceived);
+    connect(ws, &QWebSocket::textMessageReceived, remoteDevice, &RemoteUsb2snesWDevice::sendText);
+    connect(ws, &QWebSocket::binaryMessageReceived, remoteDevice, &RemoteUsb2snesWDevice::sendBinary);
 }
 
 void    WSServer::processIpsData(QWebSocket* ws)

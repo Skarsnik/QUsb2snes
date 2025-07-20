@@ -199,6 +199,7 @@ void AppUi::onMenuHovered(QAction* action)
     {
         UiWidget->addClientStatus(clientName);
     }
+    sDebug() << "Asking the wserver to check status";
     wsServer.requestDeviceStatus();
 }
 

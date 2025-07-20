@@ -25,6 +25,7 @@ private:
     bool        doingDeviceList = false;
     bool        doingDeviceStatus = false;
     bool        doingAttach = false;
+    QMap<QString, QString>  mapLocalNamesToRemoteNames;
     DeviceFactoryStatus  devFacStatus;
     void        checkFailed(Error::DeviceFactoryError err);
     void        checkStatus();

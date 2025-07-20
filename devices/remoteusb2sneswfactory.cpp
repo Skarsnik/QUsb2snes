@@ -24,19 +24,26 @@ ADevice* RemoteUsb2SnesWFactory::attach(QString deviceName)
 {
     if (remote == nullptr)
         createRemote();
+    sDebug() << "Attach";
+    if (remote->state() != Usb2Snes::Ready)
+    {
+        checkStatus();
+        return nullptr;
+    }
     QEventLoop loop;
     doingAttach = true;
     connect(remote, &Usb2Snes::deviceListDone, &loop, &QEventLoop::quit);
     connect(remote, &Usb2Snes::disconnected, &loop, &QEventLoop::quit);
+    remote->deviceList();
     loop.exec();
     doingAttach = false;
     if (remote->state() == Usb2Snes::None || deviceList.isEmpty())
         return nullptr;
     for (QString dev : deviceList)
     {
-        if (dev == deviceName)
+        if (mapLocalNamesToRemoteNames.key(dev) == deviceName)
         {
-            RemoteUsb2snesWDevice* newDev = new RemoteUsb2snesWDevice();
+            RemoteUsb2snesWDevice* newDev = new RemoteUsb2snesWDevice(mapLocalNamesToRemoteNames[deviceName]);
             newDev->createWebsocket(remoteUrl);
             return newDev;
         }
@@ -100,6 +107,7 @@ void    RemoteUsb2SnesWFactory::createRemote()
     sDebug() << "Creating the client";
     remote = new Usb2Snes(false);
     connect(remote, &Usb2Snes::connected, this, [=] {
+        sDebug() << "Usb2snes connected";
         remote->setAppName("QUsb2Snes Remote access");
         remote->appVersion();
     });
@@ -118,6 +126,11 @@ void    RemoteUsb2SnesWFactory::createRemote()
                 {
                     checkFailed(Error::DeviceFactoryError::DFE_REMOTE_NO_DEVICE);
                 } else {
+                    mapLocalNamesToRemoteNames.clear();
+                    for (const auto& dev : devs)
+                    {
+                        mapLocalNamesToRemoteNames[remoteName + " - " + dev] = dev;
+                    }
                     if (doingDeviceList) {
                         for (const auto& dev : devs)
                         {

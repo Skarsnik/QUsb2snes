@@ -90,8 +90,8 @@ void WSServer::onNewConnection()
         return ;
     }
 
-    connect(newSocket, SIGNAL(textMessageReceived(QString)), this, SLOT(onTextMessageReceived(QString)));
-    connect(newSocket, SIGNAL(binaryMessageReceived(QByteArray)), this, SLOT(onBinaryMessageReceived(QByteArray)));
+    connect(newSocket,&QWebSocket::textMessageReceived, this, &WSServer::onTextMessageReceived);
+    connect(newSocket,&QWebSocket::binaryMessageReceived, this, &WSServer::onBinaryMessageReceived);
     connect(newSocket, SIGNAL(disconnected()), this, SLOT(onClientDisconnected()));
     connect(newSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onClientError(QAbstractSocket::SocketError)));
 
@@ -324,17 +324,12 @@ void WSServer::onDeviceFactoryStatusDone(DeviceFactory::DeviceFactoryStatus stat
 }
 
 
-void WSServer::onTextMessageReceived(QString message)
+void WSServer::onTextMessageReceived(const QString &message)
 {
     QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
     const WSInfos &wsInfo = wsInfos.value(ws);
     sDebug() << wsInfo.name << "received " << message;
 
-    if (wsInfo.attachedToRemote)
-    {
-        //remoteFactory.sendToRemote(ws, message);
-        return ;
-    }
     MRequest* req = requestFromJSON(message);
     sDebug() << "Request is " << req->opcode;
     if ((intptr_t)req->owner == 42)
@@ -399,7 +394,7 @@ void    WSServer::addToPendingRequest(ADevice* device, MRequest *req)
     }
 }
 
-void WSServer::onBinaryMessageReceived(QByteArray data)
+void WSServer::onBinaryMessageReceived(const QByteArray &data)
 {
     QWebSocket* ws = qobject_cast<QWebSocket*>(sender());
     WSInfos& infos = wsInfos[ws];

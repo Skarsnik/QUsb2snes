@@ -6,29 +6,106 @@ Q_LOGGING_CATEGORY(log_remoteusb2snesdevice, "Remote Device")
 #define sInfo() qCInfo(log_remoteusb2snesdevice)
 
 
-RemoteUsb2snesWDevice::RemoteUsb2snesWDevice(QObject *parent)
+RemoteUsb2snesWDevice::RemoteUsb2snesWDevice(QString remoteName, QObject *parent)
     : ADevice{parent}
 {
+    sDebug() << "Creating remote device to " << remoteName;
+    remoteDeviceName = remoteName;
 }
 
 void RemoteUsb2snesWDevice::createWebsocket(QUrl url)
 {
+    websocket = new QWebSocket();
     websocket->open(url);
-    connect(websocket, &QWebSocket::textMessageReceived, this, &RemoteUsb2snesWDevice::textMessageReceived);
-    connect(websocket, &QWebSocket::binaryMessageReceived, this, &RemoteUsb2snesWDevice::binaryMessageReceived);
+    // We can't connect yet to the remote server, attach need to be first
+    connect(websocket, &QWebSocket::textMessageReceived, this, [=] (const QString& message)
+    {
+        if (attached == false)
+        {
+            Message m;
+            m.text = message;
+            queue.enqueue(m);
+            sDebug() << "Queueing text message";
+        }
+        sDebug() << "Received message from remote" << message;
+    });
+    connect(websocket, &QWebSocket::binaryMessageReceived, this, [=] (const QByteArray& message)
+    {
+        if (attached == false)
+        {
+            Message m;
+            m.datas = message;
+            queue.enqueue(m);
+            sDebug() << "Queueing data message";
+        }
+        sDebug() << "Received binary message from remote, size : " << message.size();
+    });
+    connect(websocket, &QWebSocket::connected, this, [=]
+    {
+        sDebug() << "Connected to remote " << url;
+        attach();
+    });
+    connect(websocket, &QWebSocket::disconnected, this, [=]
+    {
+        sDebug() << "Disconnected";
+        emit closed();
+    });
 }
 
-void RemoteUsb2snesWDevice::send(QString message)
+void RemoteUsb2snesWDevice::sendText(const QString& message)
 {
     sDebug() << "Sending text request to remote" << message;
     websocket->sendTextMessage(message);
 }
 
-void RemoteUsb2snesWDevice::send(QByteArray data)
+void RemoteUsb2snesWDevice::sendBinary(const QByteArray& data)
 {
     sDebug() << "Sending binary data to remote" << data.size();
     websocket->sendBinaryMessage(data);
 }
+
+void RemoteUsb2snesWDevice::setClientName(const QString &name)
+{
+    clientName = name;
+}
+
+void RemoteUsb2snesWDevice::attach()
+{
+    QJsonArray      jOp;
+    QJsonObject     jObj;
+
+    jObj["Opcode"] = "Attach";
+    jOp.append(remoteDeviceName);
+    jObj["Space"] = "SNES";
+    jObj["Operands"] = jOp;
+    sDebug() << ">>" << QJsonDocument(jObj).toJson();
+    websocket->sendTextMessage(QJsonDocument(jObj).toJson());
+    attached = true;
+    if (clientName.isEmpty() == false)
+    {
+        jObj["Opcode"] = "Name";
+        jOp[0] = "Remote " + clientName;
+        jObj["Operands"] = jOp;
+        sDebug() << ">>" << QJsonDocument(jObj).toJson();
+        websocket->sendTextMessage(QJsonDocument(jObj).toJson());
+    }
+    while (queue.empty() == false)
+    {
+        Message m = queue.dequeue();
+        if (m.text.isEmpty())
+        {
+            websocket->sendTextMessage(m.text);
+        }
+        else
+        {
+            websocket->sendBinaryMessage(m.datas);
+        }
+    }
+    connect(websocket, &QWebSocket::textMessageReceived, this, &RemoteUsb2snesWDevice::textMessageReceived);
+    connect(websocket, &QWebSocket::binaryMessageReceived, this, &RemoteUsb2snesWDevice::binaryMessageReceived);
+}
+
+
 
 
 

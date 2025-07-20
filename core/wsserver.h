@@ -154,8 +154,8 @@ private slots:
     void    onNewConnection();
     void    onWSError(QWebSocketProtocol::CloseCode code);
     void    onWSClosed();
-    void    onTextMessageReceived(QString message);
-    void    onBinaryMessageReceived(QByteArray data);
+    void    onTextMessageReceived(const QString& message);
+    void    onBinaryMessageReceived(const QByteArray& data);
     void    onClientDisconnected();
     void    onClientError(QAbstractSocket::SocketError);
     void    onDeviceCommandFinished();
@@ -213,6 +213,7 @@ private:
     void        sendReply(QWebSocket* ws, const QStringList& args);
     void        sendReply(QWebSocket* ws, QString args);
     void        sendReplyV2(QWebSocket *ws, QString args);
+    void        setRemoteConnection(QWebSocket* ws, WSInfos& infos, ADevice* device);
 
 
 
