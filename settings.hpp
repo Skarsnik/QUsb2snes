@@ -25,6 +25,7 @@ private:
 
 public:
     explicit Settings(QObject *parent = nullptr) : QSettings("Test.ini", QSettings::IniFormat) {};
+    ~Settings() {};
     template<SettingsV key> auto value()
     {
         constexpr QMetaType::Type type = [&]() {
