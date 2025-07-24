@@ -25,11 +25,11 @@ private:
 
 public:
 #ifndef Q_OS_WIN
-    explicit Settings(QObject *parent = nullptr) : QSettings("nyo.fr", "QUsb2Snes") {};
+    explicit Settings(QObject *parent = nullptr) : QSettings("nyo.fr", "QUsb2Snes") {}
 #else
     explicit Settings(QObject *parent = nullptr) : QSettings("config.ini", QSettings::IniFormat) {};
 #endif
-    ~Settings() {};
+    ~Settings() {}
     template<SettingsV key> auto value()
     {
         constexpr QMetaType::Type type = [&]() {
@@ -38,14 +38,16 @@ public:
                     return mapping.type;
             return QMetaType::Void;
         }();
-        constexpr QStringView settingString = [&]() {
+        QStringView settingString = [&]() {
             for (const SettingEntry& mapping : settingsEntries)
                 if (mapping.value == key)
                     return mapping.entry;
+            return QStringView();
             const QMetaEnum meta = QMetaEnum::fromType<SettingsV>();
             const QString text = QString::fromLatin1(meta.valueToKey(key));
             return QStringView(text);
         }();
+
         qDebug() << "Value() StringKey"  << settingString;
         if constexpr (type == QMetaType::Bool) {
             return QSettings::value(settingString.toString()).toBool();
@@ -56,7 +58,7 @@ public:
         } else if constexpr (type == QMetaType::QString) {
             return QSettings::value(settingString.toString()).toString();
         } else {
-            return QSettings::value(QString(settingString));
+            return QSettings::value(settingString.toString());
         }
     }
     /*void    setValue(SettingsV key, const QVariant& value)
@@ -82,7 +84,7 @@ public:
                     return mapping.type;
             return QMetaType::Void;
         }();
-        constexpr QStringView settingString = [&]() {
+        QStringView settingString = [&]() {
             for (const SettingEntry& mapping : settingsEntries)
                 if (mapping.value == key)
                     return mapping.entry;
@@ -90,10 +92,10 @@ public:
             const QString text = QString::fromLatin1(meta.valueToKey(key));
             return QStringView(text);
         }();
-        constexpr bool canConvert = type == QMetaType::Int && std::is_same<T, int>::value
-                                    || type == QMetaType::QString && std::is_convertible<T, QString>::value
-                                    || type == QMetaType::Bool && std::is_same<T, bool>::value
-                                    || type == QMetaType::Double && std::is_same<T, double>::value;
+        constexpr bool canConvert = (type == QMetaType::Int && std::is_same<T, int>::value)
+                                    || (type == QMetaType::QString && std::is_convertible<T, QString>::value)
+                                    || (type == QMetaType::Bool && std::is_same<T, bool>::value)
+                                    || (type == QMetaType::Double && std::is_same<T, double>::value);
 
         #if __cpp_static_assert >= 202306L
             const QMetaEnum meta = QMetaEnum::fromType<SettingsV>();
