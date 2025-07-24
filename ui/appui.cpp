@@ -154,7 +154,7 @@ void AppUi::init()
             wsServer.addTrusted(ori);
         }
     }
-    //addRemoteFactory();
+    addRemoteFactory();
     checkForApplications();
     connect(qApp, &QCoreApplication::aboutToQuit, this, [=]() {
       sysTray->hide();

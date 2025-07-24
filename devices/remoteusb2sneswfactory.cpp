@@ -6,18 +6,25 @@ Q_LOGGING_CATEGORY(log_remoteusb2snes, "Remote factory")
 
 #include "remoteusb2sneswfactory.h"
 #include "remoteusb2sneswdevice.h"
+#include "settings.hpp"
+
+extern Settings*    mySettings;
 
 
 RemoteUsb2SnesWFactory::RemoteUsb2SnesWFactory(QObject *parent)
     : DeviceFactory{parent}
 {
     devFacStatus.name = name();
-    remoteUrl = "ws://192.168.0.37:" + QString::number(USB2SnesWS::defaultPort);
 }
 
 QStringList RemoteUsb2SnesWFactory::listDevices()
 {
     return QStringList();
+}
+
+QUrl RemoteUsb2SnesWFactory::remoteUrl()
+{
+    return QUrl("ws://" + mySettings->value<Settings::RemoteHost>() + ":" + QString::number(USB2SnesWS::defaultPort));
 }
 
 ADevice* RemoteUsb2SnesWFactory::attach(QString deviceName)
@@ -44,7 +51,7 @@ ADevice* RemoteUsb2SnesWFactory::attach(QString deviceName)
         if (mapLocalNamesToRemoteNames.key(dev) == deviceName)
         {
             RemoteUsb2snesWDevice* newDev = new RemoteUsb2snesWDevice(mapLocalNamesToRemoteNames[deviceName]);
-            newDev->createWebsocket(remoteUrl);
+            newDev->createWebsocket(remoteUrl());
             return newDev;
         }
     }
@@ -168,7 +175,7 @@ void    RemoteUsb2SnesWFactory::checkStatus()
         remote->deviceList();
     } else {
         sDebug() << "Attempt to connect to remote";
-        remote->connectToHost("192.168.0.37", USB2SnesWS::defaultPort);
+        remote->connectToHost(mySettings->value<Settings::RemoteHost>(), USB2SnesWS::defaultPort);
         QTimer::singleShot(100, this, [=] {
             if (remote->state() == Usb2Snes::None)
             {

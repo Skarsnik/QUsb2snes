@@ -61,7 +61,7 @@ std::ostream* stdLogStream = nullptr;
 WSServer    wsServer;
 QSettings*  globalSettings;
 
-Settings    testSettings;
+Settings*    mySettings;
 
 /*
 #include "backward.hpp"
@@ -227,6 +227,8 @@ int main(int ac, char *ag[])
     if (!QFile::exists(SQPath::logDirectoryPath()))
         QDir().mkdir(SQPath::logDirectoryPath());
     //std::filebuf crashFile;
+    mySettings = new Settings();
+    mySettings->setValue<Settings::RemoteHost>("192.168.0.27");
 #ifndef Q_OS_WIN
     globalSettings = new QSettings("nyo.fr", "QUsb2Snes");
 #else
@@ -318,10 +320,5 @@ int main(int ac, char *ag[])
    });
    QTimer::singleShot(100, &startServer);
 #endif
-    qDebug() << std::is_convertible<const char*, std::string>::value;
-    qDebug() << std::is_convertible<const char*, QString>::value;
-    testSettings.setValue<Settings::RemoteHost>("PcxikoNyo");
-    qDebug() << "Settings" << testSettings.value<Settings::RemoteHost>();
-    //return 1;
     return app.exec();
 }

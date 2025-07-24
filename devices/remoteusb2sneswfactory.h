@@ -29,9 +29,9 @@ private:
     DeviceFactoryStatus  devFacStatus;
     void        checkFailed(Error::DeviceFactoryError err);
     void        checkStatus();
-    QUrl        remoteUrl;
     void        createRemote();
     QStringList deviceList;
+    QUrl        remoteUrl();
 
 };
 

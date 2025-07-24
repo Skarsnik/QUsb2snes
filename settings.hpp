@@ -24,7 +24,11 @@ private:
     };
 
 public:
-    explicit Settings(QObject *parent = nullptr) : QSettings("Test.ini", QSettings::IniFormat) {};
+#ifndef Q_OS_WIN
+    explicit Settings(QObject *parent = nullptr) : QSettings("nyo.fr", "QUsb2Snes") {};
+#else
+    explicit Settings(QObject *parent = nullptr) : QSettings("config.ini", QSettings::IniFormat) {};
+#endif
     ~Settings() {};
     template<SettingsV key> auto value()
     {
