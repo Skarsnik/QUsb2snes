@@ -228,7 +228,7 @@ int main(int ac, char *ag[])
         QDir().mkdir(SQPath::logDirectoryPath());
     //std::filebuf crashFile;
     mySettings = new Settings();
-    mySettings->setValue<Settings::RemoteHost>("192.168.0.27");
+    //mySettings->setValue<Settings::RemoteHost>("192.168.0.37");
 #ifndef Q_OS_WIN
     globalSettings = new QSettings("nyo.fr", "QUsb2Snes");
 #else

@@ -48,11 +48,13 @@ Q_LOGGING_CATEGORY(log_appUi, "APPUI")
 #include "appui.h"
 #include "wsserver.h"
 #include "sqpath.h"
+#include "settings.hpp"
 
 
 static const  QString       applicationJsonFileName = "qusb2snesapp.json";
 extern QSettings*           globalSettings;
 extern WSServer             wsServer;
+extern Settings*            mySettings;
 
 
 AppUi::AppUi(QObject *parent) : QObject(parent)
@@ -154,7 +156,10 @@ void AppUi::init()
             wsServer.addTrusted(ori);
         }
     }
-    addRemoteFactory();
+    if (mySettings->value<Settings::RemoteHost>().isEmpty() == false)
+    {
+        addRemoteFactory();
+    }
     checkForApplications();
     connect(qApp, &QCoreApplication::aboutToQuit, this, [=]() {
       sysTray->hide();
