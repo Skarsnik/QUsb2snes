@@ -111,7 +111,8 @@ HEADERS += core/adevice.h \
           localstorage.h \
           core/usb2snes.h \
 	  sqpath.h \
-          core/wsserver.h
+          core/wsserver.h \
+          settings.hpp
 
 macx: {
         message("MAC OS BUILD")
