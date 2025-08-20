@@ -108,7 +108,7 @@ HEADERS += core/adevice.h \
           devices/sd2snesdevice.h \
           devices/snesclassic.h \
           client/usb2snesclient.h \
-          localstorage.h \
+          core/localstorage.h \
           core/usb2snes.h \
 	  sqpath.h \
           core/wsserver.h \
