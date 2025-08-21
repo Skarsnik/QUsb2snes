@@ -610,6 +610,11 @@ QList<ADevice::FileInfos> SD2SnesDevice::parseLSCommand(QByteArray& dataI)
                 cpt++;
         }
         QString name;
+        if (type == 0x02)
+        {
+            sDebug() << "Type 2 " << cpt << QString::number(data.at(cpt), 16);
+            type = static_cast<unsigned char>(data.at(cpt));
+        }
         cpt++;
         while (data.at(cpt) != 0)
         {
