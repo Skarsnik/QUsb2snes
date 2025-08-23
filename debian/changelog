@@ -1,3 +1,10 @@
+qusb2snes (0.7.35-1) unstable; urgency=medium
+
+  * Old port (8080) is now disabled by default
+  * Small fix for file listing from a sd2snes/fxpak pro
+
+ -- Sylvain Colinet <scolinet@gmail.com>  Sat, 23 Aug 2025 16:54:08 +0200
+
 qusb2snes (0.7.33-1) unstable; urgency=medium
 
   * Small bug fixes with nwa and devicelist requests
