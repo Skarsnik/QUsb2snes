@@ -161,7 +161,7 @@ void    AppUi::DLManagerRequestFinished(QNetworkReply* reply)
 void AppUi::updated(QString fromVersion)
 {
     QMessageBox::about(nullptr, tr("QUsb2Snes updated succesfully"),
-                       QString(tr("QUsb2Snes successfully updated from %1 to version %2")).arg(fromVersion).arg(qApp->applicationVersion()));
+                       QString(tr("QUsb2Snes successfully updated to version %2")).arg(fromVersion).arg(qApp->applicationVersion()));
     if (false == globalSettings->contains("telemetrydatahandled"))
     {
         QStringList devices;
