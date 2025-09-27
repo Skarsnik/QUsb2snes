@@ -27,7 +27,7 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTimer>
-#include "../rommapping/rommapping.h"
+#include "utils/rommapping/rommapping.h"
 
 
 class LuaBridgeDevice : public ADevice

@@ -30,6 +30,10 @@
 #include "adevice.h"
 #include "devicefactory.h"
 #include "devices/remoteusb2sneswfactory.h"
+#include "aclient.h"
+#include "websocketprovider.h"
+
+using namespace Core;
 
 Q_DECLARE_LOGGING_CATEGORY(log_wsserver)
 
@@ -42,71 +46,8 @@ class WSServer : public QObject
 {
     Q_OBJECT
 public:
-    enum ClientCommandState {
-        NOCOMMAND,
-        WAITINGREPLY,
-        WAITINGBDATAREPLY
-    };
-    Q_ENUM(ClientCommandState)
-
-    enum ErrorType {
-        CommandError,
-        ProtocolError,
-        DeviceError,
-    };
-    Q_ENUM(ErrorType)
-
-    enum class RequestState {
-        NEW,
-        SENT,
-        WAITINGREPLY,
-        WAITINGBDATAREPLY,
-        DONE,
-        CANCELLED
-    };
-    Q_ENUM(RequestState)
-private:
-
-    struct MRequest {
-        MRequest() {
-            id = gId++;
-            wasPending = false;
-        }
-        quint64             id;
-        QWebSocket*         owner;
-        QTime               timeCreated;
-        USB2SnesWS::opcode  opcode;
-        SD2Snes::space      space;
-        QStringList         arguments;
-        QStringList         flags;
-        RequestState        state;
-        bool                wasPending;
-        friend QDebug              operator<<(QDebug debug, const MRequest& req);
-    private:
-        static quint64      gId;
-    };
-
-    friend QDebug              operator<<(QDebug debug, const WSServer::MRequest& req);
-    struct WSInfos {
-        QString                 name;
-        bool                    attached;
-        ADevice*                attachedTo;
-        ClientCommandState      commandState;
-        unsigned int            currentPutSize;
-        unsigned int            expectedDataSize;
-        //QList<unsigned int>     pendingPutSizes;
-        //QList<QByteArray>       pendingPutDatas;
-        QByteArray              recvData;
-        QByteArray              ipsData;
-        unsigned int            ipsSize;
-        unsigned int            byteReceived;
-        bool                    pendingAttach;
-        bool                    legacy;
-        bool                    attachedToRemote;
-    };
-
     struct DeviceInfos {
-        QWebSocket*         currentWS;
+        AClient*         currentClient;
         USB2SnesWS::opcode  currentCommand;
     };
 
@@ -142,7 +83,6 @@ public:
     QStringList getAllClientsName();
 
 signals:
-    void    error();
     void    untrustedConnection(QString origin);
     void    listenFailed(QString err);
     void    newDeviceFactoryStatus(DeviceFactory::DeviceFactoryStatus status);
@@ -151,13 +91,14 @@ signals:
 public slots:
 
 private slots:
-    void    onNewConnection();
-    void    onWSError(QWebSocketProtocol::CloseCode code);
+    void    onNewWsClient(AClient* client);
+    void    onNewClient(AClient *client);
+    void    onNewRequest(MRequest* req);
+
     void    onWSClosed();
-    void    onTextMessageReceived(const QString& message);
     void    onBinaryMessageReceived(const QByteArray& data);
     void    onClientDisconnected();
-    void    onClientError(QAbstractSocket::SocketError);
+    void    onClientError();
     void    onDeviceCommandFinished();
     void    onDeviceProtocolError();
     void    onDeviceClosed();
@@ -172,22 +113,23 @@ private:
     QMetaEnum                           spaceMetaEnum;
     QMetaEnum                           flagsMetaEnum;
     QMetaEnum                           errTypeMetaEnum;
-    QMap<quint16, QWebSocketServer*>    wsServers;
-    QMap<QWebSocket*, WSInfos>          wsInfos;
+    QMap<quint16, WebSocketProvider*>   wsServers;
     QList<ADevice*>                     devices; // Mostly used to keep tracks of signal/slots connection
     QList<DeviceFactory*>               deviceFactories;
+    QList<AClient*>                     clients;
     QMap<ADevice*, DeviceFactory*>      mapDevFact;
     QMap<ADevice*, DeviceInfos>         devicesInfos;
     QMap<ADevice*, MRequest*>           currentRequests;
     QString                             m_errorString;
     ErrorType                           m_errorType;
     QStringList                         trustedOrigin;
+
     RemoteUsb2SnesWFactory*             remoteFactory;
 
     // Used for the async devicelist stuff
     unsigned    int                     numberOfAsyncFactory;
     unsigned    int                     pendingDeviceListQuery;
-    QList<QWebSocket*>                  pendingDeviceListWebsocket;
+    QList<AClient*>                     pendingDeviceListClients;
     QList<MRequest>                     pendingDeviceListRequests;
     QStringList                         deviceList;
 
@@ -197,9 +139,8 @@ private:
     int                                 factoryStatusDoneCount;
 
     void        setError(const ErrorType type, const QString reason);
-    MRequest*   requestFromJSON(const QString& str);
-    void        clientError(QWebSocket* ws);
-    void        cleanUpSocket(QWebSocket* ws);
+    //MRequest*   requestFromJSON(const QString& str);
+    void        cleanUpClient(AClient* client);
     bool        isValidUnAttached(const USB2SnesWS::opcode opcode);
     void        executeRequest(MRequest* req);
     void        executeServerRequest(MRequest *req);
@@ -210,10 +151,10 @@ private:
     QStringList getDevicesList();
     void        cmdAttach(MRequest* req);
     void        processIpsData(QWebSocket* ws);
-    void        sendReply(QWebSocket* ws, const QStringList& args);
-    void        sendReply(QWebSocket* ws, QString args);
-    void        sendReplyV2(QWebSocket *ws, QString args);
-    void        setRemoteConnection(QWebSocket* ws, WSInfos& infos, ADevice* device);
+    void        processIpsData(AClient* client);
+    void        sendReply(AClient* client, const QStringList& args);
+    void        sendReply(AClient* client, QString args);
+    void        setRemoteConnection(QWebSocket* ws, AClient* infos, ADevice* device);
 
 
 

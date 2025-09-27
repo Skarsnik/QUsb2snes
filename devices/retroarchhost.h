@@ -28,7 +28,7 @@
 #include <QUdpSocket>
 #include <QVersionNumber>
 #include <functional>
-#include "../rommapping/rominfo.h"
+#include "utils/rommapping/rommapping.h"
 
 class RetroArchHost : public QObject
 {
