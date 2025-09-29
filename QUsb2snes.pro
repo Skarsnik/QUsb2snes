@@ -63,9 +63,15 @@ INCLUDEPATH += core/
 
 SOURCES += core/adevice.cpp \
           core/devicefactory.cpp \
+          core/localstorage.cpp \
+          core/wsserver.cpp \
+          core/wsservercommands.cpp \
+          core/websocketprovider.cpp \
+          core/websocketclient.cpp \
+          devices/sd2snesdevice.cpp \
+          devices/snesclassic.cpp \
           devices/sd2snesfactory.cpp \
           devices/snesclassicfactory.cpp \
-          ipsparse.cpp \
           devices/deviceerror.cpp \
           devices/luabridge.cpp \
           devices/luabridgedevice.cpp \
@@ -77,41 +83,40 @@ SOURCES += core/adevice.cpp \
           devices/remoteusb2sneswfactory.cpp \
           devices/remoteusb2sneswdevice.cpp \
           main.cpp \
-          rommapping/mapping_hirom.c \
-          rommapping/mapping_lorom.c \
-          rommapping/rommapping.c \
-          rommapping/rominfo.c \
-          devices/sd2snesdevice.cpp \
-          devices/snesclassic.cpp \
-          core/localstorage.cpp \
-          core/wsserver.cpp \
-          core/wsservercommands.cpp \
-          client/usb2snesclient.cpp \
+          utils/rommapping/mapping_hirom.c \
+          utils/rommapping/mapping_lorom.c \
+          utils/rommapping/rommapping.c \
+          utils/rommapping/rominfo.c \
+          utils/ipsparse.cpp \
+          client/usb2snesclient.cpp
 
-HEADERS += core/adevice.h \
+HEADERS +=core/adevice.h \
+          core/localstorage.h \
+          core/usb2snes.h \
           core/devicefactory.h \
+          core/aclient.h \
+          core/websocketclient.h \
+          core/websocketprovider.h \
+          core/wsserver.h \
           devices/deviceerror.h \
           devices/sd2snesfactory.h \
           devices/snesclassicfactory.h \
           devices/retroarchfactory.h \
           devices/remoteusb2sneswfactory.h \
           devices/remoteusb2sneswdevice.h \
-          ipsparse.h \
           devices/luabridge.h \
           devices/luabridgedevice.h \
           devices/retroarchdevice.h \
           devices/retroarchhost.h \
           devices/emunetworkaccessfactory.h \
           devices/emunetworkaccessdevice.h \
-          rommapping/rommapping.h \
-          rommapping/rominfo.h \
           devices/sd2snesdevice.h \
           devices/snesclassic.h \
+          utils/ipsparse.h \
+          utils/rommapping/rommapping.h \
+          utils/rommapping/rominfo.h \
           client/usb2snesclient.h \
-          core/localstorage.h \
-          core/usb2snes.h \
 	  sqpath.h \
-          core/wsserver.h \
           settings.hpp
 
 macx: {
