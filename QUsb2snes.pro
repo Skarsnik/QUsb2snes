@@ -95,6 +95,7 @@ HEADERS +=core/adevice.h \
           core/usb2snes.h \
           core/devicefactory.h \
           core/aclient.h \
+          core/aclientprovider.h \
           core/websocketclient.h \
           core/websocketprovider.h \
           core/wsserver.h \
