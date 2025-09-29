@@ -329,6 +329,7 @@ void WSServer::onNewRequest(MRequest* req)
                 (isFileCommand(req->opcode) && !dev->hasFileCommands()))
             {
                 client->sendError(ErrorType::DeviceError, QString("The device does not support the command %1").arg(cmdMetaEnum.valueToKey(static_cast<int>(req->opcode))));
+                return ;
             }
             currentRequests[dev] = req;
             devicesInfos[dev].currentCommand = req->opcode;
@@ -338,13 +339,10 @@ void WSServer::onNewRequest(MRequest* req)
             sDebug() << client->attachedTo->name() << "Adding request in queue " << *req << "(" << pendingRequests[client->attachedTo].size() << ")";
             addToPendingRequest(client->attachedTo, req);
         }
-
     }
     if (isValidUnAttached(req->opcode))
         executeServerRequest(req);
     return ;
-LError:
-    clientError(client); //FIXME
 }
 
 void    WSServer::addToPendingRequest(ADevice* device, MRequest *req)
@@ -372,8 +370,7 @@ void WSServer::onBinaryMessageReceived(const QByteArray& data)
     sDebug() << client->name << "Received binary data" << data.size() << "Expected size: " << client->expectedDataSize;
     if (client->commandState != AClient::ClientCommandState::WAITINGBDATAREPLY && client->expectedDataSize == 0)
     {
-        setError(ErrorType::ProtocolError, "Sending binary data when nothing waiting for it");
-        clientError(client);
+        client->sendError(ErrorType::ProtocolError, "Sending binary data when nothing waiting for it");
         return;
     }
     // IPS stuff, please don't queue IPS data ~~
@@ -414,8 +411,7 @@ void WSServer::onBinaryMessageReceived(const QByteArray& data)
             dev->writeData(data);
         } else { // There is too much data
             dev->writeData(data.left(client->currentPutSize));
-            setError(ErrorType::ProtocolError, "Sending too much binary data");
-            clientError(client);
+            client->sendError(ErrorType::ProtocolError, "Sending too much binary data");
         }
         return ;
     }
@@ -555,7 +551,7 @@ void    WSServer::cleanUpDevice(ADevice* device)
     }
     for (AClient* client : toDiscard)
     {
-        client->sendError(Core::ErrorType::DeviceError, "Device closed");
+        client->sendError(m_errorType, m_errorString);
     }
     if (devInfo.currentClient != nullptr)
         devInfo.currentClient = nullptr;

@@ -47,8 +47,7 @@ bool    WSServer::isControlCommand(USB2SnesWS::opcode opcode)
 
 #define CMD_TAKE_ONE_ARG(cmd) if (req->arguments.size() != 1) \
 { \
-    setError(ErrorType::CommandError, QString("%1 command take one argument").arg(cmd)); \
-    clientError(client); \
+    client->sendError(ErrorType::CommandError, QString("%1 command take one argument").arg(cmd)); \
     return ; \
 }
 
@@ -169,8 +168,7 @@ void    WSServer::executeRequest(MRequest *req)
     case USB2SnesWS::PutFile : {
         if (req->arguments.size() != 2)
         {
-            setError(ErrorType::CommandError, "PutFile command take 2 arguments (file1, SizeInHex)");
-            clientError(client);
+            client->sendError(ErrorType::CommandError, "PutFile command take 2 arguments (file1, SizeInHex)");
             return ;
         }
         bool ok;
@@ -183,8 +181,7 @@ void    WSServer::executeRequest(MRequest *req)
     case USB2SnesWS::Rename : {
         if (req->arguments.size() != 2)
         {
-            setError(ErrorType::CommandError, "Rename command take 2 arguments (file1, file2)");
-            clientError(client);
+            client->sendError(ErrorType::CommandError, "Rename command take 2 arguments (file1, file2)");
             return ;
         }
         device->fileCommand(SD2Snes::opcode::MV, QVector<QByteArray>() << req->arguments.at(0).toLatin1()
@@ -211,8 +208,7 @@ void    WSServer::executeRequest(MRequest *req)
     case USB2SnesWS::GetAddress : {
         if (req->arguments.size() < 2)
         {
-            setError(ErrorType::CommandError, "GetAddress commands take at least 2 arguments (AddressInHex, SizeInHex)");
-            clientError(client);
+            client->sendError(ErrorType::CommandError, "GetAddress commands take at least 2 arguments (AddressInHex, SizeInHex)");
             return ;
         }
         connect(device, &ADevice::getDataReceived, this, &WSServer::onDeviceGetDataReceived, Qt::UniqueConnection);
@@ -222,8 +218,7 @@ void    WSServer::executeRequest(MRequest *req)
         {
             if (req->arguments.at(1).toUInt(&ok, 16) == 0)
             {
-                setError(ErrorType::CommandError, "GetAddress - trying to read 0 byte");
-                clientError(client);
+                client->sendError(ErrorType::CommandError, "GetAddress - trying to read 0 byte");
                 return ;
             }
             device->getAddrCommand(req->space, req->arguments.at(0).toUInt(&ok, 16), req->arguments.at(1).toUInt(&ok, 16));
@@ -239,8 +234,7 @@ void    WSServer::executeRequest(MRequest *req)
                 unsigned usize = req->arguments.at(i + 1).toUInt(&ok, 16);
                 if (usize == 0)
                 {
-                    setError(ErrorType::CommandError, "GetAddress - trying to read 0 byte");
-                    clientError(client);
+                    client->sendError(ErrorType::CommandError, "GetAddress - trying to read 0 byte");
                     return ;
                 }
                 if (usize > 255)
@@ -249,8 +243,7 @@ void    WSServer::executeRequest(MRequest *req)
                     {
                         split = true;
                     } else {
-                        setError(ErrorType::CommandError, "GetAddress - VGet with a size > 255");
-                        clientError(client);
+                        client->sendError(ErrorType::CommandError, "GetAddress - VGet with a size > 255");
                         return ;
                     }
                 }
@@ -288,8 +281,7 @@ void    WSServer::executeRequest(MRequest *req)
     case USB2SnesWS::PutAddress : {
         if (req->arguments.size() < 2)
         {
-            setError(ErrorType::CommandError, "PutAddress command take at least 2 arguments (AddressInHex, SizeInHex)");
-            clientError(client);
+            client->sendError(ErrorType::CommandError, "PutAddress command take at least 2 arguments (AddressInHex, SizeInHex)");
             return ;
         }
         bool ok;
@@ -302,8 +294,7 @@ void    WSServer::executeRequest(MRequest *req)
             putSize = req->arguments.at(1).toUInt(&ok, 16);
             if (putSize == 0)
             {
-                setError(ErrorType::CommandError, "PutAddress - trying to write 0 byte");
-                clientError(client);
+                client->sendError(ErrorType::CommandError, "PutAddress - trying to write 0 byte");
                 return ;
             }
             if (req->flags.isEmpty())
@@ -322,8 +313,7 @@ void    WSServer::executeRequest(MRequest *req)
             {
                 if (req->arguments.at(i + 1).toUInt(&ok, 16) == 0)
                 {
-                    setError(ErrorType::CommandError, "PutAddress - trying to write 0 byte");
-                    clientError(client);
+                    client->sendError(ErrorType::CommandError, "PutAddress - trying to write 0 byte");
                     return ;
                 }
                 vputArgs.append(QPair<unsigned int, quint8>(req->arguments.at(i).toUInt(&ok, 16), req->arguments.at(i + 1).toUShort(&ok, 16)));
@@ -379,8 +369,7 @@ void    WSServer::executeRequest(MRequest *req)
     case USB2SnesWS::PutIPS : {
         if (req->arguments.size() < 2)
         {
-            setError(ErrorType::CommandError, "PutIPS command take at least 2 arguments (Name, SizeInHex)");
-            clientError(client);
+            client->sendError(ErrorType::CommandError, "PutIPS command take at least 2 arguments (Name, SizeInHex)");
             return ;
         }
         bool    ok;
@@ -391,8 +380,8 @@ void    WSServer::executeRequest(MRequest *req)
     }
     default:
     {
-        setError(ErrorType::ProtocolError, "Invalid command or non implemented");
-        clientError(client);
+        client->sendError(ErrorType::ProtocolError, "Invalid command or non implemented");
+        return ;
     }
     }
 
@@ -607,8 +596,7 @@ void WSServer::cmdAttach(MRequest *req)
         }
         if (devFact->attachError().isEmpty() == false)
         {
-            setError(ErrorType::CommandError, "Attach Error with " + deviceToAttach + " - " + devFact->attachError());
-            clientError(req->owner);
+            req->owner->sendError(ErrorType::CommandError, "Attach Error with " + deviceToAttach + " - " + devFact->attachError());
             return ;
         }
     }
@@ -621,8 +609,7 @@ void WSServer::cmdAttach(MRequest *req)
             sDebug() << "Trying to open device";
             if (devGet->open() == false)
             {
-                setError(ErrorType::CommandError, "Attach: Can't open the device on " + deviceToAttach);
-                clientError(req->owner);
+                req->owner->sendError(ErrorType::CommandError, "Attach: Can't open the device on " + deviceToAttach);
                 return;
             }
         }
@@ -636,8 +623,7 @@ void WSServer::cmdAttach(MRequest *req)
             processCommandQueue(devGet);
         return ;
     } else {
-        setError(ErrorType::CommandError, "Trying to Attach to an unknow device");
-        clientError(req->owner);
+        req->owner->sendError(ErrorType::CommandError, "Trying to Attach to an unknow device");
         return ;
     }
 }
