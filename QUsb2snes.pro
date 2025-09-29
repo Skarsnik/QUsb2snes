@@ -99,6 +99,7 @@ HEADERS +=core/adevice.h \
           core/websocketclient.h \
           core/websocketprovider.h \
           core/wsserver.h \
+          core/types.h \
           devices/deviceerror.h \
           devices/sd2snesfactory.h \
           devices/snesclassicfactory.h \
