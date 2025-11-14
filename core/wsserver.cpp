@@ -95,7 +95,7 @@ void WSServer::onNewWsClient(AClient* client)
 void    WSServer::onNewClient(AClient* client)
 {
     connect(client, &AClient::newRequest, this, &WSServer::onNewRequest);
-    connect(client, &AClient::binaryData, this, &WSServer::onBinaryMessageReceived);
+    connect(client, &AClient::binaryData, this, &WSServer::onBinaryDataReceivedFromClient);
     client->attached = false;
     client->attachedTo = nullptr;
     client->commandState = AClient::ClientCommandState::NOCOMMAND;
@@ -363,7 +363,7 @@ void    WSServer::addToPendingRequest(ADevice* device, MRequest *req)
     }
 }
 
-void WSServer::onBinaryMessageReceived(const QByteArray& data)
+void WSServer::onBinaryDataReceivedFromClient(const QByteArray& data)
 {
     AClient* client = qobject_cast<AClient*>(sender());
     ADevice* dev = client->attachedTo;

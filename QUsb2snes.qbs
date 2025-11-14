@@ -40,7 +40,7 @@ Project {
 
             "utils/rommapping/mapping_hirom.c",
             "utils/rommapping/mapping_lorom.c",
-            "utils/rommpaping/rommapping.h",
+
             "utils/rommapping/rommapping.c",
             "utils/rommapping/rominfo.h",
             "utils/rommapping/rominfo.c",

@@ -55,6 +55,7 @@ bool    WSServer::isControlCommand(USB2SnesWS::opcode opcode)
 void WSServer::executeServerRequest(MRequest* req)
 {
     AClient*    client = req->owner;
+    client->currentOpcode = req->opcode;
     sInfo() << "Executing server request : " << *req << "for" << client->name;
     switch (req->opcode)
     {
