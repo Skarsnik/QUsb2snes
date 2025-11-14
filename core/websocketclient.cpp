@@ -23,6 +23,16 @@ WebSocketClient::WebSocketClient(QWebSocket *socket, AClientProvider* parent = n
     connect(m_socket, QOverload<QAbstractSocket::SocketError>::of(&QWebSocket::error), this, &WebSocketClient::onWSError);
 }
 
+void WebSocketClient::bindToRemote(RemoteUsb2snesWDevice* remote)
+{
+    disconnect(m_socket, &QWebSocket::binaryMessageReceived, this, &WebSocketClient::onBinaryMessageReceived);
+    disconnect(m_socket, &QWebSocket::textMessageReceived, this, &WebSocketClient::onTextMessageReceived);
+    connect(m_socket, &QWebSocket::binaryMessageReceived, remote, &RemoteUsb2snesWDevice::sendBinary);
+    connect(m_socket, &QWebSocket::textMessageReceived, remote, &RemoteUsb2snesWDevice::sendText);
+    connect(remote, &RemoteUsb2snesWDevice::textMessageReceived, m_socket, &QWebSocket::sendTextMessage);
+    connect(remote, &RemoteUsb2snesWDevice::binaryMessageReceived, m_socket, &QWebSocket::sendBinaryMessage);
+}
+
 void WebSocketClient::close()
 {
     m_socket->close();

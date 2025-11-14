@@ -13,6 +13,7 @@ public:
     void     sendText(const QString& message);
     void     sendBinary(const QByteArray& data);
     void     setClientName(const QString& name);
+    void     attach();
 
 
     // ADevice interface
@@ -52,7 +53,6 @@ private:
     QWebSocket* websocket;
     QString     remoteDeviceName;
     QString     clientName;
-    void     attach();
 };
 
 #endif // REMOTEUSB2SNESWDEVICE_H

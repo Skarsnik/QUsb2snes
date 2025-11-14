@@ -106,6 +106,10 @@ void RemoteUsb2snesWDevice::attach()
 }
 
 
+QString RemoteUsb2snesWDevice::name() const
+{
+    return "Usb2Snes remote";
+}
 
 
 
@@ -163,11 +167,6 @@ void RemoteUsb2snesWDevice::infoCommand()
 void RemoteUsb2snesWDevice::writeData(QByteArray data)
 {
 
-}
-
-QString RemoteUsb2snesWDevice::name() const
-{
-    return "Usb2Snes remote";
 }
 
 bool RemoteUsb2snesWDevice::hasFileCommands()

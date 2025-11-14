@@ -30,6 +30,7 @@
 #include "adevice.h"
 #include "devicefactory.h"
 #include "devices/remoteusb2sneswfactory.h"
+#include "websocketclient.h"
 #include "aclient.h"
 #include "websocketprovider.h"
 
@@ -96,7 +97,7 @@ private slots:
     void    onNewRequest(MRequest* req);
 
     void    onWSClosed();
-    void    onBinaryMessageReceived(const QByteArray& data);
+    void    onBinaryDataReceivedFromClient(const QByteArray& data);
     void    onClientDisconnected();
     void    onClientError();
     void    onDeviceCommandFinished();
@@ -154,7 +155,7 @@ private:
     void        processIpsData(AClient* client);
     void        sendReply(AClient* client, const QStringList& args);
     void        sendReply(AClient* client, QString args);
-    void        setRemoteConnection(QWebSocket* ws, AClient* infos, ADevice* device);
+    void        setRemoteConnection(WebSocketClient *client, ADevice* device);
 
 
 

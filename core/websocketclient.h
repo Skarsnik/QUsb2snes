@@ -2,6 +2,7 @@
 #define WEBSOCKETCLIENT_H
 
 #include "aclient.h"
+#include "devices/remoteusb2sneswdevice.h"
 #include <QWebSocket>
 
 class WebSocketClient : public AClient
@@ -9,6 +10,7 @@ class WebSocketClient : public AClient
     Q_OBJECT
 public:
     WebSocketClient(QWebSocket* socket, AClientProvider* parent);
+    void    bindToRemote(RemoteUsb2snesWDevice *remote);
 
 public:
     void close();
@@ -16,7 +18,8 @@ public:
     void close(QWebSocketProtocol::CloseCode code, QString str);
 
 private:
-    QWebSocket  *m_socket;
+    QWebSocket* m_socket;
+    QWebSocket* m_remoteSocket;
 
 private slots:
     void    onWSError(QAbstractSocket::SocketError error);

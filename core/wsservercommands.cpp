@@ -588,7 +588,7 @@ void WSServer::cmdAttach(MRequest *req)
             if (qobject_cast<RemoteUsb2SnesWFactory*>(devFact) != nullptr)
             {
                 req->owner->attachedToRemote = true;
-                setRemoteConnection(nullptr, req->owner, devGet);
+                setRemoteConnection(req->owner, devGet);
                 // Since we don't call open, there should be not pending command happening.
                 req->owner->pendingAttach = false;
                 return;
@@ -632,24 +632,12 @@ void WSServer::cmdAttach(MRequest *req)
 /* This set the connection to the remote, the main code stop caring about the
  * the communication at this point, only the device will log trafic.
  */
-void    WSServer::setRemoteConnection(QWebSocket* ws, AClient* infos, ADevice* device)
+void    WSServer::setRemoteConnection(WebSocketClient* client, ADevice* device)
 {
     sDebug() << "Attaching to remote server";
-    infos->attachedTo = device;
+    client->attachedTo = device;
     RemoteUsb2snesWDevice* remoteDevice = qobject_cast<RemoteUsb2snesWDevice*>(device);
-    remoteDevice->setClientName(infos->name);
-    connect(remoteDevice, &RemoteUsb2snesWDevice::textMessageReceived, ws, [=](const QString& message)
-    {
-        ws->sendTextMessage(message);
-    });
-    connect(remoteDevice, &RemoteUsb2snesWDevice::binaryMessageReceived, ws, [=](const QByteArray& message)
-    {
-        ws->sendBinaryMessage(message);
-    });
-    //disconnect(ws, &QWebSocket::textMessageReceived, this, &WSServer::onTextMessageReceived);
-    disconnect(ws, &QWebSocket::binaryMessageReceived, this, &WSServer::onBinaryMessageReceived);
-    connect(ws, &QWebSocket::textMessageReceived, remoteDevice, &RemoteUsb2snesWDevice::sendText);
-    connect(ws, &QWebSocket::binaryMessageReceived, remoteDevice, &RemoteUsb2snesWDevice::sendBinary);
+    client->bindToRemote(remoteDevice);
 }
 
 void    WSServer::processIpsData(AClient *client)
