@@ -1,10 +1,5 @@
 name: Archlinux package
-# on:
-#   workflow_call:
-#     inputs:
-#       package_name:
-#         required: true
-#         type: string
+
 on:
   push:
     branches:
@@ -30,7 +25,7 @@ jobs:
 
       - name: Define target repository
         run: |
-          if [[ ${{ github.ref_type }} == 'master' ]]; then
+          if [[ ${{ github.ref_name }} == 'master' ]]; then
             echo "REPO_NAME=${{ env.package_name }}-git" >> $GITHUB_ENV
           else
             echo "REPO_NAME=${{ env.package_name }}" >> $GITHUB_ENV
@@ -38,7 +33,7 @@ jobs:
 
       - name: Clone external repository
         run: |
-          git clone ssh://aur@aur.archlinux.org/${{ env.REPO_NAME }}}.git
+          git clone ssh://aur@aur.archlinux.org/${{ env.REPO_NAME }}.git
 
       - name: Update PKGBUILD and .SRCINFO
         run: |
