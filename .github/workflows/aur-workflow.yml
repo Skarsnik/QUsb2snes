@@ -30,7 +30,7 @@ jobs:
 
       - name: Define target repository
         run: |
-          if [[ {{ github.ref_type }} == 'master' ]]; then
+          if [[ ${{ github.ref_type }} == 'master' ]]; then
             echo "REPO_NAME=${{ env.package_name }}-git" >> $GITHUB_ENV
           else
             echo "REPO_NAME=${{ env.package_name }}" >> $GITHUB_ENV
