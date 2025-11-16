@@ -1,0 +1,77 @@
+name: Archlinux package
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "*"
+  pull_request:
+    branches: [master]
+
+env:
+  package_name: qusb2snes
+
+jobs:
+  update_package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH key for external repository
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.AUR_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
+
+      - name: Define target repository
+        run: |
+          if [[ ${{ github.ref_name }} == 'master' ]]; then
+            echo "REPO_NAME=${{ env.package_name }}-git" >> $GITHUB_ENV
+          else
+            echo "REPO_NAME=${{ env.package_name }}" >> $GITHUB_ENV
+          fi
+
+      - name: Clone external repository
+        run: |
+          git clone ssh://aur@aur.archlinux.org/${{ env.REPO_NAME }}.git
+
+      - name: Update PKGBUILD and .SRCINFO
+        run: |
+          PKGBUILD_PATH="PKGBUILD"
+          sed -E -i.bak "s/^([[:space:]]*)(pkgver)[[:space:]]*=[[:space:]]*.*/\1\2=${{github.ref_name}}/" $PKGBUILD_PATH
+          if grep -q "^[[:space:]]*pkgver=${{github.ref_name}}" "$PKGBUILD_PATH"; then
+            rm -f "${PKGBUILD_PATH}.bak"
+            echo "Updated $PKGBUILD_PATH: pkgver=${{github.ref_name}}"
+            cat "$PKGBUILD_PATH"
+          else
+            echo "Error: failed to update pkgver in $PKGBUILD_PATH" >&2
+            echo "Backup saved as ${PKGBUILD_PATH}.bak" >&2
+            exit 3
+          fi
+        working-directory: ${{ env.REPO_NAME }}
+
+      - name: Update .SRCINFO
+        run: |
+          SRCINFO_PATH=".SRCINFO"
+          sed -E -i.bak "s/^([[:space:]]*)(pkgver)[[:space:]]*=[[:space:]]*.*/\1\2=${{github.ref_name}}/" "$SRCINFO_PATH"
+          if grep -q "^[[:space:]]*pkgver=${{github.ref_name}}" "$SRCINFO_PATH"; then
+            rm -f "${SRCINFO_PATH}.bak"
+            echo "Updated $SRCINFO_PATH: pkgver=${{github.ref_name}}"
+            cat "$SRCINFO_PATH"
+          else
+            echo "Error: failed to update pkgver in $SRCINFO_PATH" >&2
+            echo "Backup saved as ${SRCINFO_PATH}.bak" >&2
+            exit 3
+          fi
+        working-directory: ${{ env.REPO_NAME }}
+
+      - name: Push to AUR
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
+        with:
+          pkgname: ${{ env.REPO_NAME }}
+          pkgbuild: ${{ env.REPO_NAME }}/PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update AUR package
+          ssh_keyscan_types: rsa,ecdsa,ed25519
