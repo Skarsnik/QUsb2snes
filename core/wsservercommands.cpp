@@ -588,7 +588,7 @@ void WSServer::cmdAttach(MRequest *req)
             if (qobject_cast<RemoteUsb2SnesWFactory*>(devFact) != nullptr)
             {
                 req->owner->attachedToRemote = true;
-                setRemoteConnection(req->owner, devGet);
+                setRemoteConnection(qobject_cast<WebSocketClient*>(req->owner), devGet);
                 // Since we don't call open, there should be not pending command happening.
                 req->owner->pendingAttach = false;
                 return;
@@ -637,6 +637,7 @@ void    WSServer::setRemoteConnection(WebSocketClient* client, ADevice* device)
     sDebug() << "Attaching to remote server";
     client->attachedTo = device;
     RemoteUsb2snesWDevice* remoteDevice = qobject_cast<RemoteUsb2snesWDevice*>(device);
+    remoteDevice->attach();
     client->bindToRemote(remoteDevice);
 }
 
