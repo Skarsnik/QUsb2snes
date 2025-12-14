@@ -104,6 +104,7 @@ void    WSServer::onNewClient(AClient* client)
     client->recvData.clear();
     client->expectedDataSize = 0;
     client->ipsSize = 0;
+    clients.append(client);
 }
 
 void WSServer::onWSClosed()
