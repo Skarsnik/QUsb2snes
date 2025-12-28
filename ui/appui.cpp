@@ -32,11 +32,11 @@
 #include <QProcess>
 #include <QStyle>
 #include <QTranslator>
-#include <QtNetwork>
 #include <QNetworkAccessManager>
 #include <QVBoxLayout>
 #include <QSettings>
 #include <QScreen>
+#include <QFileSystemModel>
 
 #include <ui/wizard/devicesetupwizard.h>
 
@@ -315,7 +315,6 @@ AppUi::ApplicationInfo AppUi::parseJsonAppInfo(QString fileName)
     if (job.contains("QtApp"))
         info.isQtApp = job["QtApp"].toBool();
     info.name = job["name"].toString();
-    info.folder = QFileInfo(fileName).absolutePath();
     info.description = job["description"].toString();
     if (false)
     {
@@ -330,21 +329,28 @@ AppUi::ApplicationInfo AppUi::parseJsonAppInfo(QString fileName)
         {
             if (line.startsWith("Icon"))
             {
-                info.icon = "/usr/share/";
+                info.iconPath = "/usr/share/";
             }
         }
     }
-    info.executable = job["executable"].toString();
-    info.icon = job["icon"].toString();
+    info.executablePath = job["executable"].toString();
+    if (job.contains("icon"))
+    {
+        info.iconPath = job["icon"].toString();
+    }
+
     return info;
 }
 
+QDir AppUi::sharedAppsLocation() const
+{
+    return QDir(QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation)[0] + "/usb2snes-apps/");
+}
 
 void AppUi::checkForApplications()
 {
     QDir    appsDir(SQPath::softwareDatasPath() + "/apps");
-    if (appsDir.exists() == false)
-        return ;
+    sInfo() << "Searching for applications in " << appsDir.absolutePath();
     if (appsDir.exists() == true)
     {
         foreach (QFileInfo fi, appsDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
@@ -356,59 +362,61 @@ void AppUi::checkForApplications()
             {
                 qDebug() << "Found a json description file "  + applicationJsonFileName;
                 appInfo = parseJsonAppInfo(fi.absoluteFilePath() + "/" + applicationJsonFileName);
+                appInfo.executablePath = fi.absoluteFilePath() + "/" + appInfo.executablePath;
+                appInfo.iconPath = fi.absoluteFilePath() + "/" + appInfo.iconPath;
             } else {
                 QDir dir(fi.absoluteFilePath());
                 QFileInfoList fil = dir.entryInfoList(QDir::Files | QDir::Executable);
                 if (!fil.isEmpty())
                 {
                     appInfo.name = fi.baseName();
-                    appInfo.executable = fil.first().baseName();
-                    appInfo.folder = fi.absoluteFilePath();
+                    appInfo.executablePath = fil.first().absoluteFilePath();
                     if (QFile::exists(fi.absoluteFilePath() + "/icone.png"))
-                        appInfo.icon = "icone.png";
+                        appInfo.iconPath = fi.absoluteFilePath() + "/icone.png";
                 }
             }
-            if (!appInfo.name.isEmpty())
+            if (appInfo.name.isEmpty() == false)
             {
-                regularApps[appInfo.folder] = appInfo;
+                regularApps.append(appInfo);
                 sInfo() << "Found an application" << appInfo;
             }
         }
     }
-/*#ifdef SQPROJECT_INSTALLED && SQPROJECT_UNIX_INSTALL_PREFIX
-    for (const QFileInfo fi : appsDir.entryInfoList(QDir::NoDotAndDotDot, QDir::Files))
+    sInfo() << "Searching for .json description in " << sharedAppsLocation().absolutePath();
+    for (const QFileInfo fi : sharedAppsLocation().entryInfoList(QDir::NoDotAndDotDot | QDir::Files))
     {
         if (fi.suffix() == "json")
         {
-           ApplicationInfo appInfo = parseJsonAppInfo(fi.absoluteFilePath());
-           regularApps[appInfo.name] = appInfo;
-           sInfo() << "Found an application" << appInfo;
+            ApplicationInfo appInfo = parseJsonAppInfo(fi.absoluteFilePath());
+            bool found = false;
+            for (const auto& app : regularApps)
+            {
+                if (appInfo.executablePath == app.executablePath)
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (found == false)
+            {
+                regularApps.append(appInfo);
+                sInfo() << "Found an application" << appInfo;
+            }
         }
     }
-#endif*/
-    if (regularApps.isEmpty())
-        return ;
-    appsMenu->clear();
-    appsMenu->addAction(tr("Local Applications"));
-    appsMenu->addSeparator();
-    appsMenu->setToolTipsVisible(true);
-    connect(appsMenu, SIGNAL(triggered(QAction*)), this, SLOT(onAppsMenuTriggered(QAction*)));
-    QMapIterator<QString, ApplicationInfo> it(regularApps);
-    while (it.hasNext())
+#ifdef SQPROJECT_UNIX_INSTALL
+    QDir unixShare(SQPath::softwareDatasPath());
+    sInfo() << "Searching for .json description in " << unixShare.absolutePath();
+    for (const QFileInfo fi : unixShare.entryInfoList(QDir::NoDotAndDotDot | QDir::Files))
     {
-        it.next();
-        ApplicationInfo info = it.value();
-        sDebug() << "Adding " << it.key() << " - " << info.name;
-        sDebug() << info;
-        QAction *act;
-        if (!it.value().icon.isEmpty())
-            act = appsMenu->addAction(QIcon(info.folder + "/" + info.icon), info.name);
-        else
-            act = appsMenu->addAction(info.name);
-        act->setData(it.key());
-        if (!info.description.isEmpty())
-            act->setToolTip(info.description);
+        if (fi.suffix() == "json")
+        {
+            ApplicationInfo appInfo = parseJsonAppInfo(fi.absoluteFilePath());
+            regularApps.append(appInfo);
+            sInfo() << "Found an application" << appInfo;
+        }
     }
+#endif
 }
 
 
@@ -453,7 +461,7 @@ void AppUi::onUntrustedConnection(QString origin)
 QDebug operator<<(QDebug debug, const AppUi::ApplicationInfo &req)
 {
     debug << "Name : " << req.name << " Description : " << req.description
-          << "Folder : " << req.folder << "Icon : " <<req.icon << "Exe :" << req.executable
+          << "Icon : " <<req.iconPath << "Exe :" << req.executablePath
           << "QtApp :" << req.isQtApp;
     return debug;
 }

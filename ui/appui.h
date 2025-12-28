@@ -68,15 +68,11 @@ private slots:
 
 private:
     struct ApplicationInfo {
-        bool    isQtApp;
+        bool    isQtApp = false;
         QString name;
         QString description;
-        QString icon;
-        QString folder;
-        QString executable;
-        ApplicationInfo() {
-            isQtApp = false;
-        }
+        QString iconPath;
+        QString executablePath;
         friend QDebug              operator<<(QDebug debug, const ApplicationInfo& req);
     };
 
@@ -110,7 +106,7 @@ private:
     SNESClassicFactory*             snesClassic;
     RemoteUsb2SnesWFactory*         remoteFactory = nullptr;
     EmuNetworkAccessFactory*        emuNWAccess;
-    QMap<QString, ApplicationInfo>  regularApps;
+    QList<ApplicationInfo>          regularApps;
 
     QNetworkAccessManager*          dlManager;
     QLabel*                         dlLabel;
@@ -138,7 +134,9 @@ private:
     void addRemoteFactory();
     void setLinuxDeviceMenu();
     void setMenu();
+    void createApplicationMenu();
     void setDeviceEntry(const QString str);
+    QDir sharedAppsLocation() const;
 
     QList<PopTrackerPackInfo> poptrackerScanPack();
     bool checkPopTracker();

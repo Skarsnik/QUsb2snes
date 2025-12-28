@@ -6,6 +6,7 @@
 #include <QDesktopServices>
 #include <QProcess>
 #include <QStyle>
+#include <QFileSystemModel>
 #include "appui.h"
 #include "sqpath.h"
 
@@ -30,7 +31,17 @@ void    AppUi::setMenu()
     if (checkPopTracker())
     {
         addPopTrackerMenu();
+        for (unsigned int i = 0; i < regularApps.size(); i++)
+        {
+            if (regularApps[i].name == "Poptracker")
+            {
+                regularApps.removeAt(i);
+                sDebug() << "Remove poptracker from app list";
+                break;
+            }
+        }
     }
+    createApplicationMenu();
     if (!globalSettings->value("Magic2SnesLocation").toString().isEmpty())
         handleMagic2Snes(globalSettings->value("Magic2SnesLocation").toString());
     menu->addSeparator();
@@ -144,6 +155,41 @@ void    AppUi::setMenu()
 #ifdef  Q_OS_LINUX
     setLinuxDeviceMenu();
 #endif
+}
+
+void AppUi::createApplicationMenu()
+{
+    if (regularApps.isEmpty())
+        return ;
+    appsMenu->clear();
+    appsMenu->addAction(tr("Local Applications"));
+    appsMenu->addSeparator();
+    appsMenu->setToolTipsVisible(true);
+    connect(appsMenu, SIGNAL(triggered(QAction*)), this, SLOT(onAppsMenuTriggered(QAction*)));
+    QListIterator<ApplicationInfo> it(regularApps);
+    while (it.hasNext())
+    {
+        ApplicationInfo info = it.next();
+        sDebug() << "Adding " << info.name;
+        sDebug() << info;
+        QAction *act;
+        if (info.iconPath.isEmpty() == false)
+            act = appsMenu->addAction(QIcon(info.iconPath), info.name);
+        else
+        {
+#ifdef Q_OS_WIN
+            QFileSystemModel model;
+            QString exePath = QFileInfo(info.executablePath).absoluteFilePath();
+            model.setRootPath(exePath);
+            act = appsMenu->addAction(model.fileIcon(model.index(exePath)), info.name);
+#else
+            act = appsMenu->addAction(info.name);
+#endif
+        }
+        act->setData(info.name);
+        if (!info.description.isEmpty())
+            act->setToolTip(info.description);
+    }
 }
 
 void AppUi::setLinuxDeviceMenu()
@@ -292,30 +338,35 @@ void AppUi::onAppsMenuTriggered(QAction *action)
     if (action->data().isNull())
         return ;
 
-    const ApplicationInfo& appInfo = regularApps[action->data().toString()];
+    ApplicationInfo appInfo;
+    for (const auto& app : regularApps)
+    {
+        if (app.name == action->data().toString())
+        {
+            appInfo = app;
+            break;
+        }
+    }
     QProcess proc(this);
     //proc.setWorkingDirectory(fi.path());
     QString exec;
-    QString wDir = appInfo.folder;
+    QFileInfo appFi(appInfo.executablePath);
+    QString wDir = appFi.absolutePath();
     QStringList arg;
     if (appInfo.isQtApp)
     {
         wDir = qApp->applicationDirPath();
 #ifdef Q_OS_WIN
         arg << "-platformpluginpath" << qApp->applicationDirPath() + "/platforms/";
-        if (!QFileInfo::exists(appInfo.folder + "/styles/"))
+        if (QFileInfo::exists(wDir + "/styles/") == false)
         {
-            QDir d(appInfo.folder);
+            QDir d(wDir);
             d.mkdir("styles");
-            QFile::copy(qApp->applicationDirPath() + "/styles/qwindowsvistastyle.dll", appInfo.folder + "/styles/qwindowsvistastyle.dll");
+            QFile::copy(qApp->applicationDirPath() + "/styles/qwindowsvistastyle.dll", wDir + "/styles/qwindowsvistastyle.dll");
         }
 #endif
     }
-#ifdef Q_OS_WIN
-    exec = appInfo.folder + "/" + appInfo.executable + ".exe";
-#else
-    exec = appInfo.folder + "/" + appInfo.executable;
-#endif
+    exec = appInfo.executablePath;
     bool ok = proc.startDetached(exec, arg, wDir);
     sDebug() << "Running " << exec << " in " << wDir << ok;
     if (!ok)

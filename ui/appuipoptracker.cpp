@@ -10,9 +10,16 @@ Q_LOGGING_CATEGORY(log_appPopTracker, "APPUIPopTracker")
 
 
 
-
 bool AppUi::checkPopTracker()
 {
+    for (const auto& app : regularApps)
+    {
+        if (app.name == "Poptracker")
+        {
+            popTrackerExePath = app.executablePath;
+            return true;
+        }
+    }
     popTrackerExePath = qApp->applicationDirPath() + "/poptracker/poptracker.exe";
     return QFile::exists(qApp->applicationDirPath() + "/poptracker/poptracker.exe");
 }
@@ -52,7 +59,7 @@ QList<AppUi::PopTrackerPackInfo> AppUi::poptrackerScanPack()
 {
     QList<PopTrackerPackInfo> toret;
     QProcess poptrackerProcess(this);
-    poptrackerProcess.start(qApp->applicationDirPath() + "/poptracker/poptracker.exe", QStringList() << "--list-installed");
+    poptrackerProcess.start(popTrackerExePath, QStringList() << "--list-installed");
     if (!poptrackerProcess.waitForFinished(2000))
         return toret;
 
