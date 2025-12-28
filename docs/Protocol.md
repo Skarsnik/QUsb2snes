@@ -4,9 +4,9 @@ It's better to use the USB2snes websocket protocol to access usb2snes as it allo
 
 ## Connection
 
-The server is accessible on `ws://localhost:8080`. It's a regular no encrypted websocket server.
+The server is accessible on `ws://localhost:23074` (8080 is the legacy port and should not be used). It's a regular non-encrypted WebSocket server.
 
-Request are sent as json in text messages. Data must be sent in binary messages.
+Requests are sent as json in text messages. Data must be sent in binary messages.
 
 ## Performing a Request
 
@@ -38,13 +38,13 @@ The websocket server send you back a json reply this form
 
 ## Errors
 
-If an error occur, the server will just close your connection.
+If an error occurs, the server will just close your connection.
 
 ## First commands
 
 ### Get devices list
 
-Your first command should be `DeviceList` to received the list of available device. In the case of Usb2snes original server you will only get sd2snes hardware as their port name. QUsb2Snes support more 'device' so their name is important as you cannot just list your serial device ports.
+Your first command should be `DeviceList` to receive the list of available devices. In the case of Usb2snes original server, you will only get sd2snes hardware as their port name. QUsb2Snes and SNI support more 'devices', so the name is important, as you cannot just list your serial device ports.
 
 Example
 
@@ -71,7 +71,7 @@ QUsb2snes
 
 ### Attach to the device
 
-Next command is `Attach` to associate yourself with the device you want.
+The next command is `Attach` to associate yourself with the device you want.
 
 ```json
 {
@@ -81,7 +81,7 @@ Next command is `Attach` to associate yourself with the device you want.
 }
 ```
 
-You will get no reply if the command succeeded, a failure will be the server closing the connection. 
+You will get no reply if the command succeeded; a failure will be the server closing the connection. 
 It is recommended to execute an `Info` command to make sure you are attached to the device.
 
 ## Command list
@@ -95,12 +95,12 @@ It's better to use a Name since both usb2snes and QUsb2snes can display the name
 
 ### Info
 
-This give you information on what the device is running.
+This gives you information on what the device is running.
 USB2Snes returns you the firmware version string, the version, the current running rom, and a flags list.
 QUsb2Snes replace the second version with the device type name.
 
-The current running rom is interesting since for usb2snes device `/sd2snes/menu.bin` tell you the device is not running a ROM.
-For QUsb2snes most no sd2snes devices you will mostly get garbage informations
+The current running ROM is interesting since for usb2snes device `/sd2snes/menu.bin` tells you the device is not running a ROM.
+For QUsb2snes, most no sd2snes devices you will mostly get garbage information
 
 A SD2Snes device
 
@@ -132,11 +132,11 @@ This read the first 256 bytes from the WRAM
 }
 ```
 
-The server will reply directly with binary data corresponding to what you requested. Be careful, usb2snes implementation make it send data by chunck of 1024 bytes so don't execpt the full data in one go if you request more than this value.
+The server will reply directly with binary data corresponding to what you requested. Be careful, the original usb2snes implementation makes it send data by chunks of 1024 bytes, so don't expect the full data in one go if you request more than this value.
 
 ### PutAddress [offset, size]
 
-The arguments work like GetAddress. After sending the json request as text message, send your binary data as binary message(s). Again with the original usb2snes server don't send more than 1024 bytes per binary message, send the data in chunks of 1024.
+The arguments work like GetAddress. After sending the json request as text message, send your binary data as binary message(s). Again, with the original usb2snes server, don't send more than 1024 bytes per binary message; send the data in chunks of 1024.
 
 ## Usb2snes address
 
@@ -146,7 +146,7 @@ The arguments work like GetAddress. After sending the json request as text messa
 
 ## Flags
 
-This are the flags you will get from a sd2snes device.
+These are the flags you will get from a sd2snes device.
 
 * `FEAT_DSPX` 
 * `FEAT_ST0010`
