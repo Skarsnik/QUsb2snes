@@ -137,9 +137,24 @@ Only a non gui build version takes arguments. It still uses the config file, but
 
 See [COMPILING.adoc](COMPILING.adoc).
 
-## Developers
+## Application Developers
 
-Look at the [docs/Protocol.md](docs/Protocol.md) file to have a detailed view of the commands of the websocket protocol.
+If you want to develop an application, look at the [docs/Protocol.md](docs/Protocol.md) file to have a detailed view of the commands of the websocket protocol.
+
+You can also 'register' your application by writing a JSON file in the 'shared application'/usb2snes-apps folder, IE: `C:/Users/<USER>/AppData/Local/usb2snes-apps` on Windows and `~/.local/share/usb2snes-apps` on Linux.
+
+The JSON file must look like this:
+
+```json
+{
+    "name" : "RA2Snes",
+    "description" : "Application to track RetroAchievements progress in SNES games",
+    "executable" : "C:/Users/scoli/Downloads/RA2Snes-windows-x64/RA2Snes.exe"
+    "icon" : "path to your application icon, this is not mandatory on Windows"
+    "desktoprc-file" : "If your application is installed on Linux, set its path"
+}
+```
+
 
 ## Licence
 
