@@ -258,7 +258,7 @@ int main(int ac, char *ag[])
     }
     app.setApplicationVersion(QVersionNumber::fromString(plop).toString());
 #else
-    app.setApplicationVersion("0.8");
+    app.setApplicationVersion("0.9");
 #endif
 
 #ifdef Q_OS_MACOS
