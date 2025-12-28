@@ -24,13 +24,13 @@ Installation via other means (homebrew, chocolatey, etc.) is not planned at the 
 
 ### Configuration files
 
-Logs are put in the standard path for application data.
-It should be: `$HOME/.local/share/QUsb2Snes` on Linux and `%APPDATA/QUsb2Snes` on Windows.
+Logs are put in the standard path for application data if you use an installed version.
+It should be: `$HOME/.local/share/QUsb2Snes` on Linux.
+Otherwise, it will be in the directory where the executable is located.
 
 Please note that the directory will be named after the binary file. If you create a symlink on Linux (e.g. qusb2snes.exe), the directory will change accordingly.
 
-And the settings file is into
-`$HOME/.config/skarsnik.nyo.fr/QUsb2Snes.conf`
+The settings file is located aside the executable on Windows or in `$HOME/.config/skarsnik.nyo.fr/QUsb2Snes.conf` on Linux.
 
 ### Enabling/Disabling emulators
 
@@ -45,7 +45,7 @@ retroarchdevice=true
 
 ### Serial configuration (Linux)
 
-To make your sd2snes device work, you will need to set some tty setting
+If your device does not work out of the box, you can try the following command to set some tty settings
 
 `stty -F /dev/ttyACM0 0:0:cbd:0:3:1c:7f:15:4:5:40:0:11:13:1a:0:12:f:17:16:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0`
 
@@ -56,41 +56,41 @@ Replace `/dev/ttyACM0` with the correct device.
 
 #### SD2Snes & FXpak Pro
 
-Latest firmware already has the usb2snes support in it. Just choose or enable the Sd2snes support in QUsb2Snes.
-If you want to use an old fimrware (< 1.11) you need to install the last [Usb2Snes firmware by Redguyyy](https://github.com/RedGuyyyy/sd2snes/releases/) by
-following the instruction provided.
+The latest firmware already has the usb2snes support in it. Just choose or enable the Sd2snes support in QUsb2Snes.
+If you want to use an old firmware (< 1.11), you need to install the last [Usb2Snes firmware by Redguyyy](https://github.com/RedGuyyyy/sd2snes/releases/) by
+following the instructions provided.
 Don't start `usb2snes.exe` since QUsb2snes do the same thing than the original software.
-Your sd2snes device should show up on the Devices menu when connected.
+Your SD2Snes device should show up on the Devices menu when connected.
 
 
 #### SNES9x Rerecording & BSnes-AS
 
 This is not supported anymore. Please refer to older QUsb2Snes releases. 
-Emulator with Emulator Network Access support are recommanded instead. 
-Use Snes9x-nwa, Bizhawk with the nwa tool or bsnes-plus-nwa
+Emulators with Emulator Network Access support are recommended instead. 
+For example, Snes9x-nwa, Bizhawk with the nwa tool or bsnes-plus-nwa
 
 
-#### BizHawk (bsnes core recommanded)
+#### BizHawk (bsnes core recommended)
 
 Download the Emulator Network Access plugin for bizhawk at https://github.com/Skarsnik/Bizhawk-nwa-tool/releases
 Enable or choose the Emulator Network Access support in QUsb2Snes.
-Copy the dll in the `ExternalTools` directory in you BizHawk folder (or create it if needed) then load the tool from the `Tools->External Tools` menu.
+Copy the dll in the `ExternalTools` directory in your BizHawk folder (or create it if needed), then load the tool from the `Tools->External Tools` menu.
 
-The lua bridge method is not supported anymore. Please refer to older QUsb2Snes releases for instructions if you really need it
+The Lua bridge method is not supported anymore. Please refer to older QUsb2Snes releases for instructions if you really need it
 
 
 #### RetroArch with Snes9x core
 
-You can use Snex9x (not recommanded) or bsnes-mercury cores. You need to activate the network command support, etheir in the configuration menu of RetroArch or editing your `retroarch.cfg` file (can be found in %appData%\RetroArch) to set `network_cmd_enable = "true"` (default is false). Then you need to activate the RetroArch virtual device on the devices menu. Any flavor of bsnes-mercury is prefered as we can access the ROM data.
+You can use Snex9x (not recommended) or bsnes-mercury cores. You need to activate the network command support, either in the configuration menu of RetroArch or by editing your `retroarch.cfg` file (can be found in %appData%\RetroArch) to set `network_cmd_enable = "true"` (default is false). Then you need to activate the RetroArch virtual device in the devices menu. Any flavour of bsnes-mercury is preferred as we can access the ROM data.
 
-Snex9x core : For software needing to the patch the ROM (multitroid for example) you etheir need to patch the rom manually with the IPS file or put the IPS file along side the rom with the same name for retroarch to auto patch it.
+Snex9x core: For software needing to patch the ROM (multitroid for example) you either need to patch the rom manually with the IPS file or put the IPS file along side the rom with the same name for retroarch to auto patch it.
 
-You can connect to a remote RetroArch by adding a `RetroArchHosts="remoteName=ip"` in the config file. If you want to add multiple hosts, just add ; between each host definition.
+You can connect to a remote RetroArch by adding a `RetroArchHosts="remoteName=ip"` in the config file. If you want to add multiple hosts, just add a `;` between each host definition.
 
 
 #### SNES classic (called also SNES mini)
 
-If for some reason your SNES classic does not have the expected IP address (connected via wifi or something) you can add a `SNESClassicIP=myip` in the config.ini file.
+If, for some reason, your SNES classic does not have the expected IP address (connected via wifi or something) you can add a `SNESClassicIP=myip` in the config.ini file.
 
 
 #### Native emulator (canoe)
@@ -99,7 +99,7 @@ Mostly tested with Super Metroid.
 
 Enable the SNES classic support on the device menu.
 
-You need to 'hack' your SNES classic with the Hakchi2 CE version (https://github.com/TeamShinkansen/hakchi2/releases/) then remove the covershell mod if needed (as explained in https://github.com/TeamShinkansen/hakchi2/releases/tag/v3.4.0).
+You need to 'hack' your SNES classic with the Hakchi2 CE version (https://github.com/TeamShinkansen/hakchi2/releases/), then remove the covershell mod if needed (as explained in https://github.com/TeamShinkansen/hakchi2/releases/tag/v3.4.0).
 
 Install the `serverstuff` mod provided by QUsb2snes: copy the `serverstuff.hmod` to the `user_mods` directory on Hakchi2, then install the mod with Hakchi2
 
@@ -123,7 +123,7 @@ Then now put your copy in place of the original one.
 
 This is only available in conjunction with the `-nogui` option.
 
-Only the non gui version take arguments, It still use the config file but you can use some arguments to enable the support you want.
+Only a non gui build version takes arguments. It still uses the config file, but you can use some arguments to enable the support you want.
 
 * `-sd2snes` : to activate the sd2snes support
 * `-luabridge` : for the lua bridge support
@@ -139,11 +139,11 @@ See [COMPILING.adoc](COMPILING.adoc).
 
 ## Developers
 
-Look at the [docs/Protocol.md](docs/Protocol.md) file to have a detailed view of the commands of websocket protocol.
+Look at the [docs/Protocol.md](docs/Protocol.md) file to have a detailed view of the commands of the websocket protocol.
 
 ## Licence
 
-QUsb2snes project follow the GPL version 3 licence, you can find the full version of the licence on the LICENCE file.
+QUsb2snes project follows the GPL version 3 licence, you can find the full version of the licence in the LICENCE file.
 
 ## Icons
 
