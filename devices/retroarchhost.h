@@ -120,7 +120,7 @@ private:
     qint64          writeId;
 
     qint64  nextId();
-    void    setInfoFromRomHeader(QByteArray data);
+    bool    setInfoFromRomHeader(QByteArray data);
     void    makeInfoFail(QString error);
     void    onReadyRead();
     void    onPacket(QByteArray& data);
