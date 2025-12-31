@@ -170,14 +170,20 @@ QString RetroArchHost::lastInfoError() const
     return m_lastInfoError;
 }
 
-void RetroArchHost::setInfoFromRomHeader(QByteArray data)
+bool RetroArchHost::setInfoFromRomHeader(QByteArray data)
 {
     struct rom_infos* rInfos = get_rom_info(data);
     sDebug() << "From header : " << rInfos->title << rInfos->type;
+    if (!rom_info_make_sense(rInfos, rInfos->type))
+    {
+        free(rInfos);
+        return false;
+    }
     if (!readMemoryAPI)
         m_gameTile = rInfos->title;
     romType = rInfos->type;
     free(rInfos);
+    return true;
 }
 
 
@@ -314,9 +320,7 @@ void RetroArchHost::onPacket(QByteArray& data)
         case ReqInfoRMemoryLoRomData:
         {
             QList<QByteArray> tList = data.trimmed().split(' ');
-            tList.removeFirst();
-            tList.removeFirst();
-            if (tList.at(0) == "-1")
+            if (tList.at(2) == "-1" || !setInfoFromRomHeader(QByteArray::fromHex(tList.mid(2).join())))
             {
                 if (state == ReqInfoRMemoryHiRomData)
                 {
@@ -329,7 +333,6 @@ void RetroArchHost::onPacket(QByteArray& data)
                     break;
                 }
             }
-            setInfoFromRomHeader(QByteArray::fromHex(tList.join()));
             readMemoryHasRomAccess = (romType == HiROM); // see comments in translateAddress()
             state = None;
             emit infoDone(reqId);
@@ -352,10 +355,10 @@ void RetroArchHost::onPacket(QByteArray& data)
             if (tList.at(2) == "-1")
             {
                 readRamHasRomAccess = false;
+            } else if (!setInfoFromRomHeader(QByteArray::fromHex(tList.mid(2).join()))) {
+                // This was previously expected to never fail, and perhaps it couldn't.
+                sDebug() << "Failed to set info from ROM header";
             } else {
-                tList.removeFirst();
-                tList.removeFirst();
-                setInfoFromRomHeader(QByteArray::fromHex(tList.join()));
                 readRamHasRomAccess = true;
             }
             state = None;
