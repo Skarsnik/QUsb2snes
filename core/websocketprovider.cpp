@@ -54,5 +54,5 @@ void WebSocketProvider::onServerError(QWebSocketProtocol::CloseCode code)
 
 void WebSocketProvider::deleteClient(AClient *client)
 {
-    delete client;
+    client->deleteLater();
 }

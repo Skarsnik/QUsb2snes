@@ -117,7 +117,8 @@ void WebSocketClient::onBinaryMessageReceived(QByteArray data)
 
 void WebSocketClient::onClientDisconnected()
 {
-
+    sDebug() << "Websocketclient " << name << "disconnected";
+    emit closed();
 }
 
 

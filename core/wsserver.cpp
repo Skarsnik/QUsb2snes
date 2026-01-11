@@ -96,6 +96,7 @@ void    WSServer::onNewClient(AClient* client)
 {
     connect(client, &AClient::newRequest, this, &WSServer::onNewRequest);
     connect(client, &AClient::binaryData, this, &WSServer::onBinaryDataReceivedFromClient);
+    connect(client, &AClient::closed, this, &WSServer::onClientDisconnected);
     client->attached = false;
     client->attachedTo = nullptr;
     client->commandState = AClient::ClientCommandState::NOCOMMAND;
@@ -553,9 +554,11 @@ void    WSServer::cleanUpDevice(ADevice* device)
     for (AClient* client : toDiscard)
     {
         client->sendError(m_errorType, m_errorString);
+        client->attached = false;
     }
     if (devInfo.currentClient != nullptr)
         devInfo.currentClient = nullptr;
+    pendingRequests.remove(device);
     DeviceFactory* devFact = mapDevFact[device];
     mapDevFact.remove(device);
     disconnect(device, nullptr, this, nullptr);
