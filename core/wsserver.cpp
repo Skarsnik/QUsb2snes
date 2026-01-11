@@ -308,7 +308,7 @@ void WSServer::onDeviceFactoryStatusDone(DeviceFactory::DeviceFactoryStatus stat
 void WSServer::onNewRequest(MRequest* req)
 {
     AClient* client = req->owner;
-    sDebug() << client->name << "received " << *req;
+    sInfo() << client->name << " new request " << req->opcode << *req;
     if (client->attached == false && !isValidUnAttached(req->opcode))
     {
         if (client->pendingAttach)

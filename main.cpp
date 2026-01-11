@@ -136,18 +136,22 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
     //cout << msg;
     if (dontLogNext)
        return ;
+    QString logLevel;
     QString logString = QString("%6 %5 - %7: %1").arg(localMsg.constData()).arg(context.category, 20).arg(QDateTime::currentDateTime().toString(Qt::ISODate));
     switch (type)
     {
         case QtDebugMsg:
+            logLevel = "Debug";
             logDebugCrash.append(logString.arg("Debug"));
             break;
         case QtCriticalMsg:
+            logLevel = "Critical";
             logDebugCrash.append(logString.arg("Critical"));
             *log << logString.arg("Critical");
             logBuffer.append(logString.arg("Critical"));
             break;
         case QtWarningMsg:
+            logLevel = "Warning";
             logDebugCrash.append(logString.arg("Warning"));
             *log << logString.arg("Warning");
             logBuffer.append(logString.arg("Warning"));
@@ -164,6 +168,7 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
             qApp->exit(1);
             break;
         case QtInfoMsg:
+            logLevel = "Info";
             logDebugCrash.append(logString.arg("Info"));
             *log << logString.arg("Info");
             logBuffer.append(logString.arg("Info"));
@@ -171,7 +176,7 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
     }
     if (debugLogFile.device() != nullptr)
     {
-        debugLogFile << logString.arg("Debug");
+        debugLogFile << logString.arg(logLevel);
         debugLogFile << "\n";
         debugLogFile.flush();
     }
@@ -233,7 +238,7 @@ int main(int ac, char *ag[])
     globalSettings = new QSettings("nyo.fr", "QUsb2Snes");
 #else
     globalSettings = new QSettings("config.ini", QSettings::IniFormat);
-#endif
+#endif   
     if (globalSettings->contains("debugLog") && globalSettings->value("debugLog").toBool())
     {
         mDebugLog.open(QIODevice::WriteOnly | QIODevice::Text);
