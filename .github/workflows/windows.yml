@@ -90,8 +90,7 @@ jobs:
             Invoke-WebRequest -Uri "https://github.com/Skarsnik/snesclassicstuff/releases/download/serverstuffmod_v2/serverstuff.hmod" -OutFile "serverstuff.hmod"
             Copy-Item serverstuff.hmod QUsb2Snes\
             # Open SSL for the updater
-            dir "C:\Program Files\"
-            dir "C:\Program Files\OpenSSL-Win64\"
+            dir "C:\Program Files\OpenSSL\bin"
             Copy-Item "C:\Program Files\OpenSSL\bin\libcrypto-1_1-x64.dll" QUsb2Snes\libcrypto-1_1-x64.dll
             Copy-Item "C:\Program Files\OpenSSL\bin\libssl-1_1-x64.dll" QUsb2Snes\libssl-1_1-x64.dll
             7z a "QUsb2Snes.7z" QUsb2Snes
