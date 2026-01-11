@@ -91,8 +91,8 @@ jobs:
             Copy-Item serverstuff.hmod QUsb2Snes\
             # Open SSL for the updater
             dir "C:\Program Files\OpenSSL\bin"
-            Copy-Item "C:\Program Files\OpenSSL\bin\libcrypto-1_1-x64.dll" QUsb2Snes\libcrypto-1_1-x64.dll
-            Copy-Item "C:\Program Files\OpenSSL\bin\libssl-1_1-x64.dll" QUsb2Snes\libssl-1_1-x64.dll
+            Copy-Item "C:\Program Files\OpenSSL\bin\libcrypto-3-x64.dll" QUsb2Snes\libcrypto-3-x64.dll
+            Copy-Item "C:\Program Files\OpenSSL\bin\libssl-3-x64.dll" QUsb2Snes\libssl-3-x64.dll
             7z a "QUsb2Snes.7z" QUsb2Snes
       -
         name: Upload 7zip
