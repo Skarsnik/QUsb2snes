@@ -634,10 +634,9 @@ void WSServer::cmdAttach(MRequest *req)
  */
 void    WSServer::setRemoteConnection(WebSocketClient* client, ADevice* device)
 {
-    sDebug() << "Attaching to remote server";
+    sDebug() << "Binding to remote server";
     client->attachedTo = device;
     RemoteUsb2snesWDevice* remoteDevice = qobject_cast<RemoteUsb2snesWDevice*>(device);
-    remoteDevice->attach();
     client->bindToRemote(remoteDevice);
 }
 
