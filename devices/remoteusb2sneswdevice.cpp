@@ -54,12 +54,28 @@ void RemoteUsb2snesWDevice::createWebsocket(QUrl url)
 
 void RemoteUsb2snesWDevice::sendText(const QString& message)
 {
+    if (attached == false)
+    {
+        Message m;
+        m.text = message;
+        queue.enqueue(m);
+        sDebug() << "Queueing text message" << message;
+        return ;
+    }
     sDebug() << "Sending text request to remote" << message;
     websocket->sendTextMessage(message);
 }
 
 void RemoteUsb2snesWDevice::sendBinary(const QByteArray& data)
 {
+    if (attached == false)
+    {
+        Message m;
+        m.datas = data;
+        queue.enqueue(m);
+        sDebug() << "Queueing data message" << data;
+        return ;
+    }
     sDebug() << "Sending binary data to remote" << data.size();
     websocket->sendBinaryMessage(data);
 }
@@ -74,6 +90,7 @@ void RemoteUsb2snesWDevice::attach()
     QJsonArray      jOp;
     QJsonObject     jObj;
 
+    sDebug() << "Attaching to remote";
     jObj["Opcode"] = "Attach";
     jOp.append(remoteDeviceName);
     jObj["Space"] = "SNES";
@@ -91,13 +108,12 @@ void RemoteUsb2snesWDevice::attach()
     }
     while (queue.empty() == false)
     {
+        qDebug() << "Sending queued messages " << queue.size();
         Message m = queue.dequeue();
-        if (m.text.isEmpty())
+        if (m.text.isEmpty() == false)
         {
             websocket->sendTextMessage(m.text);
-        }
-        else
-        {
+        } else {
             websocket->sendBinaryMessage(m.datas);
         }
     }
