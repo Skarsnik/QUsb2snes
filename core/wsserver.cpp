@@ -610,6 +610,7 @@ void WSServer::cleanUpClient(AClient* client)
             }
         }
     }
+    clients.removeAll(client);
     qobject_cast<AClientProvider*>(client->parent())->deleteClient(client);
 }
 
