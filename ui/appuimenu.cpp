@@ -173,19 +173,29 @@ void AppUi::createApplicationMenu()
         sDebug() << "Adding " << info.name;
         sDebug() << info;
         QAction *act;
+        QIcon icon;
         if (info.iconPath.isEmpty() == false)
-            act = appsMenu->addAction(QIcon(info.iconPath), info.name);
-        else
         {
+            if (info.desktopEntry == false)
+            {
+                icon = QIcon(info.iconPath);
+            } else {
+                icon = QIcon::fromTheme(info.iconPath);
+            }
+        } else  {
 #ifdef Q_OS_WIN
             QFileSystemModel model;
             QString exePath = QFileInfo(info.executablePath).absoluteFilePath();
             model.setRootPath(exePath);
+            icon = model.fileIcon(model.index(exePath));
             act = appsMenu->addAction(model.fileIcon(model.index(exePath)), info.name);
 #else
-            act = appsMenu->addAction(info.name);
 #endif
         }
+        if (icon.isNull())
+            act = appsMenu->addAction(info.name);
+        else
+            act = appsMenu->addAction(icon, info.name);
         act->setData(info.name);
         if (!info.description.isEmpty())
             act->setToolTip(info.description);

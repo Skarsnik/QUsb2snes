@@ -37,6 +37,7 @@
 #include <QSettings>
 #include <QScreen>
 #include <QFileSystemModel>
+#include <QProcessEnvironment>
 
 #include <ui/wizard/devicesetupwizard.h>
 
@@ -316,23 +317,44 @@ AppUi::ApplicationInfo AppUi::parseJsonAppInfo(QString fileName)
         info.isQtApp = job["QtApp"].toBool();
     info.name = job["name"].toString();
     info.description = job["description"].toString();
-    if (false)
+#ifdef Q_OS_LINUX
+    if (job.contains("xdg-desktop-file-name"))
     {
-        QFile desktopFile(job["linux-desktop"].toString());
-        if (desktopFile.open(QIODevice::ReadOnly) == false)
+        QDir appsDir;
+        QStringList xdgDirs = QProcessEnvironment::systemEnvironment().value("XDG_DATA_DIRS").split(":", Qt::SkipEmptyParts);
+
+        for (const QString& xdgDir : xdgDirs)
         {
-            return ApplicationInfo();
-        }
-        QTextStream fileStream(&desktopFile);
-        QString line;
-        while (fileStream.readLineInto(&line))
-        {
-            if (line.startsWith("Icon"))
+            QFileInfo fi(xdgDir + "/applications/" + job.value("xdg-desktop-file-name").toString() + ".desktop");
+            if (fi.exists())
             {
-                info.iconPath = "/usr/share/";
+                sDebug() << "Desktop file found at " << fi.absolutePath();
+                QFile desktopFile(fi.absoluteFilePath());
+                if (desktopFile.open(QIODevice::ReadOnly) == false)
+                    return ApplicationInfo();
+                QString line = desktopFile.readLine();
+                info.desktopEntry = true;
+                line = line.trimmed();
+                while (desktopFile.atEnd() == false)
+                {
+                    if (line.startsWith("Exec="))
+                    {
+                        info.executablePath = line.split("=").at(1);
+                    }
+                    if (line.startsWith("Icon="))
+                    {
+                        info.iconPath = info.executablePath = line.split("=").at(1);
+                    }
+                    if (line.startsWith("Comment="))
+                    {
+                        info.description = line.split("=").at(1);
+                    }
+                    line = desktopFile.readLine().trimmed();
+                }
             }
         }
     }
+#endif
     info.executablePath = job["executable"].toString();
     if (job.contains("icon"))
     {

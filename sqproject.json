@@ -13,5 +13,8 @@
     "files" : {
 	"WIN32:LuaBridge/luabridge.lua" : "LuaBridge/luabridge.lua",
 	"WIN32:LuaBridge/socket.dll" : "https://shelter.mahoro-net.org/~skarsnik/project/socket.dll"
-    }
+    },
+    "flatpak-filesystem-permissions" : [
+	"xdg-config", "xdg-data"	    
+    ]
 }

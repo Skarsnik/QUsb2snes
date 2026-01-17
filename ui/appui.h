@@ -73,6 +73,7 @@ private:
         QString description;
         QString iconPath;
         QString executablePath;
+        bool    desktopEntry = false;
         friend QDebug              operator<<(QDebug debug, const ApplicationInfo& req);
     };
 

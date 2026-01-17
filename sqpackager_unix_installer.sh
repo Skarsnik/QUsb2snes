@@ -98,6 +98,9 @@ if [ $DO_BUILD = 1 ]; then
     if [ $SKIP_MAKE = 0 ]; then
         make -j 4
     fi
+    if [ $? != 0 ]; then
+        exit 1
+    fi
     cd -
 fi
 
