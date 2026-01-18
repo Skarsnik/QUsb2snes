@@ -16,7 +16,7 @@ Comment=This software allow you to access your FxPak Pro files and more
 Exec=QFile2Snes
 
 # The name of the icon that will be used to display this entry
-Icon=fr.nyo
+Icon=fr.nyo.QFile2Snes
 
 # Describes whether this application needs to be run in a terminal or not
 Terminal=false

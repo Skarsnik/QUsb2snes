@@ -1,0 +1,32 @@
+app-id: fr.nyo.QUsb2Snes
+runtime: org.kde.Platform
+runtime-version: '6.8'
+sdk: org.kde.Sdk
+command: QUsb2Snes
+finish-args:
+    - --socket=fallback-x11
+    - --socket=wayland
+    - --filesystem=xdg-data
+
+modules:
+    - name: QUsb2Snes
+      buildsystem: simple
+      builddir: true
+      no-make-install: true
+      build-commands:
+        - "sh ./sqpackager_unix_installer.sh --prefix /app/ DEFINES+='SQPROJECT_FLATPAK_INSTALL'  CONFIG+='release'"
+      sources:
+       - type: dir
+         path: ./
+    - name: QFile2Snes
+      buildsystem: simple
+      builddir: true
+      no-make-install: true
+      build-commands:
+        - "cd QFile2Snes && sh ./sqpackager_unix_installer.sh --prefix /app/ DEFINES+='SQPROJECT_FLATPAK_INSTALL'  CONFIG+='release'"
+        - mv /app//share/applications/fr.nyo.QFile2Snes.desktop /app//share/applications/fr.nyo.QUsb2Snes.QFile2Snes.desktop
+        - mv /app/share/icons/hicolor/48x48/apps/fr.nyo.QFile2Snes.png /app//share/icons/hicolor/48x48/apps/fr.nyo.QUsb2Snes.QFile2Snes.png
+        - desktop-file-edit --set-key=Icon --set-value=fr.nyo.QUsb2Snes.QFile2Snes /app//share/applications/fr.nyo.QUsb2Snes.QFile2Snes.desktop
+      sources:
+       - type: dir
+         path: ./
