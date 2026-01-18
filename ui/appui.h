@@ -124,6 +124,7 @@ private:
     void                addMagic2SnesFolder(QString path);
     void                addDevicesInfo(DeviceFactory *devFact);
     ApplicationInfo     parseJsonAppInfo(QString fileName);
+    ApplicationInfo     getAppInfosFromDesktop(const QString xdgDesktopEntry);
     void                checkForNewVersion(bool manual = false);
     void                postTelemetryData();
     void startWServer();

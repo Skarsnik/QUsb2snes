@@ -306,6 +306,49 @@ bool    AppUi::startLegacyPort()
 }
 
 
+AppUi::ApplicationInfo AppUi::getAppInfosFromDesktop(const QString xdgDesktopEntry)
+{
+    QDir appsDir;
+    AppUi::ApplicationInfo toret;
+    QStringList xdgDirs = QProcessEnvironment::systemEnvironment().value("XDG_DATA_DIRS").split(":", Qt::SkipEmptyParts);
+
+    for (const QString& xdgDir : xdgDirs)
+    {
+        QFileInfo fi(xdgDir + "/applications/" + xdgDesktopEntry + ".desktop");
+        if (fi.exists())
+        {
+            sInfo() << "Desktop file found at " << fi.absolutePath() << " for" << xdgDesktopEntry;
+            QFile desktopFile(fi.absoluteFilePath());
+            if (desktopFile.open(QIODevice::ReadOnly) == false)
+                return ApplicationInfo();
+            QString line = desktopFile.readLine();
+            toret.desktopEntry = true;
+            line = line.trimmed();
+            while (desktopFile.atEnd() == false)
+            {
+                if (line.startsWith("Name="))
+                {
+                    toret.name = line.split("=").at(1);
+                }
+                if (line.startsWith("Exec="))
+                {
+                    toret.executablePath = line.section("=", 1);
+                }
+                if (line.startsWith("Icon="))
+                {
+                    toret.iconPath = line.split("=").at(1);
+                }
+                if (line.startsWith("Comment="))
+                {
+                    toret.description = line.split("=").at(1);
+                }
+                line = desktopFile.readLine().trimmed();
+            }
+        }
+    }
+    return toret;
+}
+
 AppUi::ApplicationInfo AppUi::parseJsonAppInfo(QString fileName)
 {
     ApplicationInfo info;
@@ -320,39 +363,8 @@ AppUi::ApplicationInfo AppUi::parseJsonAppInfo(QString fileName)
 #ifdef Q_OS_LINUX
     if (job.contains("xdg-desktop-file-name"))
     {
-        QDir appsDir;
-        QStringList xdgDirs = QProcessEnvironment::systemEnvironment().value("XDG_DATA_DIRS").split(":", Qt::SkipEmptyParts);
-
-        for (const QString& xdgDir : xdgDirs)
-        {
-            QFileInfo fi(xdgDir + "/applications/" + job.value("xdg-desktop-file-name").toString() + ".desktop");
-            if (fi.exists())
-            {
-                sDebug() << "Desktop file found at " << fi.absolutePath();
-                QFile desktopFile(fi.absoluteFilePath());
-                if (desktopFile.open(QIODevice::ReadOnly) == false)
-                    return ApplicationInfo();
-                QString line = desktopFile.readLine();
-                info.desktopEntry = true;
-                line = line.trimmed();
-                while (desktopFile.atEnd() == false)
-                {
-                    if (line.startsWith("Exec="))
-                    {
-                        info.executablePath = line.split("=").at(1);
-                    }
-                    if (line.startsWith("Icon="))
-                    {
-                        info.iconPath = info.executablePath = line.split("=").at(1);
-                    }
-                    if (line.startsWith("Comment="))
-                    {
-                        info.description = line.split("=").at(1);
-                    }
-                    line = desktopFile.readLine().trimmed();
-                }
-            }
-        }
+        info = getAppInfosFromDesktop(job.value("xdg-desktop-file-name").toString());
+        return info;
     }
 #endif
     info.executablePath = job["executable"].toString();
@@ -405,7 +417,7 @@ void AppUi::checkForApplications()
         }
     }
     sInfo() << "Searching for .json description in " << sharedAppsLocation().absolutePath();
-    for (const QFileInfo fi : sharedAppsLocation().entryInfoList(QDir::NoDotAndDotDot | QDir::Files))
+    for (const QFileInfo& fi : sharedAppsLocation().entryInfoList(QDir::NoDotAndDotDot | QDir::Files))
     {
         if (fi.suffix() == "json")
         {
@@ -438,6 +450,9 @@ void AppUi::checkForApplications()
             sInfo() << "Found an application" << appInfo;
         }
     }
+#endif
+#ifdef SQPROJECT_FLATPAK_INSTALL
+    regularApps.append(getAppInfosFromDesktop("fr.nyo.QUsb2Snes.QFile2Snes"));
 #endif
 }
 
@@ -483,7 +498,7 @@ void AppUi::onUntrustedConnection(QString origin)
 QDebug operator<<(QDebug debug, const AppUi::ApplicationInfo &req)
 {
     debug << "Name : " << req.name << " Description : " << req.description
-          << "Icon : " <<req.iconPath << "Exe :" << req.executablePath
+          << "Icon : " <<req.iconPath << "Exe : " << req.executablePath
           << "QtApp :" << req.isQtApp;
     return debug;
 }

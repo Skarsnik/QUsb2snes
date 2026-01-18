@@ -377,8 +377,14 @@ void AppUi::onAppsMenuTriggered(QAction *action)
 #endif
     }
     exec = appInfo.executablePath;
-    bool ok = proc.startDetached(exec, arg, wDir);
-    sDebug() << "Running " << exec << " in " << wDir << ok;
+    bool ok;
+    if (appInfo.desktopEntry)
+    {
+        ok = proc.startDetached("/bin/sh", QStringList() << "-c" << appInfo.executablePath);
+    } else {
+        ok = proc.startDetached(exec, arg, wDir);
+    }
+    sInfo() << "Running " << exec << " in " << wDir << ok;
     if (!ok)
-        sDebug() << "Error running " << exec << proc.errorString();
+        sInfo() << "Error running " << exec << proc.errorString();
 }
