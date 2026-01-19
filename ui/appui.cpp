@@ -411,7 +411,7 @@ void AppUi::checkForApplications()
             }
             if (appInfo.name.isEmpty() == false)
             {
-                regularApps.append(appInfo);
+                regularApps[appInfo.executablePath] = appInfo;
                 sInfo() << "Found an application" << appInfo;
             }
         }
@@ -422,38 +422,15 @@ void AppUi::checkForApplications()
         if (fi.suffix() == "json")
         {
             ApplicationInfo appInfo = parseJsonAppInfo(fi.absoluteFilePath());
-            bool found = false;
-            for (const auto& app : regularApps)
-            {
-                if (appInfo.executablePath == app.executablePath)
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if (found == false)
-            {
-                regularApps.append(appInfo);
-                sInfo() << "Found an application" << appInfo;
-            }
-        }
-    }
-#ifdef SQPROJECT_UNIX_INSTALL
-    QDir unixShare(SQPath::softwareDatasPath());
-    sInfo() << "Searching for .json description in " << unixShare.absolutePath();
-    for (const QFileInfo fi : unixShare.entryInfoList(QDir::NoDotAndDotDot | QDir::Files))
-    {
-        if (fi.suffix() == "json")
-        {
-            ApplicationInfo appInfo = parseJsonAppInfo(fi.absoluteFilePath());
-            regularApps.append(appInfo);
+            regularApps[appInfo.executablePath] = appInfo;
             sInfo() << "Found an application" << appInfo;
         }
     }
-#endif
-#ifdef SQPROJECT_FLATPAK_INSTALL
-    regularApps.append(getAppInfosFromDesktop("fr.nyo.QUsb2Snes.QFile2Snes"));
-#endif
+    if (ISFLATPAK())
+    {
+        const auto appInfo = getAppInfosFromDesktop("fr.nyo.QUsb2Snes.QFile2Snes");
+        regularApps[appInfo.executablePath] = appInfo;
+    }
 }
 
 

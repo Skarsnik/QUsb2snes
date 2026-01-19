@@ -31,11 +31,11 @@ void    AppUi::setMenu()
     if (checkPopTracker())
     {
         addPopTrackerMenu();
-        for (unsigned int i = 0; i < regularApps.size(); i++)
+        for (const auto& key : regularApps.keys())
         {
-            if (regularApps[i].name == "Poptracker")
+            if (regularApps[key].name == "Poptracker")
             {
-                regularApps.removeAt(i);
+                regularApps.remove(key);
                 sDebug() << "Remove poptracker from app list";
                 break;
             }
@@ -166,10 +166,9 @@ void AppUi::createApplicationMenu()
     appsMenu->addSeparator();
     appsMenu->setToolTipsVisible(true);
     connect(appsMenu, SIGNAL(triggered(QAction*)), this, SLOT(onAppsMenuTriggered(QAction*)));
-    QListIterator<ApplicationInfo> it(regularApps);
-    while (it.hasNext())
+    for (const auto& key : regularApps.keys())
     {
-        ApplicationInfo info = it.next();
+        ApplicationInfo info = regularApps[key];
         sDebug() << "Adding " << info.name;
         sDebug() << info;
         QAction *act;
@@ -183,20 +182,20 @@ void AppUi::createApplicationMenu()
                 icon = QIcon::fromTheme(info.iconPath);
             }
         } else  {
-#ifdef Q_OS_WIN
-            QFileSystemModel model;
-            QString exePath = QFileInfo(info.executablePath).absoluteFilePath();
-            model.setRootPath(exePath);
-            icon = model.fileIcon(model.index(exePath));
-            act = appsMenu->addAction(model.fileIcon(model.index(exePath)), info.name);
-#else
-#endif
+            if (ISWINDOWS())
+            {
+                QFileSystemModel model;
+                QString exePath = QFileInfo(info.executablePath).absoluteFilePath();
+                model.setRootPath(exePath);
+                icon = model.fileIcon(model.index(exePath));
+                act = appsMenu->addAction(model.fileIcon(model.index(exePath)), info.name);
+            }
         }
         if (icon.isNull())
             act = appsMenu->addAction(info.name);
         else
             act = appsMenu->addAction(icon, info.name);
-        act->setData(info.name);
+        act->setData(info.executablePath);
         if (!info.description.isEmpty())
             act->setToolTip(info.description);
     }
@@ -348,15 +347,7 @@ void AppUi::onAppsMenuTriggered(QAction *action)
     if (action->data().isNull())
         return ;
 
-    ApplicationInfo appInfo;
-    for (const auto& app : regularApps)
-    {
-        if (app.name == action->data().toString())
-        {
-            appInfo = app;
-            break;
-        }
-    }
+    ApplicationInfo appInfo = regularApps[action->data().toString()];
     QProcess proc(this);
     //proc.setWorkingDirectory(fi.path());
     QString exec;
@@ -366,15 +357,16 @@ void AppUi::onAppsMenuTriggered(QAction *action)
     if (appInfo.isQtApp)
     {
         wDir = qApp->applicationDirPath();
-#ifdef Q_OS_WIN
-        arg << "-platformpluginpath" << qApp->applicationDirPath() + "/platforms/";
-        if (QFileInfo::exists(wDir + "/styles/") == false)
+        if (ISWINDOWS())
         {
-            QDir d(wDir);
-            d.mkdir("styles");
-            QFile::copy(qApp->applicationDirPath() + "/styles/qwindowsvistastyle.dll", wDir + "/styles/qwindowsvistastyle.dll");
+            arg << "-platformpluginpath" << qApp->applicationDirPath() + "/platforms/";
+            if (QFileInfo::exists(wDir + "/styles/") == false)
+            {
+                QDir d(wDir);
+                d.mkdir("styles");
+                QFile::copy(qApp->applicationDirPath() + "/styles/qwindowsvistastyle.dll", wDir + "/styles/qwindowsvistastyle.dll");
+            }
         }
-#endif
     }
     exec = appInfo.executablePath;
     bool ok;

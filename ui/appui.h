@@ -107,7 +107,7 @@ private:
     SNESClassicFactory*             snesClassic;
     RemoteUsb2SnesWFactory*         remoteFactory = nullptr;
     EmuNetworkAccessFactory*        emuNWAccess;
-    QList<ApplicationInfo>          regularApps;
+    QMap<QString, ApplicationInfo>  regularApps;
 
     QNetworkAccessManager*          dlManager;
     QLabel*                         dlLabel;
@@ -139,6 +139,18 @@ private:
     void createApplicationMenu();
     void setDeviceEntry(const QString str);
     QDir sharedAppsLocation() const;
+    constexpr bool ISWINDOWS() {
+#ifdef Q_OS_WIN
+        return true;
+#endif
+        return false;
+    }
+    constexpr bool ISFLATPAK() {
+#ifdef SQPROJECT_FLATPAK_INSTALL
+        return true;
+#endif
+        return false;
+    }
 
     QList<PopTrackerPackInfo> poptrackerScanPack();
     bool checkPopTracker();
