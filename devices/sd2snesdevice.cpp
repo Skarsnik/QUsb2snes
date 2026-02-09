@@ -181,10 +181,6 @@ void    SD2SnesDevice::sendVCommand(SD2Snes::opcode opcode, SD2Snes::space space
 
 void SD2SnesDevice::spReadyRead()
 {
-    static QByteArray   responseBlock = QByteArray();
-    static int          bytesGetSent = 0;
-    static bool         fileGetSizeSent = false; // This avoid sending it twice
-
     QByteArray data = m_port.readAll();
     bytesReceived += data.size();
     dataReceived += data;
@@ -402,7 +398,6 @@ void    SD2SnesDevice::beNiceToFirmWare(const QByteArray& data)
 
 void SD2SnesDevice::writeData(QByteArray data)
 {
-    static unsigned int dataSent = 0;
     unsigned int toWriteSize = data.size();
     sDebug() << toWriteSize << dataSent << m_putSize;
     // We are done sending stuff and this cover most case

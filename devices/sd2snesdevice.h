@@ -82,6 +82,13 @@ private:
 
     QSerialPort m_port;
 
+    // For handling reply
+    QByteArray   responseBlock = QByteArray();
+    int          bytesGetSent = 0;
+    bool         fileGetSizeSent = false; // This avoid sending it twice
+
+    unsigned int dataSent = 0;
+
     QByteArray  dataReceived;
     QByteArray  lsData;
     //int         responseSizeExpected;
