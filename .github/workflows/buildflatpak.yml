@@ -12,6 +12,8 @@ jobs:
       options: --privileged
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
     - uses: little-core-labs/get-git-tag@v3.0.1
       id: tagName
     - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
