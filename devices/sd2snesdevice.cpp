@@ -26,7 +26,7 @@
 #include "sd2snesdevice.h"
 
 Q_LOGGING_CATEGORY(log_sd2snes, "SD2SNES")
-#define sDebug() qCDebug(log_sd2snes())
+#define sDebug() qCDebug(log_sd2snes()) << this->name()
 
 
 SD2SnesDevice::SD2SnesDevice(QString portName)

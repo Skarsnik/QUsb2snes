@@ -1,0 +1,42 @@
+name: Build Flatpak
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  flatpak:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+    steps:
+    - uses: actions/checkout@v4
+    - uses: little-core-labs/get-git-tag@v3.0.1
+      id: tagName
+    - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      with:
+        bundle: QUsb2Snes.flatpak
+        manifest-path: fr.nyo.QUsb2Snes.yml
+        upload-artifact: false
+    - run: |
+        cp QUsb2Snes.flatpak QUsb2Snes-x86_64.flatpak
+    - name: Add artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: QUsb2Snes-x86_64.flatpak
+        path: QUsb2Snes-x86_64.flatpak
+
+    - name: Prep Release
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        cp QUsb2Snes-x86_64.flatpak "QUsb2Snes-$GIT_TAG_NAME-x86_64.flatpak"
+    - name: Release
+      uses: softprops/action-gh-release@v0.1.13
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          "QUsb2Snes-$GIT_TAG_NAME-x86_64.flatpak"
+        draft: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }
