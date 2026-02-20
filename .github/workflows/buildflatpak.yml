@@ -39,4 +39,4 @@ jobs:
           "QUsb2Snes-$GIT_TAG_NAME-x86_64.flatpak"
         draft: true
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
