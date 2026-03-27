@@ -213,7 +213,13 @@ void AppUi::init()
                 QRect geo = sysTray->geometry();
                 sDebug() << "Systray geo" << geo;
                 QPoint tray_center   = sysTray->geometry().center();
-                if (tray_center == QPoint(0, 0))
+
+                QString currEnv = qgetenv("XDG_CURRENT_DESKTOP");
+                if (currEnv.isEmpty()){
+                    currEnv = "none";
+                }
+
+                if (tray_center == QPoint(0, 0) &&  currEnv.toLower().contains("xfce"))
                 {
                     QPoint mousePos = QCursor::pos() - qApp->screenAt(QCursor::pos())->geometry().topLeft();
                     geo = QRect(mousePos, QSize(10, 10));
