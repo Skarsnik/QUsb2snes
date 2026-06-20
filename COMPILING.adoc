@@ -58,4 +58,100 @@ If you need to specify which qmake version to use you can use the `--qmake-cmd` 
 
 == MacOS
 
-TBD
+These steps produce a native build (the resulting binary matches the architecture
+of the Qt you build against: arm64 on Apple Silicon, x86_64 on Intel).
+
+=== Prerequisites
+
+* Xcode (or the Command Line Tools) for the clang toolchain
+* Qt 6 with the websockets, serialport and svg modules. The simplest way is Homebrew,
+  which ships a native build for your CPU. Install just the modules this project needs:
+
+[source,bash]
+----
+brew install qtbase qtsvg qtwebsockets qtserialport
+----
+
+`qtbase` provides `qmake` and `macdeployqt`. To keep the commands below unambiguous,
+point `$QTBIN` at it:
+
+[source,bash]
+----
+export QTBIN="$(brew --prefix qtbase)/bin"
+----
+
+The rest of this guide uses `$QTBIN/qmake` and `$QTBIN/macdeployqt`.
+
+=== Compiling
+
+[source,bash]
+----
+git submodule update --init --recursive
+mkdir build && cd build
+$QTBIN/qmake ../QUsb2snes.pro CONFIG+=release CONFIG+=c++17 "QT+=svg" \
+  "QMAKE_CXXFLAGS+=-U__cpp_static_assert -Wno-builtin-macro-redefined"
+make -j$(sysctl -n hw.ncpu)
+----
+
+This creates `QUsb2Snes.app` inside the build directory. At this point the app links
+against the Qt frameworks of your Qt install, so it only runs on a machine that has
+that same Qt available.
+
+The extra qmake arguments pass the C++17 standard, pull in the SVG module (so
+`macdeployqt` bundles the SVG image plugin), and work around Apple clang defining
+`__cpp_static_assert` in older language modes.
+
+NOTE: When building with a newer Xcode SDK than the one Qt was tested with, qmake
+prints an "unsupported configuration" warning. Add `CONFIG+=sdk_no_version_check` to
+silence it.
+
+=== Making a standalone, distributable .app
+
+Use `macdeployqt` to copy the Qt frameworks and plugins into the bundle, then re-sign
+it. The re-signing step is required: `macdeployqt` rewrites the embedded libraries,
+which invalidates their code signatures, and on Apple Silicon macOS kills any binary
+with an invalid signature (the app would crash on launch with signal 9 / exit 137).
+
+[source,bash]
+----
+$QTBIN/macdeployqt QUsb2Snes.app
+codesign --force --deep --sign - QUsb2Snes.app
+----
+
+Replace `--sign -` (ad-hoc) with your Developer ID identity if you intend to
+distribute and notarize the app.
+
+NOTE: Qt 6's `macdeployqt` runs an ad-hoc codesign itself at the end and may print
+`codesign` errors (e.g. about the `apps/` files added below). The deployment still
+completes; the explicit `codesign --force --deep` line is what produces the final valid
+signature.
+
+=== Embedding the QFile2Snes companion app
+
+QFile2Snes (the file explorer) is shipped inside the QUsb2Snes bundle and shares its
+Qt frameworks, so it shows up in the *Applications* menu. Build it, drop its binary in
+`Contents/MacOS/`, register it under `Contents/MacOS/apps/QFile2Snes/`, then run a
+single `macdeployqt` that fixes both executables before signing.
+
+[source,bash]
+----
+# build QFile2Snes (native, same flags)
+mkdir QFile2Snes/build && cd QFile2Snes/build
+$QTBIN/qmake ../QFile2Snes.pro CONFIG+=release CONFIG+=c++17
+make -j$(sysctl -n hw.ncpu)
+cd ../..
+
+# embed it into the already-built (but not yet deployed) QUsb2Snes.app
+cp QFile2Snes/build/QFile2Snes.app/Contents/MacOS/QFile2Snes build/QUsb2Snes.app/Contents/MacOS/
+mkdir -p build/QUsb2Snes.app/Contents/MacOS/apps/QFile2Snes
+cp QFile2Snes/qusb2snesapposx.json build/QUsb2Snes.app/Contents/MacOS/apps/QFile2Snes/qusb2snesapp.json
+cp QFile2Snes/icon50x50.png build/QUsb2Snes.app/Contents/MacOS/apps/QFile2Snes/icone.png
+
+# deploy once (fixes the QFile2Snes binary too), then sign the whole bundle
+$QTBIN/macdeployqt build/QUsb2Snes.app -executable=build/QUsb2Snes.app/Contents/MacOS/QFile2Snes
+codesign --force --deep --sign - build/QUsb2Snes.app
+----
+
+NOTE: register it with `qusb2snesapposx.json` (executable `../../QFile2Snes`), copied in
+as `qusb2snesapp.json`. The non-osx `qusb2snesapp.json` points at `QFile2Snes` relative
+to the `apps/QFile2Snes/` folder, which is the Windows layout, not the `.app` one.
