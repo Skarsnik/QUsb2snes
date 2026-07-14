@@ -26,7 +26,7 @@ jobs:
         id: tagName
       -
         name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
         with: 
           submodules : true
       -
@@ -100,7 +100,7 @@ jobs:
             7z a "QUsb2Snes.7z" QUsb2Snes
       -
         name: Upload 7zip
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: QUsb2Snes.7z
           path: QUsb2Snes.7z
