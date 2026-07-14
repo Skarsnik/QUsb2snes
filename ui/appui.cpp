@@ -215,11 +215,20 @@ void AppUi::init()
                 QPoint tray_center   = sysTray->geometry().center();
                 if (tray_center == QPoint(0, 0))
                 {
-                    QPoint mousePos = QCursor::pos() - qApp->screenAt(QCursor::pos())->geometry().topLeft();
+                    // QSystemTrayIcon::geometry() reports (0,0) on Wayland, which does not
+                    // expose tray coordinates. Fall back to the cursor position, guarding
+                    // against screenAt() returning null (also possible on Wayland).
+                    QScreen* cursorScreen = qApp->screenAt(QCursor::pos());
+                    if (cursorScreen == nullptr)
+                        cursorScreen = qApp->primaryScreen();
+                    QPoint mousePos = QCursor::pos() - cursorScreen->geometry().topLeft();
                     geo = QRect(mousePos, QSize(10, 10));
                     tray_center = mousePos;
                 }
-                QRect  screen_rect   = qApp->screenAt(tray_center)->geometry();
+                QScreen* trayScreen = qApp->screenAt(tray_center);
+                if (trayScreen == nullptr)
+                    trayScreen = qApp->primaryScreen();
+                QRect  screen_rect   = trayScreen->geometry();
                 QPoint screen_center = screen_rect.center();
 
                 Qt::Corner corner = Qt::TopLeftCorner;
