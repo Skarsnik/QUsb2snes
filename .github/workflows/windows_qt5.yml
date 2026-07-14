@@ -20,6 +20,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          toolset: '14.44'
       - uses: little-core-labs/get-git-tag@v3.0.1
         id: tagName
       -
@@ -30,9 +32,10 @@ jobs:
       -
        # I wish I could use Chocolatey or something else but it's a pain in the but
         name: Install Qt
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
         with:
-          version: '5.12.2'
+          version: '5.15.2'
+          arch: 'win64_msvc2019_64'
       -
         name: build      
         run: | 
