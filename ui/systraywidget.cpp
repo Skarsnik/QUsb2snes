@@ -62,7 +62,10 @@ void SysTrayWidget::addClientStatus(QString status)
 void SysTrayWidget::on_pushButton_clicked()
 {
     QPoint tray_center   = this->geometry().center();
-    QRect  screen_rect   = qApp->screenAt(tray_center)->geometry();
+    QScreen* screen = qApp->screenAt(tray_center);
+    if (screen == nullptr)
+        screen = qApp->primaryScreen();
+    QRect  screen_rect   = screen->geometry();
     QPoint screen_center = screen_rect.center();
 
     Qt::Corner corner = Qt::TopLeftCorner;
