@@ -11,7 +11,7 @@ exists("sq_project_forced_version.pri") {
 
 DEFINES += GIT_TAG_VERSION=\\\"$$GIT_TAG_VERSION\\\"
 
-CONFIG += c++20
+CONFIG += c++2a
 
 UISOURCES = ui/appui.cpp \
             ui/appuimenu.cpp \

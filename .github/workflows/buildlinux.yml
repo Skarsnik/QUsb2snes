@@ -73,6 +73,7 @@ jobs:
   build_clazy:
 
     runs-on: ubuntu-latest
+    if: false # disabled until clazy is fixed in ubuntu 26.04
 
     steps:
       - name: Install Qt
