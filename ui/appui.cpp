@@ -213,7 +213,13 @@ void AppUi::init()
                 QRect geo = sysTray->geometry();
                 sDebug() << "Systray geo" << geo;
                 QPoint tray_center   = sysTray->geometry().center();
-                if (tray_center == QPoint(0, 0))
+
+                QString currEnv = qgetenv("XDG_CURRENT_DESKTOP");
+                if (currEnv.isEmpty()){
+                    currEnv = "none";
+                }
+
+                if (tray_center == QPoint(0, 0) &&  currEnv.toLower().contains("xfce"))
                 {
                     // QSystemTrayIcon::geometry() reports (0,0) on Wayland, which does not
                     // expose tray coordinates. Fall back to the cursor position, guarding
