@@ -20,7 +20,7 @@ Installation via other means (homebrew, chocolatey, etc.) is not planned at the 
 
 ---
 
-## Usage
+## Configuration and Usage
 
 ### Configuration files
 
@@ -43,34 +43,41 @@ For example, to enable the retroarchdevice, add or change the config under `[Gen
 retroarchdevice=true
 ```
 
-### Serial configuration (Linux)
+### SD2SNES & FXPak Pro
 
-If your device does not work out of the box, you can try the following command to set some tty settings
+The latest firmware already has the usb2snes support in it. Just choose or enable the SD2SNES support in QUsb2Snes.
+Don't start `usb2snes.exe` since QUsb2snes does this by itself.
+Your SD2SNES device should show up on the Devices menu when connected.
+
+If you want to use an old firmware (< 1.11), you need to install the last [Usb2Snes firmware by Redguyyy](https://github.com/RedGuyyyy/sd2snes/releases/) by following the instructions provided.
+
+#### Serial troubleshooting (Linux)
+
+##### TTY configuration
+
+If your SD2SNES/FXPak does not work out of the box, you can try the following command to set some TTY settings:
 
 `stty -F /dev/ttyACM0 0:0:cbd:0:3:1c:7f:15:4:5:40:0:11:13:1a:0:12:f:17:16:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0`
 
-Replace `/dev/ttyACM0` with the correct device.
+If you have other serial devices plugged in to your computer, replace `/dev/ttyACM0` with whatever `/dev/` entry your flashcart is using.
+
+##### "Device is busy" error
+
+If your flashcart device shows up in QUsb2snes as "busy", you can try the following command to grant access + read/write permissions to the device for all users on your system:
+
+`chmod a+rw /dev/ttyACM0`
+
+Again, if you have other serial devices plugged in to your computer, replace `/dev/ttyACM0` with the correct `/dev/` entry for your flashcart.
 
 
-### Emulator configuration
-
-#### SD2Snes & FXpak Pro
-
-The latest firmware already has the usb2snes support in it. Just choose or enable the Sd2snes support in QUsb2Snes.
-If you want to use an old firmware (< 1.11), you need to install the last [Usb2Snes firmware by Redguyyy](https://github.com/RedGuyyyy/sd2snes/releases/) by
-following the instructions provided.
-Don't start `usb2snes.exe` since QUsb2snes do the same thing than the original software.
-Your SD2Snes device should show up on the Devices menu when connected.
-
-
-#### SNES9x Rerecording & BSnes-AS
+### SNES9x Rerecording & BSnes-AS
 
 This is not supported anymore. Please refer to older QUsb2Snes releases. 
 Emulators with Emulator Network Access support are recommended instead. 
 For example, Snes9x-nwa, Bizhawk with the nwa tool or bsnes-plus-nwa
 
 
-#### BizHawk (bsnes core recommended)
+### BizHawk (bsnes core recommended)
 
 Download the Emulator Network Access plugin for bizhawk at https://github.com/Skarsnik/Bizhawk-nwa-tool/releases
 Enable or choose the Emulator Network Access support in QUsb2Snes.
@@ -79,7 +86,7 @@ Copy the dll in the `ExternalTools` directory in your BizHawk folder (or create 
 The Lua bridge method is not supported anymore. Please refer to older QUsb2Snes releases for instructions if you really need it
 
 
-#### RetroArch with Snes9x core
+### RetroArch with Snes9x core
 
 You can use Snex9x (not recommended) or bsnes-mercury cores. You need to activate the network command support, either in the configuration menu of RetroArch or by editing your `retroarch.cfg` file (can be found in %appData%\RetroArch) to set `network_cmd_enable = "true"` (default is false). Then you need to activate the RetroArch virtual device in the devices menu. Any flavour of bsnes-mercury is preferred as we can access the ROM data.
 
@@ -88,7 +95,7 @@ Snex9x core: For software needing to patch the ROM (multitroid for example) you 
 You can connect to a remote RetroArch by adding a `RetroArchHosts="remoteName=ip"` in the config file. If you want to add multiple hosts, just add a `;` between each host definition.
 
 
-#### SNES classic (called also SNES mini)
+### SNES classic (called also SNES mini)
 
 If, for some reason, your SNES classic does not have the expected IP address (connected via wifi or something) you can add a `SNESClassicIP=myip` in the config.ini file.
 
