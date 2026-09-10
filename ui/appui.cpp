@@ -277,7 +277,7 @@ void   AppUi::startWServer()
         status = wsServer.start(addr, port);
         if (!status.isEmpty())
         {
-            QMessageBox::critical(nullptr, tr("Error starting the application"), QString(tr("Error starting the core of the application\n Error listening on %1:%2 : %3\nMake sure nothing else is using this port").arg(addr.toString()).arg(port).arg(status)));
+            QMessageBox::critical(nullptr, tr("Error starting the application"), QString(tr("Error starting the core of the application\n Error listening on %1:%2 : %3\nMake sure nothing else is using this port.").arg(addr.toString()).arg(port).arg(status)));
             qApp->exit(1);
         }
         return ;
@@ -292,7 +292,7 @@ void   AppUi::startWServer()
     {
         QMessageBox::critical(nullptr, tr("Error listenning on normal port"),
                               QString(tr("There was an error starting the core of the application : %1\n"
-                                         "Make sure there is no other Usb2Snes webserver application running (QUsb2Snes/SNI/Crowd Control")).arg(status));
+                                         "Make sure there is no other Usb2Snes webserver application running (QUsb2Snes/SNI/Crowd Control)")).arg(status));
         qApp->exit(1);
     }
 }

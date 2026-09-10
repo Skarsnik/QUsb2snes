@@ -305,7 +305,7 @@ void AppUi::onDeviceFactoryStatusReceived(DeviceFactory::DeviceFactoryStatus sta
                 statusString.append(name + ": ");
                 if (clients.isEmpty())
                 {
-                    statusString.append(tr("ready, no client connected"));
+                    statusString.append(tr("Ready. No application connected"));
                 } else {
                     statusString.append(clients.join(", "));
                 }
