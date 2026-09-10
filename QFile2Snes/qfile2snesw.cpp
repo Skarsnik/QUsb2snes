@@ -190,8 +190,9 @@ void QFile2SnesW::onUsb2SnesStateChanged()
         ui->transfertProgressBar->setVisible(true);
         ui->transfertProgressBar->setInvertedAppearance(false);
         ui->transfertProgressBar->setValue(99);
-        usb2snes->queueInfos();
+        //usb2snes->queueInfos();
         m_state = SENDINDFILE;
+        //return ;
     }
     if (usb2snes->state() == Usb2Snes::ReceivingFile)
     {
