@@ -158,6 +158,16 @@ void    WSServer::executeRequest(MRequest *req)
         req->state = RequestState::WAITINGREPLY;
         break;
     }
+    case USB2SnesWS::ExtendedList: {
+        CMD_TAKE_ONE_ARG("ExtendedList")
+        if (device->extendedLS(req->arguments.at(0).toLatin1()) == false)
+        {
+            client->sendError(ErrorType::DeviceError, "The device does not support this command");
+            return;
+        }
+        req->state = RequestState::WAITINGREPLY;
+        break;
+    }
     case USB2SnesWS::GetFile : {
         CMD_TAKE_ONE_ARG("GetFile")
         connect(device, &ADevice::getDataReceived, this, &WSServer::onDeviceGetDataReceived, Qt::UniqueConnection);
@@ -379,6 +389,7 @@ void    WSServer::executeRequest(MRequest *req)
         client->ipsSize = req->arguments.at(1).toUInt(&ok, 16);
         break;
     }
+
     default:
     {
         client->sendError(ErrorType::ProtocolError, "Invalid command or non implemented");
@@ -445,6 +456,10 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
     case USB2SnesWS::Info :
     {
         USB2SnesInfo    ifo = device->parseInfo(device->dataRead);
+        /*if (ifo.flags.contains("HAS_EXTENDED_LS"))
+        {
+            ifo.flags.append("SERVER_SUPPORT_EXTENDED_LS");
+        }*/
         sendReply(info.currentClient, QStringList() << ifo.version << ifo.deviceName << ifo.romPlaying << ifo.flags);
         break;
     }
@@ -457,6 +472,20 @@ void    WSServer::processDeviceCommandFinished(ADevice* device)
         foreach(ADevice::FileInfos fi, lfi)
         {
             rep << QString::number(static_cast<quint32>(fi.type));
+            rep << fi.name;
+        }
+        sendReply(info.currentClient, rep);
+        break;
+    }
+    case USB2SnesWS::ExtendedList :
+    {
+        QList<ADevice::FileInfos> lfi = device->parseLSCommand(device->dataRead);
+        QStringList rep;
+        foreach(ADevice::FileInfos fi, lfi)
+        {
+            rep << QString::number(static_cast<quint32>(fi.type));
+            rep << QString::number(fi.size);
+            rep << fi.createdDate.toString(Qt::ISODate);
             rep << fi.name;
         }
         sendReply(info.currentClient, rep);

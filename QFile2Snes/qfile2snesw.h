@@ -52,7 +52,7 @@ private slots:
 
     void    onUsb2SnesStateChanged();
 
-    void on_usb2snesListView_doubleClicked(const QModelIndex &index);
+    void on_usb2snesTableView_doubleClicked(const QModelIndex &index);
 
     void    onUsb2SnesFileSendProgress(int size);
 
@@ -87,10 +87,12 @@ private:
     Usb2SnesFileModel*  usb2snesModel;
     bool                started;
     MyFileSystemModel*  localFileModel;
+    bool                extendedLS = false;
 
     void    setLFilepath(QString path);
     void    refreshStatus();
     void    setEnabledSd2SnesUI(bool enabled);
+    void    setExtendedLS(bool extended);
 
     // QWidget interface
     void updateLocalFileView(QString path);

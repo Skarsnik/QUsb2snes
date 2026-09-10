@@ -129,7 +129,7 @@ QStringList Usb2Snes::getJsonResults(QString json)
 {
     QStringList toret;
     QJsonDocument   jdoc = QJsonDocument::fromJson(json.toLatin1());
-    if (!jdoc.object()["Results"].toArray().isEmpty())
+    if (jdoc.object()["Results"].toArray().isEmpty() == false)
     {
         QJsonArray jarray = jdoc.object()["Results"].toArray();
         foreach(QVariant entry, jarray.toVariantList())
@@ -142,7 +142,7 @@ QStringList Usb2Snes::getJsonResults(QString json)
 
 void Usb2Snes::onWebSocketTextReceived(QString message)
 {
-    sDebug() << "<<T" << message;
+    sDebug() << "<<T" << m_currentCommand << message;
     lastTextMessage = message;
     switch (m_istate)
     {
@@ -226,6 +226,23 @@ void Usb2Snes::onWebSocketTextReceived(QString message)
         emit lsDone(toret);
         break;
     }
+    case ExtendedList: {
+        QList<FileInfo> toret;
+        QStringList infos = getJsonResults(message);
+        for (int i = 0; i < infos.size(); i += 4)
+        {
+            FileInfo fi;
+            fi.dir = infos.at(i) == "0";
+            fi.size = infos.at(i + 1).toUInt();
+            fi.createdTime = QDateTime::fromString(infos.at(i + 2), Qt::ISODate);
+            //sDebug() << fi.createdTime;
+            fi.name = infos.at(i + 3);
+            toret << fi;
+        }
+        changeState(Ready);
+        emit lsDone(toret);
+        break;
+    }
     case GetFile: {
         QStringList result = getJsonResults(message);
         bool    ok;
@@ -243,6 +260,7 @@ void Usb2Snes::onWebSocketTextReceived(QString message)
     }
     if (m_queueInfo)
     {
+        sDebug() << "Queued info, do it?";
         infos();
         m_queueInfo = false;
     }
@@ -484,6 +502,12 @@ void    Usb2Snes::ls(QString path)
 {
     changeState(Busy);
     sendRequest(List, QStringList() << path);
+}
+
+void Usb2Snes::extendedls(const QString path)
+{
+    changeState(Busy);
+    sendRequest(ExtendedList, QStringList() << path);
 }
 
 QString Usb2Snes::firmwareString()

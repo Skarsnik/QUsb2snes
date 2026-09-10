@@ -37,6 +37,7 @@ public:
     void            fileCommand(SD2Snes::opcode op, QVector<QByteArray> args);
     void            fileCommand(SD2Snes::opcode op, QByteArray args);
     void            controlCommand(SD2Snes::opcode op, QByteArray args = QByteArray());
+    bool            extendedLS(QByteArray args);
     void            putFile(QByteArray name, unsigned int size);
     void            getSetAddrCommand(SD2Snes::opcode op, unsigned int addr, unsigned int size);
     void            getAddrCommand(SD2Snes::space space, unsigned int addr, unsigned int size);
@@ -60,6 +61,15 @@ public:
 
     QByteArray      fileData;
 
+    enum  list_cmd_fi_flags {
+        USBINT_FI_FLAGS_NONE = 0,
+        USBINT_FI_FLAGS_FILESIZE = 1,
+        USBINT_FI_FLAGS_FILEDATE = 2,
+        USBINT_FI_FLAGS_FILETIME = 4,
+        USBINT_FI_FLAGS_ATTRIBUTE = 8
+    };
+
+    Q_ENUM(list_cmd_fi_flags)
 
 public slots:
     bool    open();

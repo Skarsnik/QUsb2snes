@@ -188,7 +188,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QListView" name="usb2snesListView">
+         <widget class="QTableView" name="usb2snesTableView">
           <property name="acceptDrops">
            <bool>true</bool>
           </property>
@@ -204,6 +204,12 @@
           <property name="alternatingRowColors">
            <bool>true</bool>
           </property>
+          <attribute name="horizontalHeaderVisible">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="horizontalHeaderStretchLastSection">
+           <bool>false</bool>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -314,7 +320,7 @@
      <x>0</x>
      <y>0</y>
      <width>736</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

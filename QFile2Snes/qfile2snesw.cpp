@@ -68,15 +68,21 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
     usb2snes = new Usb2Snes(false);
     usb2snesModel = new Usb2SnesFileModel(usb2snes);
     localFileModel->setUsb2Snes(usb2snes);
-    ui->usb2snesListView->setModel(usb2snesModel);
+    ui->usb2snesTableView->setModel(usb2snesModel);
+    auto header = ui->usb2snesTableView->horizontalHeader();
+    header->setSectionResizeMode(0, QHeaderView::Stretch);
+    connect(usb2snesModel, &Usb2SnesFileModel::columnsInserted, this, [=] {
+        header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    });
     m_state = NOTCONNECTED;
     qDebug() << localFileModel->mimeTypes();
     ui->transfertProgressBar->setVisible(false);
     ui->infoLabel->setText(tr("Trying to find the SD2Snes device"));
     connect(usb2snes, &Usb2Snes::stateChanged, this, &QFile2SnesW::onUsb2SnesStateChanged);
     connect(usb2snes, &Usb2Snes::fileSendProgress, this, &QFile2SnesW::onUsb2SnesFileSendProgress);
-    connect(ui->usb2snesListView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &QFile2SnesW::onSDViewSelectionChanged);
-    connect(ui->usb2snesListView->selectionModel(), &QItemSelectionModel::currentChanged, this, &QFile2SnesW::onSDViewCurrentChanged);
+    connect(ui->usb2snesTableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &QFile2SnesW::onSDViewSelectionChanged);
+    connect(ui->usb2snesTableView->selectionModel(), &QItemSelectionModel::currentChanged, this, &QFile2SnesW::onSDViewCurrentChanged);
     connect(localFileModel, &MyFileSystemModel::aboutToOverwroteFile, this, &QFile2SnesW::onAboutToOverwriteFile);
     connect(localFileModel, &MyFileSystemModel::directoryLoaded, this, &QFile2SnesW::onLocalDirectoryLoaded);
     started = false;
@@ -115,7 +121,14 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
         }
     });
     connect(usb2snes, &Usb2Snes::infoDone, this, [=] (Usb2Snes::DeviceInfo infos) {
+        qDebug() << "Info done";
         ui->infoLabel->setText(QString(tr("Firmware version : %1 - Rom Playing : %2")).arg(infos.firmwareVersion, infos.romPlaying));
+        if (infos.flags.contains("HAS_EXTENDED_LIST"))
+        {
+            setExtendedLS(true);
+        } else {
+            setExtendedLS(false);
+        }
         if (infos.flags.contains("NO_FILE_CMD"))
         {
             setEnabledSd2SnesUI(false);
@@ -124,6 +137,7 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
             setEnabledSd2SnesUI(true);
             usb2snesModel->setPath(usb2snesModel->currentDir());
         }
+
     });
     QTimer::singleShot(0, this, [=] {
             usb2snes->connect();
@@ -156,7 +170,7 @@ void    QFile2SnesW::refreshStatus()
 
 void QFile2SnesW::setEnabledSd2SnesUI(bool enabled)
 {
-    ui->usb2snesListView->setEnabled(enabled);
+    ui->usb2snesTableView->setEnabled(enabled);
     ui->menuButton->setEnabled(enabled);
     ui->deleteButton->setEnabled(enabled);
     ui->newDirButton->setEnabled(enabled);
@@ -202,8 +216,14 @@ void QFile2SnesW::onUsb2SnesStateChanged()
 
 }
 
+void QFile2SnesW::setExtendedLS(bool extended)
+{
+    extendedLS = extended;
+    usb2snesModel->setExtended(extended);
+}
 
-void QFile2SnesW::on_usb2snesListView_doubleClicked(const QModelIndex &index)
+
+void QFile2SnesW::on_usb2snesTableView_doubleClicked(const QModelIndex &index)
 {
     static const QRegularExpression twoSlash("\\/\\+");
     if (!usb2snesModel->isDir(index))
@@ -223,8 +243,8 @@ void QFile2SnesW::on_usb2snesListView_doubleClicked(const QModelIndex &index)
     }
     usb2snesModel->setPath(newPath);
     ui->sd2snesLabel->setText(QString(tr("SD2Snes directory: %1")).arg(newPath));
-    ui->usb2snesListView->clearSelection();
-    ui->usb2snesListView->selectionModel()->clearSelection();
+    ui->usb2snesTableView->clearSelection();
+    ui->usb2snesTableView->selectionModel()->clearSelection();
     ui->renameButton->setEnabled(false);
     ui->deleteButton->setEnabled(false);
 }
@@ -250,7 +270,7 @@ void QFile2SnesW::onSDViewCurrentChanged(const QModelIndex &current, const QMode
     Q_UNUSED(current)
     qDebug() << "current Changed";
     ui->bootButton->setEnabled(false);
-    QString fileName = usb2snesModel->data(ui->usb2snesListView->currentIndex()).toString();
+    QString fileName = usb2snesModel->data(ui->usb2snesTableView->currentIndex()).toString();
     if (fileName.right(4) == ".smc" || fileName.right(4) == ".sfc")
         ui->bootButton->setEnabled(true);
 }
@@ -258,7 +278,7 @@ void QFile2SnesW::onSDViewCurrentChanged(const QModelIndex &current, const QMode
 void QFile2SnesW::on_renameButton_clicked()
 {
     bool    ok;
-    QString currentName = usb2snesModel->data(ui->usb2snesListView->currentIndex()).toString();
+    QString currentName = usb2snesModel->data(ui->usb2snesTableView->currentIndex()).toString();
     QString newName = QInputDialog::getText(this, tr("Rename dialog"), tr("New filename"), QLineEdit::Normal, currentName, &ok);
     if (!ok)
         return;
@@ -271,7 +291,7 @@ void QFile2SnesW::on_renameButton_clicked()
 
 void QFile2SnesW::on_deleteButton_clicked()
 {
-    QString currentName = usb2snesModel->data(ui->usb2snesListView->currentIndex()).toString();
+    QString currentName = usb2snesModel->data(ui->usb2snesTableView->currentIndex()).toString();
     usb2snes->deleteFile(usb2snesModel->currentDir() + "/" + currentName);
     usb2snesModel->setPath(usb2snesModel->currentDir());
 }
@@ -293,7 +313,7 @@ void QFile2SnesW::onAboutToOverwriteFile(QByteArray data)
 
 void QFile2SnesW::on_bootButton_clicked()
 {
-    QString currentName = usb2snesModel->data(ui->usb2snesListView->currentIndex()).toString();
+    QString currentName = usb2snesModel->data(ui->usb2snesTableView->currentIndex()).toString();
     usb2snes->boot(usb2snesModel->currentDir() + "/" + currentName);
     refreshStatus();
 }

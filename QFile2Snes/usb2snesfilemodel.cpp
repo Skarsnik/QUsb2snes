@@ -38,12 +38,27 @@ static bool sort_file_infos(Usb2Snes::FileInfo a, Usb2Snes::FileInfo b) {
 
 
 Usb2SnesFileModel::Usb2SnesFileModel(Usb2Snes *usb, QObject *parent)
-    : QAbstractListModel(parent)
+    : QAbstractTableModel(parent)
 {
         usb2snes = usb;
         m_currentDir = "";
         dirOnly = false;
         connect(usb2snes, &Usb2Snes::lsDone, this, [=] (QList<Usb2Snes::FileInfo> li) {
+            if (dirOnly)
+            {
+                fileInfos.clear();
+                foreach(Usb2Snes::FileInfo fi, li)
+                {
+                    if (fi.dir)
+                        fileInfos.append(fi);
+                }
+            } else {
+                fileInfos = li;
+            }
+            std::sort(std::begin(fileInfos), std::end(fileInfos), sort_file_infos);
+            emit endResetModel();
+        });
+        connect(usb2snes, &Usb2Snes::extendedlsDone, this, [=] (QList<Usb2Snes::FileInfo> li) {
             if (dirOnly)
             {
                 fileInfos.clear();
@@ -74,10 +89,20 @@ QVariant Usb2SnesFileModel::data(const QModelIndex &index, int role) const
     switch (role) {
     case Qt::DisplayRole:
     {
-        return QVariant(fileInfos.at(index.row()).name);
+        if (index.column() == 0)
+            return QVariant(fileInfos.at(index.row()).name);
+        if (index.column() == 1)
+        {
+            return QLocale().toString(fileInfos.at(index.row()).createdTime.toLocalTime(),
+                                      QLocale::ShortFormat);
+        }
+        if (index.column() == 2 && fileInfos.at(index.row()).dir == false)
+            return QVariant(QLocale().formattedDataSize(fileInfos.at(index.row()).size));
     }
     case Qt::DecorationRole:
     {
+        if (index.column() != 0)
+            return {};
         QFileIconProvider provid;
         if (fileInfos.at(index.row()).dir)
             return provid.icon((QFileIconProvider::Folder));
@@ -86,7 +111,7 @@ QVariant Usb2SnesFileModel::data(const QModelIndex &index, int role) const
     }
 
     }
-    return QVariant();
+    return {};
 }
 
 /*
@@ -95,8 +120,31 @@ QVariant Usb2SnesFileModel::data(const QModelIndex &index, int role) const
  */
 void Usb2SnesFileModel::setPath(QString path)
 {
+    qDebug() << "Set PATH : " << path;
     m_currentDir = path;
-    usb2snes->ls(path);
+    if (extended)
+        usb2snes->extendedls(path);
+    else
+        usb2snes->ls(path);
+}
+
+void Usb2SnesFileModel::setExtended(bool e)
+{
+    qDebug() << "Set EXTENDED : " << e;
+    if (extended == false && e == true)
+    {
+        beginInsertColumns(QModelIndex(), 1, 2);
+        extended = e;
+        endInsertColumns();
+    }
+    if (extended == true && e == false)
+    {
+        beginRemoveColumns(QModelIndex(), 1, 2);
+        extended = e;
+        endRemoveColumns();
+    }
+
+
 }
 
 QString Usb2SnesFileModel::currentDir() const
@@ -117,9 +165,18 @@ void Usb2SnesFileModel::setDirOnly(bool)
 
 QVariant Usb2SnesFileModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if (role == Qt::DisplayRole)
-        return QVariant(m_currentDir);
-    return QVariant();
+    if (role != Qt::DisplayRole)
+        return {};
+    if (orientation == Qt::Horizontal)
+    {
+        if (section == 0)
+            return QVariant(tr("Name"));
+        if (section == 1)
+            return QVariant(tr("Date modified"));
+        if (section == 2)
+            return QVariant(tr("Size"));
+    }
+    return {};
 }
 
 
@@ -175,9 +232,16 @@ Qt::DropActions Usb2SnesFileModel::supportedDropActions() const
     return Qt::CopyAction;
 }
 
+int Usb2SnesFileModel::columnCount(const QModelIndex &parent) const
+{
+    if (extended)
+        return 3;
+    return 1;
+}
+
 Qt::ItemFlags Usb2SnesFileModel::flags(const QModelIndex &index) const
 {
-    Qt::ItemFlags defaultFlags = QAbstractListModel::flags(index);
+    Qt::ItemFlags defaultFlags = QAbstractTableModel::flags(index);
     Qt::ItemFlags toret;
     toret = Qt::ItemIsDropEnabled | defaultFlags;
     if (index.isValid() && !fileInfos.at(index.row()).dir)

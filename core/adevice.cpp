@@ -27,6 +27,11 @@ ADevice::ADevice(QObject *parent) : QObject(parent)
     m_attachError = "This device does not provide attach errors";
 }
 
+bool ADevice::extendedLS(QByteArray args)
+{
+    return false;
+}
+
 bool ADevice::hasVariaditeCommands()
 {
     return false;

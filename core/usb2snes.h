@@ -45,7 +45,8 @@ enum opcode {
     MENU_RESET,
     STREAM,
     TIME,
-    RESPONSE
+    RESPONSE,
+    EXTENDED_LS = 200 // this opcode does not exist
 };
 
 Q_ENUM_NS(opcode)
@@ -59,6 +60,7 @@ enum  space {
 };
 
 Q_ENUM_NS(space)
+
 
 enum  server_flags {
     NONE = 0,
@@ -131,9 +133,12 @@ Q_NAMESPACE
     GetFile, // Get a file - [filepath]->{size}->filedata
     PutFile, // Post a file -  [filepath, size] then send the binary data
     List, // LS command - [dirpath]->{typefile1, namefile1, typefile2, namefile2...}
+    ExtendedList, // extended list command, [dirpath]->{typefile1, namefile1, sizefile1, date modified1 typefile2, namefile2, sizefile2...}
+                  // Date modified is a ISO 8601 string in UTC time
     Remove, // remove a file [filepath]
     Rename, // rename a file [filepath, newfilename]
     MakeDir, // create a directory [dirpath]
+
 
     QUsb2SnesRegisterApplication // Register an application to appear in QUsb2Snes device menu
                                  // [Name, short description, exec path, icon path]
@@ -144,7 +149,8 @@ Q_NAMESPACE
         NO_FILE_CMD,
         NO_CONTROL_CMD,
         NO_ROM_WRITE,
-        NO_ROM_READ
+        NO_ROM_READ,
+        HAS_EXTENDED_LS
     };
     const unsigned int legacyPort = 8080;
     const unsigned int defaultPort = 23074;

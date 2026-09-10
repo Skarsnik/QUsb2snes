@@ -24,7 +24,7 @@
 #include <QAbstractListModel>
 #include "usb2snesclient.h"
 
-class Usb2SnesFileModel : public QAbstractListModel
+class Usb2SnesFileModel : public QAbstractTableModel
 {
     Q_OBJECT
 
@@ -34,9 +34,11 @@ public:
     // Basic functionality:
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    int columnCount(const QModelIndex &parent) const override;
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     void    setPath(QString path);
+    void    setExtended(bool e);
     QString currentDir() const;
     bool    isDir(const QModelIndex &index) const;
     void    setDirOnly(bool);
@@ -46,6 +48,7 @@ private:
     QString     m_currentDir;
     QList<Usb2Snes::FileInfo>   fileInfos;
     bool        dirOnly;
+    bool        extended = false;
 
     // QAbstractItemModel interface
 
@@ -56,9 +59,12 @@ public:
     bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) override;
     Qt::DropActions supportedDropActions() const override;
 
+
     // QAbstractItemModel interface
 public:
     Qt::ItemFlags flags(const QModelIndex &index) const override;
+
+
 };
 
 #endif // USB2SNESFILEMODEL_H

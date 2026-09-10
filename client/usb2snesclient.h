@@ -47,8 +47,10 @@ public:
         RomRunning
     };
     struct FileInfo {
-        QString name;
-        bool    dir;
+        QString     name;
+        quint32     size;
+        QDateTime   createdTime;
+        bool        dir;
     };
     struct DeviceInfo {
         QString firmwareVersion;
@@ -91,7 +93,8 @@ public:
         List,
         Remove,
         Rename,
-        MakeDir
+        MakeDir,
+        ExtendedList
     };
     Q_ENUM(Usb2SnesCommand)
 
@@ -123,6 +126,7 @@ public:
     void                    infos();
     int                     fileDataSize() const;
     void                    ls(QString path);
+    void                    extendedls(const QString path);
     QString                 firmwareString();
     QVersionNumber          firmwareVersion();
     void                    deviceList();
@@ -145,6 +149,7 @@ signals:
     void    deviceListDone(QStringList listDevice);
     void    infoDone(Usb2Snes::DeviceInfo info);
     void    lsDone(QList<Usb2Snes::FileInfo> filesInfo);
+    void    extendedlsDone(QList<Usb2Snes::FileInfo> filesInfo);
 
 
 private slots:

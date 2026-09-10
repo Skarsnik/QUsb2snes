@@ -18,11 +18,14 @@
  * along with QUsb2Snes.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <QDateTime>
 #include <QDebug>
 #include <QLoggingCategory>
 #include <QQueue>
 #include <QRegularExpression>
 #include <QThread>
+#include <QVersionNumber>
+#include <qendian.h>
 #include "sd2snesdevice.h"
 
 Q_LOGGING_CATEGORY(log_sd2snes, "SD2SNES")
@@ -214,7 +217,7 @@ void SD2SnesDevice::spReadyRead()
     }
     // Most command only need a valid response block
     if (m_currentCommand != SD2Snes::opcode::GET && m_currentCommand != SD2Snes::opcode::VGET
-        && m_currentCommand != SD2Snes::opcode::LS)
+        && m_currentCommand != SD2Snes::opcode::LS && m_currentCommand != SD2Snes::opcode::EXTENDED_LS)
     {
         if (m_currentCommand == SD2Snes::opcode::INFO)
             dataRead = responseBlock;
@@ -229,6 +232,13 @@ void SD2SnesDevice::spReadyRead()
         goto cmdFinished;
     } else {
         if (m_currentCommand == SD2Snes::opcode::LS)
+        {
+            lsData.append(data);
+            if (checkEndForLs())
+                goto cmdFinished;
+            return;
+        }
+        if (m_currentCommand == SD2Snes::opcode::EXTENDED_LS)
         {
             lsData.append(data);
             if (checkEndForLs())
@@ -477,6 +487,26 @@ void SD2SnesDevice::fileCommand(SD2Snes::opcode op, QByteArray args)
     fileCommand(op, p);
 }
 
+bool SD2SnesDevice::extendedLS(QByteArray args)
+{
+    sDebug() << "Extended LS";
+    QByteArray data("USBA");
+    data.append(static_cast<char>(SD2Snes::opcode::LS));
+    data.append(static_cast<char>(SD2Snes::space::FILE));
+    data.append(static_cast<char>(SD2Snes::server_flags::NONE));
+    data.append(static_cast<char>(list_cmd_fi_flags::USBINT_FI_FLAGS_FILEDATE |
+                                  list_cmd_fi_flags::USBINT_FI_FLAGS_FILETIME |
+                                  list_cmd_fi_flags::USBINT_FI_FLAGS_FILESIZE |
+                                  list_cmd_fi_flags::USBINT_FI_FLAGS_ATTRIBUTE));
+    data.append(QByteArray().fill(0, 512 - 8));
+    data.replace(256, args.size(), args);
+    sDebug() << ">>" << data.left(9).toHex() << "- 252-272 : " << data.mid(252, 20).toHex();
+    m_state = BUSY;
+    m_currentCommand = SD2Snes::opcode::EXTENDED_LS;
+    writeToDevice(data);
+    return true;
+}
+
 void SD2SnesDevice::controlCommand(SD2Snes::opcode op, QByteArray args)
 {
     sendCommand(op, SD2Snes::space::SNES, SD2Snes::server_flags::NONE, args);
@@ -585,6 +615,26 @@ void SD2SnesDevice::putAddrCommand(SD2Snes::space space, unsigned char flags, un
     sendCommand(SD2Snes::opcode::PUT, space, flags, data1, data2);
 }
 
+static QDateTime fat32ToDateTime(const quint16 fat32Date, const quint16 fat32Time)
+{
+    // FAT date:
+    // Bits 15-9: year since 1980
+    // Bits 8-5 : month (1-12)
+    // Bits 4-0 : day (1-31)
+    const int year  = 1980 + ((fat32Date >> 9) & 0x7F);
+    const int month = (fat32Date >> 5) & 0x0F;
+    const int day   = fat32Date & 0x1F;
+
+    // FAT time:
+    // Bits 15-11: hour (0-23)
+    // Bits 10-5 : minute (0-59)
+    // Bits 4-0  : seconds / 2
+    const int hour   = (fat32Time >> 11) & 0x1F;
+    const int minute = (fat32Time >> 5) & 0x3F;
+    const int second = (fat32Time & 0x1F) * 2;
+    return QDateTime(QDate(year, month, day), QTime(hour, minute, second), Qt::UTC);
+}
+
 
 // Why we send the whole response?
 QList<ADevice::FileInfos> SD2SnesDevice::parseLSCommand(QByteArray& dataI)
@@ -610,7 +660,28 @@ QList<ADevice::FileInfos> SD2SnesDevice::parseLSCommand(QByteArray& dataI)
             sDebug() << "Type 2 " << cpt << QString::number(data.at(cpt), 16);
             type = static_cast<unsigned char>(data.at(cpt));
         }
-        cpt++;
+        quint32 size = 0;
+        QDateTime dateTime;
+
+
+        //[file size 4 bytes] [date 2 bytes] [time 2 bytes] [attribute 1 byte] [file name]
+        if (m_currentCommand == SD2Snes::EXTENDED_LS)
+        {
+            cpt++;
+            sDebug() << "Size data : " << data.mid(cpt, 4).toHex(':');
+            size = qFromLittleEndian<quint32>(data.mid(cpt, 4).constData());
+            sDebug() << "Size :" << size;
+            cpt += 4;
+            sDebug() << "Date data : " << data.mid(cpt, 2).toHex(';');
+            quint16 date = qFromLittleEndian<quint16>(data.mid(cpt, 2).constData());
+            cpt += 2;
+            sDebug() << "Time data : " << data.mid(cpt, 2).toHex(';');
+            quint16 time = qFromLittleEndian<quint16>(data.mid(cpt, 2).constData());
+            dateTime = fat32ToDateTime(date, time);
+            cpt += 3;
+        } else {
+            cpt++;
+        }
         while (data.at(cpt) != 0)
         {
             name.append(data.at(cpt));
@@ -620,6 +691,8 @@ QList<ADevice::FileInfos> SD2SnesDevice::parseLSCommand(QByteArray& dataI)
         FileInfos fi;
         fi.type = static_cast<SD2Snes::file_type>(type);
         fi.name = name;
+        fi.size = size;
+        fi.createdDate = dateTime;
         infos.append(fi);
     }
     lsData.clear();
@@ -628,7 +701,7 @@ QList<ADevice::FileInfos> SD2SnesDevice::parseLSCommand(QByteArray& dataI)
 
 USB2SnesInfo SD2SnesDevice::parseInfo(const QByteArray& data)
 {
-    sDebug() << "Parse infos";
+    sDebug() << "Parse infos" << data.toHex(' ');
     USB2SnesInfo info;
 
     info.deviceName = "SD2SNES";
@@ -646,5 +719,10 @@ USB2SnesInfo SD2SnesDevice::parseInfo(const QByteArray& data)
     if ((flag & static_cast<unsigned char>(SD2Snes::info_flags::FEAT_CMD_UNLOCK)) != 0) info.flags.append("FEAT_CMD_UNLOCK");
     if ((flag & static_cast<unsigned char>(SD2Snes::info_flags::FEAT_USB1)) != 0) info.flags.append("FEAT_USB1");
     if ((flag & static_cast<unsigned char>(SD2Snes::info_flags::FEAT_DMA1)) != 0) info.flags.append("FEAT_DMA1");
+    auto version = QVersionNumber::fromString(info.version);
+    if (version >= QVersionNumber(1, 11, 3))
+    {
+        info.flags.append("HAS_EXTENDED_LIST");
+    }
     return info;
 }
