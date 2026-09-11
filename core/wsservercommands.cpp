@@ -187,6 +187,7 @@ void    WSServer::executeRequest(MRequest *req)
         req->state = RequestState::WAITINGREPLY;
         client->commandState = AClient::ClientCommandState::WAITINGBDATAREPLY;
         client->currentPutSize = req->arguments.at(1).toUInt(&ok, 16);
+        client->expectedDataSize = client->currentPutSize;
         break;
     }
     case USB2SnesWS::Rename : {

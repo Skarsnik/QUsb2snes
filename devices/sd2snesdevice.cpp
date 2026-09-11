@@ -668,14 +668,14 @@ QList<ADevice::FileInfos> SD2SnesDevice::parseLSCommand(QByteArray& dataI)
         if (m_currentCommand == SD2Snes::EXTENDED_LS)
         {
             cpt++;
-            sDebug() << "Size data : " << data.mid(cpt, 4).toHex(':');
+            //sDebug() << "Size data : " << data.mid(cpt, 4).toHex(':');
             size = qFromLittleEndian<quint32>(data.mid(cpt, 4).constData());
-            sDebug() << "Size :" << size;
+            //sDebug() << "Size :" << size;
             cpt += 4;
-            sDebug() << "Date data : " << data.mid(cpt, 2).toHex(';');
+            //sDebug() << "Date data : " << data.mid(cpt, 2).toHex(';');
             quint16 date = qFromLittleEndian<quint16>(data.mid(cpt, 2).constData());
             cpt += 2;
-            sDebug() << "Time data : " << data.mid(cpt, 2).toHex(';');
+            //sDebug() << "Time data : " << data.mid(cpt, 2).toHex(';');
             quint16 time = qFromLittleEndian<quint16>(data.mid(cpt, 2).constData());
             dateTime = fat32ToDateTime(date, time);
             cpt += 3;
