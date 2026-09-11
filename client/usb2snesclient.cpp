@@ -279,6 +279,7 @@ void Usb2Snes::onWebSocketBinaryReceived(QByteArray message)
     {
         m_fileGetDataSent += message.size();
         emit getFileDataGet(message);
+        emit fileSendProgress(m_fileGetDataSent);
         sDebug() << m_fileGetDataSent << m_fileSize;
         if (m_fileGetDataSent == m_fileSize)
             changeState(Ready);

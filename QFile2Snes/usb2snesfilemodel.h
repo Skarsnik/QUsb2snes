@@ -42,6 +42,7 @@ public:
     QString currentDir() const;
     bool    isDir(const QModelIndex &index) const;
     void    setDirOnly(bool);
+    Q_PROPERTY(QString currentFile READ currentFile NOTIFY currentFileChanged FINAL)
 
 private:
     Usb2Snes*   usb2snes;
@@ -50,9 +51,8 @@ private:
     bool        dirOnly;
     bool        extended = false;
 
-    // QAbstractItemModel interface
+    QString m_currentFile;
 
-    // QAbstractItemModel interface
 public:
     QStringList mimeTypes() const override;
     QMimeData *mimeData(const QModelIndexList &indexes) const override;
@@ -65,6 +65,9 @@ public:
     Qt::ItemFlags flags(const QModelIndex &index) const override;
 
 
+    QString currentFile() const;
+signals:
+    void currentFileChanged();
 };
 
 #endif // USB2SNESFILEMODEL_H

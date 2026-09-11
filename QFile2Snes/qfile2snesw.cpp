@@ -137,7 +137,14 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
             setEnabledSd2SnesUI(true);
             usb2snesModel->setPath(usb2snesModel->currentDir());
         }
-
+        connect(usb2snes, &Usb2Snes::fileSendProgress, this, [=](int size) {
+            if (extendedLS)
+            {
+                float percent = (float) size / currentDLFileSize;
+                qDebug() << "Percent transferd :" << percent;
+                ui->transfertProgressBar->setValue(percent * 100);
+            }
+        });
     });
     QTimer::singleShot(0, this, [=] {
             usb2snes->connect();
@@ -187,34 +194,69 @@ void QFile2SnesW::onUsb2SnesStateChanged()
     if (usb2snes->state() == Usb2Snes::SendingFile)
     {
         qDebug() << "Sending file";
+        ui->usb2snesTableView->setEnabled(false);
+        ui->transfertProgressBar->setEnabled(true);
         ui->transfertProgressBar->setVisible(true);
         ui->transfertProgressBar->setInvertedAppearance(false);
-        ui->transfertProgressBar->setValue(99);
+        ui->transfertProgressBar->setValue(99);        
         //usb2snes->queueInfos();
         m_state = SENDINDFILE;
-        //return ;
+        return ;
     }
     if (usb2snes->state() == Usb2Snes::ReceivingFile)
     {
         qDebug() << "Receiving file";
+        ui->usb2snesTableView->setEnabled(false);
+        ui->transfertProgressBar->setEnabled(true);
         ui->transfertProgressBar->setVisible(true);
         ui->transfertProgressBar->setInvertedAppearance(true);
-        ui->transfertProgressBar->setValue(99);
+        if (extendedLS)
+        {
+            auto idx = usb2snesModel->index(ui->usb2snesTableView->currentIndex().row(), 2);
+
+            currentDLFileSize = usb2snesModel->data(idx, Qt::UserRole).toInt();
+            qDebug() << idx << currentDLFileSize;
+            ui->transfertProgressBar->setValue(0);
+        }
+        else
+            ui->transfertProgressBar->setValue(99);
         //usb2snes->queueInfos();
+        QFileInfo fi(localFileModel->currentFile());
+        QString fileName = fi.fileName();
+        ui->transfertLabel->setText(QString(tr("Transfering %1 to your computer")).arg(fileName));
+        statusBar()->showMessage(QString(tr("Transfering %1 to your computer")).arg(fileName), 2000);
         m_state = GETTINGFILE;
+        return ;
     }
     if (usb2snes->state() == Usb2Snes::Ready && (m_state == GETTINGFILE || m_state == SENDINDFILE))
     {
         if (m_state == SENDINDFILE)
         {
             usb2snes->infos();
+            m_state = WAITINGINFO;
+            QFileInfo fi(usb2snesModel->currentFile());
+            QString fileName = fi.fileName();
+            ui->transfertLabel->setText(QString(tr("Transfering %1 to the device")).arg(fileName));
+            statusBar()->showMessage(QString(tr("Transfering %1 to the device")).arg(fileName), 2000);
+            return ;
         }
-        m_state = IDLE;
-        ui->transfertProgressBar->setValue(100);
-        ui->transfertProgressBar->setEnabled(false);
-
+        setToIdleState();
+        return ;
     }
+    if (usb2snes->state() == Usb2Snes::Ready && m_state == WAITINGINFO)
+    {
+        setToIdleState();
+    }
+}
 
+void   QFile2SnesW::setToIdleState()
+{
+    statusBar()->showMessage(tr("File transfered succesfully"), 5000);
+    m_state = IDLE;
+    ui->usb2snesTableView->setEnabled(true);
+    ui->transfertProgressBar->setValue(100);
+    ui->transfertProgressBar->setEnabled(false);
+    ui->transfertLabel->setText("");
 }
 
 void QFile2SnesW::setExtendedLS(bool extended)

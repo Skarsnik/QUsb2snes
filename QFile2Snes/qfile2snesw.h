@@ -40,6 +40,7 @@ public:
       NOTCONNECTED = 0,
       CONNECTING,
       IDLE,
+      WAITINGINFO,
       SENDINDFILE,
       GETTINGFILE,
     };
@@ -88,6 +89,7 @@ private:
     bool                started;
     MyFileSystemModel*  localFileModel;
     bool                extendedLS = false;
+    int                 currentDLFileSize = 0;
 
     void    setLFilepath(QString path);
     void    refreshStatus();
@@ -96,6 +98,7 @@ private:
 
     // QWidget interface
     void updateLocalFileView(QString path);
+    void setToIdleState();
 protected:
     void closeEvent(QCloseEvent *event);
 };

@@ -37,8 +37,11 @@ public:
     Qt::ItemFlags flags(const QModelIndex &index) const;
     void          setUsb2Snes(Usb2Snes* usb);
     const QString&      getFilePath() const;
+    Q_PROPERTY(QString currentFile READ currentFile FINAL)
 
     Qt::DropActions supportedDropActions() const;
+
+    QString currentFile() const;
 
 signals:
     void    aboutToOverwroteFile(QByteArray);
@@ -52,6 +55,7 @@ private:
     int          m_sizeReceived;
     QByteArray   m_fileData;
     QString      m_filePath;
+    QString m_currentFile;
 };
 
 #endif // MYFILESYSTEMMODEL_H

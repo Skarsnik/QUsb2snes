@@ -35,6 +35,7 @@ bool MyFileSystemModel::dropMimeData(const QMimeData *data, Qt::DropAction actio
     m_sizeReceived = 0;
     m_fileSize = 0;
     m_filePath = this->fileInfo(parent).absoluteFilePath() + "/" + data->urls().at(0).fileName();
+    m_currentFile = sd2snesFilePath;
     usb2snes->getFile(sd2snesFilePath);
     return false;
 }
@@ -91,4 +92,9 @@ void MyFileSystemModel::OnUsbFileData(QByteArray data)
         file.write(m_fileData);
         file.close();
     }
+}
+
+QString MyFileSystemModel::currentFile() const
+{
+    return m_currentFile;
 }

@@ -109,7 +109,20 @@ QVariant Usb2SnesFileModel::data(const QModelIndex &index, int role) const
         else
             return provid.icon((QFileIconProvider::File));
     }
-
+    case Qt::UserRole:
+    {
+        if (index.column() == 0)
+            return QVariant(fileInfos.at(index.row()).name);
+        if (index.column() == 1)
+        {
+            return QLocale().toString(fileInfos.at(index.row()).createdTime.toLocalTime(),
+                                      QLocale::ShortFormat);
+        }
+        if (index.column() == 2 && fileInfos.at(index.row()).dir == true)
+            return QVariant(0);
+        if (index.column() == 2 && fileInfos.at(index.row()).dir == false)
+            return QVariant(fileInfos.at(index.row()).size);
+    }
     }
     return {};
 }
@@ -223,6 +236,7 @@ bool Usb2SnesFileModel::dropMimeData(const QMimeData *data, Qt::DropAction actio
     qDebug() << url;
     dest = url.path();
     qDebug() << dest;
+    m_currentFile = dest;
     usb2snes->sendFile(dest, fileData);
     return false;
 }
@@ -247,4 +261,9 @@ Qt::ItemFlags Usb2SnesFileModel::flags(const QModelIndex &index) const
     if (index.isValid() && !fileInfos.at(index.row()).dir)
         toret |= Qt::ItemIsDragEnabled;
     return toret;
+}
+
+QString Usb2SnesFileModel::currentFile() const
+{
+    return m_currentFile;
 }
