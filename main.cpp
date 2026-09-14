@@ -102,6 +102,7 @@ static void onCrash()
         exit(1);
     crashLog.write(QString("Running QUsb2Snes version " + qApp->applicationVersion() + "\n").toUtf8());
     crashLog.write(QString("Compiled against Qt" + QString(QT_VERSION_STR) + ", running" + qVersion() + "\n").toUtf8());
+    crashLog.write(QString("Config file " + globalSettings->fileName() + "\n").toUtf8());
     for (unsigned int i = 0; i < logDebugCrash.size(); i++)
     {
         crashLog.write(logDebugCrash.at(i).toUtf8() + "\n");
@@ -272,6 +273,7 @@ int main(int ac, char *ag[])
 #endif
     qInfo() << "Running QUsb2Snes version " << qApp->applicationVersion();
     qInfo() << "Compiled against Qt" << QT_VERSION_STR << ", running" << qVersion();
+    qInfo() << "Config file" << globalSettings->fileName();
     // let set some know trusted domain
     wsServer.addTrusted("https://www.multitroid.com");
     wsServer.addTrusted("https://multitroid.com");

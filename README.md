@@ -25,12 +25,12 @@ Installation via other means (homebrew, chocolatey, etc.) is not planned at the 
 ### Configuration files
 
 Logs are put in the standard path for application data if you use an installed version.
-It should be: `$HOME/.local/share/QUsb2Snes` on Linux.
+It should be: `$HOME/.local/share/QUsb2Snes` on Linux and `$HOME/Library/Application Support/QUsb2Snes` on macOS.
 Otherwise, it will be in the directory where the executable is located.
 
 Please note that the directory will be named after the binary file. If you create a symlink on Linux (e.g. qusb2snes.exe), the directory will change accordingly.
 
-The settings file is located aside the executable on Windows or in `$HOME/.config/skarsnik.nyo.fr/QUsb2Snes.conf` on Linux.
+The settings file is located aside the executable on Windows, in `$HOME/.config/skarsnik.nyo.fr/QUsb2Snes.conf` on Linux, or in a `.plist` file inside `$HOME/Library/Preferences/` on macOS. QUsb2Snes logs the exact config file path at startup, so check the logs to confirm which file is being used.
 
 ### Enabling/Disabling emulators
 
