@@ -22,6 +22,7 @@
 #define USB2SNESFILEMODEL_H
 
 #include <QAbstractListModel>
+#include "qwidget.h"
 #include "usb2snesclient.h"
 
 class Usb2SnesFileModel : public QAbstractTableModel
@@ -51,12 +52,13 @@ private:
     bool        dirOnly;
     bool        extended = false;
 
-    QString m_currentFile;
+    QString     m_currentFile;
 
 public:
     QStringList mimeTypes() const override;
     QMimeData *mimeData(const QModelIndexList &indexes) const override;
     bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) override;
+    bool canDropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) const override;
     Qt::DropActions supportedDropActions() const override;
 
 
@@ -68,6 +70,10 @@ public:
     QString currentFile() const;
 signals:
     void currentFileChanged();
+
+    // QAbstractItemModel interface
+public:
+
 };
 
 #endif // USB2SNESFILEMODEL_H

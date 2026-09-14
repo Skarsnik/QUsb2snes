@@ -207,6 +207,7 @@ QMimeData *Usb2SnesFileModel::mimeData(const QModelIndexList &indexes) const
     {
         urls.append(QUrl(m_currentDir + "/" + fileInfos.at(idx.row()).name));
     }
+    mData->setData("application/x-usb2snes-model-drag", {});
     mData->setUrls(urls);
     return mData;
 }
@@ -238,6 +239,15 @@ bool Usb2SnesFileModel::dropMimeData(const QMimeData *data, Qt::DropAction actio
     qDebug() << dest;
     m_currentFile = dest;
     usb2snes->sendFile(dest, fileData);
+    return false;
+}
+
+bool Usb2SnesFileModel::canDropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) const
+{
+    if (data->hasFormat("application/x-usb2snes-model-drag"))
+        return false;
+    if (data->hasUrls())
+        return true;
     return false;
 }
 

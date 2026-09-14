@@ -34,9 +34,11 @@ public:
     // QAbstractItemModel interface
 public:
     bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
+    bool canDropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) const;
     Qt::ItemFlags flags(const QModelIndex &index) const;
     void          setUsb2Snes(Usb2Snes* usb);
     const QString&      getFilePath() const;
+    QMimeData *mimeData(const QModelIndexList &indexes) const;
     Q_PROPERTY(QString currentFile READ currentFile FINAL)
 
     Qt::DropActions supportedDropActions() const;
@@ -56,6 +58,8 @@ private:
     QByteArray   m_fileData;
     QString      m_filePath;
     QString m_currentFile;
+
+
 };
 
 #endif // MYFILESYSTEMMODEL_H

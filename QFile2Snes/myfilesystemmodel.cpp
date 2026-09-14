@@ -40,6 +40,15 @@ bool MyFileSystemModel::dropMimeData(const QMimeData *data, Qt::DropAction actio
     return false;
 }
 
+bool MyFileSystemModel::canDropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) const
+{
+    if (data->hasFormat("application/x-myfilesystemodel-xx"))
+        return false;
+    if (data->hasUrls())
+        return true;
+    return false;
+}
+
 Qt::ItemFlags MyFileSystemModel::flags(const QModelIndex &index) const
 {
     Qt::ItemFlags defaultFlags = QFileSystemModel::flags(index);
@@ -66,6 +75,13 @@ void MyFileSystemModel::setUsb2Snes(Usb2Snes *usb)
 const QString &MyFileSystemModel::getFilePath() const
 {
     return m_filePath;
+}
+
+QMimeData *MyFileSystemModel::mimeData(const QModelIndexList &indexes) const
+{
+    auto mimeData = QFileSystemModel::mimeData(indexes);
+    mimeData->setData("application/x-myfilesystemodel-xx", {});
+    return mimeData;
 }
 
 Qt::DropActions MyFileSystemModel::supportedDropActions() const
