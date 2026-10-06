@@ -22,15 +22,11 @@ Installation via other means (homebrew, chocolatey, etc.) is not planned at the 
 
 ## Usage
 
-### Configuration files
+Running QUsb2Snes for the first time will welcome you with a configuration Wizzard, following the Wizzard should work fine in most case.
 
-Logs are put in the standard path for application data if you use an installed version.
-It should be: `$HOME/.local/share/QUsb2Snes` on Linux.
-Otherwise, it will be in the directory where the executable is located.
+You can refer to the section `Device/Emulator Configuration` to have some clarifications.
 
-Please note that the directory will be named after the binary file. If you create a symlink on Linux (e.g. qusb2snes.exe), the directory will change accordingly.
-
-The settings file is located aside the executable on Windows or in `$HOME/.config/skarsnik.nyo.fr/QUsb2Snes.conf` on Linux.
+You can also add other support from the device menu.
 
 ### Enabling/Disabling emulators
 
@@ -43,16 +39,7 @@ For example, to enable the retroarchdevice, add or change the config under `[Gen
 retroarchdevice=true
 ```
 
-### Serial configuration (Linux)
-
-If your device does not work out of the box, you can try the following command to set some tty settings
-
-`stty -F /dev/ttyACM0 0:0:cbd:0:3:1c:7f:15:4:5:40:0:11:13:1a:0:12:f:17:16:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0`
-
-Replace `/dev/ttyACM0` with the correct device.
-
-
-### Emulator configuration
+### Device/Emulator configuration
 
 #### SD2Snes & FXpak Pro
 
@@ -116,6 +103,25 @@ Go into the `/etc/libretro/` folder and copy the `retroarch.cfg` file somewhere.
 Open the copy with a text editor and search for the `network_cmd_enable` entry, replace `false` with `true`, save.
 Then now put your copy in place of the original one.
 
+
+### Linux specificities
+
+Logs are put in the standard path for application data if you use an installed version. It should be: `$HOME/.local/share/QUsb2Snes` on Linux.
+Otherwise, it will be in the directory where the executable is located if you compiled manually.
+
+Please note that the directory will be named after the binary file. If you create a symlink on Linux (e.g. qusb2snes.exe), the directory will change accordingly.
+
+The settings file is located in `$HOME/.config/skarsnik.nyo.fr/QUsb2Snes.conf`.
+
+#### SD2Snes/Fxpak pro
+
+Ensure you are in the correct group so your device is accessible your user, in most distribution it should be the `dialout` group
+
+If your device does not work out of the box, you can try the following command to set some tty settings
+
+`stty -F /dev/ttyACM0 0:0:cbd:0:3:1c:7f:15:4:5:40:0:11:13:1a:0:12:f:17:16:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0`
+
+Replace `/dev/ttyACM0` with the correct device.
 
 ### Command line options
 
