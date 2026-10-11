@@ -1,3 +1,11 @@
+qusb2snes (0.7.42-1) UNRELEASED; urgency=medium
+
+  * Better Linux integration
+  * QFile2Snes now support futur sd2snes firmwares that provide file size and
+    date modified
+
+ -- Sylvain Colinet <scolinet@gmail.com>  Thu, 24 Sep 2026 22:07:04 +0200
+
 qusb2snes (0.7.35-1) unstable; urgency=medium
 
   * Old port (8080) is now disabled by default
