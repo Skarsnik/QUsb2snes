@@ -1,7 +1,7 @@
 The RPM will be available, for example in:
 
 ```
-results_QUsb2snes/0.7.26/1.fc37/QUsb2snes-0.7.26-1.fc37.x86_64.rpm
+results_QUsb2Snes/0.7.36/1.fc44/QUsb2Snes-0.7.36-1.fc44.x86_64.rpm
 ```
 
 It is recommanded to install with dnf to deal with dependancies

@@ -1,6 +1,6 @@
 %global debug_package %{nil}
-Name:     QUsb2snes
-Version:  0.7.30
+Name:     QUsb2Snes
+Version:  0.7.36
 Release:  1%{?dist}
 Summary:  websocket server protocol for accessing hardware/software that act like a SNES (or are a SNES)
 License:  GPLv3
@@ -16,15 +16,15 @@ Requires: qt6-qtwebsockets
 Requires: qt6-qtserialport
 
 %description
-QUsb2Snes is a websocket server that provide an unified protocol for accessing hardware/software that act like a SNES (or are a SNES). 
-A classic usage is to use the FileViewer client to upload roms to your SD2SNES. 
+QUsb2Snes is a websocket server that provide an unified protocol for accessing hardware/software that act like a SNES (or are a SNES).
+A classic usage is to use the FileViewer client to upload roms to your SD2SNES.
 But it allows for more advanced usage like reading/writing the memory of the SNES.
 
 %prep
 %autosetup -n %{name}
 
 %conf
-qmake %{name}.pro CONFIG+='release'
+qmake QUsb2snes.pro CONFIG+='release'
 cd QFile2Snes && qmake QFile2Snes.pro CONFIG+='release' && cd -
 
 %build
@@ -36,7 +36,7 @@ mkdir -p %{buildroot}/usr/bin/
 install -m 755 QUsb2Snes %{buildroot}/usr/bin/QUsb2Snes
 install -m 755 QFile2Snes/QFile2Snes %{buildroot}/usr/bin/QFile2Snes
 mkdir -p %{buildroot}/usr/share/pixmaps
-install -m 644 ui/icons/cheer128x128.png %{buildroot}/usr/share/pixmaps/QUsb2snes.png
+install -m 644 ui/icons/cheer128x128.png %{buildroot}/usr/share/pixmaps/QUsb2Snes.png
 install -m 644 QFile2Snes/icon50x50.png %{buildroot}/usr/share/pixmaps/QFile2Snes.png
 mkdir -p %{buildroot}/usr/share/applications
 install -m 644 dist/rpm/QUsb2Snes.desktop %{buildroot}/usr/share/applications/QUsb2Snes.desktop
@@ -45,7 +45,7 @@ install -m 644 dist/rpm/QFiles2Snes.desktop %{buildroot}/usr/share/applications/
 %files
 /usr/bin/QUsb2Snes
 /usr/bin/QFile2Snes
-/usr/share/pixmaps/QUsb2snes.png
+/usr/share/pixmaps/QUsb2Snes.png
 /usr/share/pixmaps/QFile2Snes.png
 /usr/share/applications/QUsb2Snes.desktop
 /usr/share/applications/QFile2Snes.desktop
