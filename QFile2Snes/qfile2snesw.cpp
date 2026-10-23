@@ -47,7 +47,7 @@ QFile2SnesW::QFile2SnesW(QWidget *parent) :
     localFileModel->setRootPath("/");
 
     ui->driveComboBox->setModel(localFileModel);
-    m_settings = new QSettings("skarsnik.nyo.fr", "QFile2Snes");
+    m_settings = new QSettings("nyo.fr", "QFile2Snes");
     ui->localFilesTreeView->setModel(localFileModel);
     QString currentDir;
     if (m_settings->contains("lastLocalDir"))
