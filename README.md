@@ -111,7 +111,7 @@ Otherwise, it will be in the directory where the executable is located if you co
 
 Please note that the directory will be named after the binary file. If you create a symlink on Linux (e.g. qusb2snes.exe), the directory will change accordingly.
 
-The settings file is located in `$HOME/.config/skarsnik.nyo.fr/QUsb2Snes.conf`.
+The settings file is located in `$HOME/.config/nyo.fr/QUsb2Snes.conf`.
 
 #### SD2Snes/Fxpak pro
 

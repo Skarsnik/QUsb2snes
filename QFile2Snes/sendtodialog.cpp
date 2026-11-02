@@ -42,7 +42,7 @@ SendToDialog::SendToDialog(QString filePath, QWidget *parent) :
     usb2snes = nullptr;
     setWindowTitle(QString(tr("Send %1 to SD2SNES").arg(fileInfos.fileName())));
 
-    settings = new QSettings("skarsnik.nyo.fr", "QFile2Snes");
+    settings = new QSettings("nyo.fr", "QFile2Snes");
     if (!settings->contains(UPDIRKEY))
     {
         settings->setValue(UPDIRKEY, "/");
